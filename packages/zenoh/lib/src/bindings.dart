@@ -50,6 +50,104 @@ class ZenohDartBindings {
       );
   late final _zd_init_log = _zd_init_logPtr
       .asFunction<void Function(ffi.Pointer<ffi.Char>)>();
+
+  /// Returns the size of z_owned_config_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_config_sizeof() {
+    return _zd_config_sizeof();
+  }
+
+  late final _zd_config_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_config_sizeof');
+  late final _zd_config_sizeof = _zd_config_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Creates a default configuration.
+  ///
+  /// @param config  Pointer to an uninitialized z_owned_config_t.
+  /// @return 0 on success, negative on failure.
+  int zd_config_default(ffi.Pointer<ffi.Opaque> config) {
+    return _zd_config_default(config);
+  }
+
+  late final _zd_config_defaultPtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_config_default',
+      );
+  late final _zd_config_default = _zd_config_defaultPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Inserts a JSON5 value into the configuration at the given key path.
+  ///
+  /// Takes a mutable owned config pointer. Internally obtains a mutable loan
+  /// via z_config_loan_mut() before calling zc_config_insert_json5().
+  ///
+  /// @param config  Pointer to a valid z_owned_config_t.
+  /// @param key     Configuration key path (e.g., "mode").
+  /// @param value   JSON5 value string (e.g., "\"peer\"").
+  /// @return 0 on success, negative on failure.
+  int zd_config_insert_json5(
+    ffi.Pointer<ffi.Opaque> config,
+    ffi.Pointer<ffi.Char> key,
+    ffi.Pointer<ffi.Char> value,
+  ) {
+    return _zd_config_insert_json5(config, key, value);
+  }
+
+  late final _zd_config_insert_json5Ptr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('zd_config_insert_json5');
+  late final _zd_config_insert_json5 = _zd_config_insert_json5Ptr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Char>,
+        )
+      >();
+
+  /// Obtains a const loaned reference to the configuration.
+  ///
+  /// @param config  Pointer to a valid z_owned_config_t.
+  /// @return Const pointer to the loaned config.
+  ffi.Pointer<ffi.Opaque> zd_config_loan(ffi.Pointer<ffi.Opaque> config) {
+    return _zd_config_loan(config);
+  }
+
+  late final _zd_config_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_config_loan');
+  late final _zd_config_loan = _zd_config_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (frees) the configuration.
+  ///
+  /// After this call the owned config is in gravestone state.
+  /// A second drop is a safe no-op.
+  ///
+  /// @param config  Pointer to a z_owned_config_t to drop.
+  void zd_config_drop(ffi.Pointer<ffi.Opaque> config) {
+    return _zd_config_drop(config);
+  }
+
+  late final _zd_config_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_config_drop',
+      );
+  late final _zd_config_drop = _zd_config_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {
