@@ -4,12 +4,18 @@ output: lib/src/bindings.dart
 headers:
   entry-points:
     - ../../src/zenoh_dart.h
+compiler-opts:
+  - '-I../../extern/zenoh-c/include'
 functions:
   include:
     - zd_.*
 structs:
   include:
     - zd_.*
+    - z_owned_.*
+    - z_loaned_.*
+    - z_view_.*
+    - z_moved_.*
 enums:
   include:
     - zd_.*
@@ -22,3 +28,65 @@ globals:
 macros:
   include:
     - zd_.*
+type-map:
+  typedefs:
+    z_owned_config_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_config_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_session_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_session_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_view_keyexpr_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_keyexpr_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_view_string_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_string_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_bytes_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_bytes_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_string_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_config_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_session_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_bytes_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_string_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
