@@ -62,3 +62,44 @@ FFI_PLUGIN_EXPORT void zd_close_session(z_owned_session_t* session) {
   z_close(z_session_loan_mut(session), NULL);
   z_session_drop(z_session_move(session));
 }
+
+// ---------------------------------------------------------------------------
+// KeyExpr
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_view_keyexpr_sizeof(void) {
+  return sizeof(z_view_keyexpr_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_view_keyexpr_from_str(z_view_keyexpr_t* ke,
+                                               const char* expr) {
+  return z_view_keyexpr_from_str(ke, expr);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_keyexpr_t* zd_view_keyexpr_loan(
+    const z_view_keyexpr_t* ke) {
+  return z_view_keyexpr_loan(ke);
+}
+
+FFI_PLUGIN_EXPORT void zd_keyexpr_as_view_string(
+    const z_loaned_keyexpr_t* ke, z_view_string_t* out) {
+  z_keyexpr_as_view_string(ke, out);
+}
+
+// ---------------------------------------------------------------------------
+// View String utilities
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_view_string_sizeof(void) {
+  return sizeof(z_view_string_t);
+}
+
+FFI_PLUGIN_EXPORT const char* zd_view_string_data(const z_view_string_t* str) {
+  const z_loaned_string_t* loaned = z_view_string_loan(str);
+  return z_string_data(loaned);
+}
+
+FFI_PLUGIN_EXPORT size_t zd_view_string_len(const z_view_string_t* str) {
+  const z_loaned_string_t* loaned = z_view_string_loan(str);
+  return z_string_len(loaned);
+}

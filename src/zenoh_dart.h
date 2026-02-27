@@ -105,4 +105,68 @@ FFI_PLUGIN_EXPORT const z_loaned_session_t* zd_session_loan(
 /// @param session  Pointer to a z_owned_session_t to close and drop.
 FFI_PLUGIN_EXPORT void zd_close_session(z_owned_session_t* session);
 
+// ---------------------------------------------------------------------------
+// KeyExpr
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_view_keyexpr_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_view_keyexpr_sizeof(void);
+
+/// Creates a view key expression from a null-terminated string.
+///
+/// The string must remain valid for the lifetime of the view.
+///
+/// @param ke    Pointer to an uninitialized z_view_keyexpr_t.
+/// @param expr  Null-terminated key expression string.
+/// @return 0 on success, Z_EINVAL (-1) if the expression is invalid.
+FFI_PLUGIN_EXPORT int zd_view_keyexpr_from_str(z_view_keyexpr_t* ke,
+                                               const char* expr);
+
+/// Obtains a const loaned reference to the key expression.
+///
+/// @param ke  Pointer to a valid z_view_keyexpr_t.
+/// @return Const pointer to the loaned key expression.
+FFI_PLUGIN_EXPORT const z_loaned_keyexpr_t* zd_view_keyexpr_loan(
+    const z_view_keyexpr_t* ke);
+
+/// Converts a loaned key expression to a view string.
+///
+/// The output view string borrows from the key expression and must not
+/// outlive it. Returns void -- always succeeds on a valid loaned keyexpr.
+///
+/// @param ke   Const pointer to a loaned key expression.
+/// @param out  Pointer to an uninitialized z_view_string_t to receive the result.
+FFI_PLUGIN_EXPORT void zd_keyexpr_as_view_string(
+    const z_loaned_keyexpr_t* ke, z_view_string_t* out);
+
+// ---------------------------------------------------------------------------
+// View String utilities
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_view_string_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_view_string_sizeof(void);
+
+/// Returns a pointer to the data of a view string.
+///
+/// Internally loans the view string and calls z_string_data on the loaned ref.
+/// The returned pointer is NOT guaranteed to be null-terminated.
+///
+/// @param str  Pointer to a valid z_view_string_t.
+/// @return Pointer to the string data.
+FFI_PLUGIN_EXPORT const char* zd_view_string_data(const z_view_string_t* str);
+
+/// Returns the length of a view string (in bytes, NOT including any terminator).
+///
+/// Internally loans the view string and calls z_string_len on the loaned ref.
+///
+/// @param str  Pointer to a valid z_view_string_t.
+/// @return Length of the string data in bytes.
+FFI_PLUGIN_EXPORT size_t zd_view_string_len(const z_view_string_t* str);
+
 #endif // ZENOH_DART_H

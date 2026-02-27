@@ -218,6 +218,138 @@ class ZenohDartBindings {
       );
   late final _zd_close_session = _zd_close_sessionPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of z_view_keyexpr_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_view_keyexpr_sizeof() {
+    return _zd_view_keyexpr_sizeof();
+  }
+
+  late final _zd_view_keyexpr_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>(
+        'zd_view_keyexpr_sizeof',
+      );
+  late final _zd_view_keyexpr_sizeof = _zd_view_keyexpr_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Creates a view key expression from a null-terminated string.
+  ///
+  /// The string must remain valid for the lifetime of the view.
+  ///
+  /// @param ke    Pointer to an uninitialized z_view_keyexpr_t.
+  /// @param expr  Null-terminated key expression string.
+  /// @return 0 on success, Z_EINVAL (-1) if the expression is invalid.
+  int zd_view_keyexpr_from_str(
+    ffi.Pointer<ffi.Opaque> ke,
+    ffi.Pointer<ffi.Char> expr,
+  ) {
+    return _zd_view_keyexpr_from_str(ke, expr);
+  }
+
+  late final _zd_view_keyexpr_from_strPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Char>)
+        >
+      >('zd_view_keyexpr_from_str');
+  late final _zd_view_keyexpr_from_str = _zd_view_keyexpr_from_strPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Char>)
+      >();
+
+  /// Obtains a const loaned reference to the key expression.
+  ///
+  /// @param ke  Pointer to a valid z_view_keyexpr_t.
+  /// @return Const pointer to the loaned key expression.
+  ffi.Pointer<ffi.Opaque> zd_view_keyexpr_loan(ffi.Pointer<ffi.Opaque> ke) {
+    return _zd_view_keyexpr_loan(ke);
+  }
+
+  late final _zd_view_keyexpr_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_view_keyexpr_loan');
+  late final _zd_view_keyexpr_loan = _zd_view_keyexpr_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Converts a loaned key expression to a view string.
+  ///
+  /// The output view string borrows from the key expression and must not
+  /// outlive it. Returns void -- always succeeds on a valid loaned keyexpr.
+  ///
+  /// @param ke   Const pointer to a loaned key expression.
+  /// @param out  Pointer to an uninitialized z_view_string_t to receive the result.
+  void zd_keyexpr_as_view_string(
+    ffi.Pointer<ffi.Opaque> ke,
+    ffi.Pointer<ffi.Opaque> out,
+  ) {
+    return _zd_keyexpr_as_view_string(ke, out);
+  }
+
+  late final _zd_keyexpr_as_view_stringPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_keyexpr_as_view_string');
+  late final _zd_keyexpr_as_view_string = _zd_keyexpr_as_view_stringPtr
+      .asFunction<
+        void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Returns the size of z_view_string_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_view_string_sizeof() {
+    return _zd_view_string_sizeof();
+  }
+
+  late final _zd_view_string_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_view_string_sizeof');
+  late final _zd_view_string_sizeof = _zd_view_string_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Returns a pointer to the data of a view string.
+  ///
+  /// Internally loans the view string and calls z_string_data on the loaned ref.
+  /// The returned pointer is NOT guaranteed to be null-terminated.
+  ///
+  /// @param str  Pointer to a valid z_view_string_t.
+  /// @return Pointer to the string data.
+  ffi.Pointer<ffi.Char> zd_view_string_data(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_view_string_data(str);
+  }
+
+  late final _zd_view_string_dataPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_view_string_data');
+  late final _zd_view_string_data = _zd_view_string_dataPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the length of a view string (in bytes, NOT including any terminator).
+  ///
+  /// Internally loans the view string and calls z_string_len on the loaned ref.
+  ///
+  /// @param str  Pointer to a valid z_view_string_t.
+  /// @return Length of the string data in bytes.
+  int zd_view_string_len(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_view_string_len(str);
+  }
+
+  late final _zd_view_string_lenPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_view_string_len',
+      );
+  late final _zd_view_string_len = _zd_view_string_lenPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {
