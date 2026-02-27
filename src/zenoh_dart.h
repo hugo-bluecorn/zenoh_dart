@@ -143,6 +143,95 @@ FFI_PLUGIN_EXPORT void zd_keyexpr_as_view_string(
     const z_loaned_keyexpr_t* ke, z_view_string_t* out);
 
 // ---------------------------------------------------------------------------
+// Bytes
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_bytes_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_bytes_sizeof(void);
+
+/// Copies a null-terminated string into owned bytes.
+///
+/// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+/// @param str    Null-terminated string to copy.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_bytes_copy_from_str(z_owned_bytes_t* bytes,
+                                             const char* str);
+
+/// Copies a buffer into owned bytes.
+///
+/// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+/// @param data   Pointer to the buffer data.
+/// @param len    Length of the buffer in bytes.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_bytes_copy_from_buf(z_owned_bytes_t* bytes,
+                                             const uint8_t* data, size_t len);
+
+/// Converts loaned bytes to an owned string.
+///
+/// @param bytes  Const pointer to a loaned bytes reference.
+/// @param out    Pointer to an uninitialized z_owned_string_t to receive the result.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_bytes_to_string(const z_loaned_bytes_t* bytes,
+                                         z_owned_string_t* out);
+
+/// Obtains a const loaned reference to the bytes.
+///
+/// @param bytes  Pointer to a valid z_owned_bytes_t.
+/// @return Const pointer to the loaned bytes.
+FFI_PLUGIN_EXPORT const z_loaned_bytes_t* zd_bytes_loan(
+    const z_owned_bytes_t* bytes);
+
+/// Drops (frees) owned bytes.
+///
+/// After this call the owned bytes are in gravestone state.
+/// A second drop is a safe no-op.
+///
+/// @param bytes  Pointer to a z_owned_bytes_t to drop.
+FFI_PLUGIN_EXPORT void zd_bytes_drop(z_owned_bytes_t* bytes);
+
+// ---------------------------------------------------------------------------
+// Owned String
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_string_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_string_sizeof(void);
+
+/// Obtains a const loaned reference to the owned string.
+///
+/// @param str  Pointer to a valid z_owned_string_t.
+/// @return Const pointer to the loaned string.
+FFI_PLUGIN_EXPORT const z_loaned_string_t* zd_string_loan(
+    const z_owned_string_t* str);
+
+/// Returns a pointer to the data of a loaned string.
+///
+/// The returned pointer is NOT guaranteed to be null-terminated.
+///
+/// @param str  Const pointer to a loaned string.
+/// @return Pointer to the string data.
+FFI_PLUGIN_EXPORT const char* zd_string_data(const z_loaned_string_t* str);
+
+/// Returns the length of a loaned string (in bytes, NOT including any terminator).
+///
+/// @param str  Const pointer to a loaned string.
+/// @return Length of the string data in bytes.
+FFI_PLUGIN_EXPORT size_t zd_string_len(const z_loaned_string_t* str);
+
+/// Drops (frees) an owned string.
+///
+/// After this call the owned string is in gravestone state.
+/// A second drop is a safe no-op.
+///
+/// @param str  Pointer to a z_owned_string_t to drop.
+FFI_PLUGIN_EXPORT void zd_string_drop(z_owned_string_t* str);
+
+// ---------------------------------------------------------------------------
 // View String utilities
 // ---------------------------------------------------------------------------
 

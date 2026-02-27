@@ -64,6 +64,63 @@ FFI_PLUGIN_EXPORT void zd_close_session(z_owned_session_t* session) {
 }
 
 // ---------------------------------------------------------------------------
+// Bytes
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_bytes_sizeof(void) {
+  return sizeof(z_owned_bytes_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_bytes_copy_from_str(z_owned_bytes_t* bytes,
+                                             const char* str) {
+  return z_bytes_copy_from_str(bytes, str);
+}
+
+FFI_PLUGIN_EXPORT int zd_bytes_copy_from_buf(z_owned_bytes_t* bytes,
+                                             const uint8_t* data, size_t len) {
+  return z_bytes_copy_from_buf(bytes, data, len);
+}
+
+FFI_PLUGIN_EXPORT int zd_bytes_to_string(const z_loaned_bytes_t* bytes,
+                                         z_owned_string_t* out) {
+  return z_bytes_to_string(bytes, out);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_bytes_t* zd_bytes_loan(
+    const z_owned_bytes_t* bytes) {
+  return z_bytes_loan(bytes);
+}
+
+FFI_PLUGIN_EXPORT void zd_bytes_drop(z_owned_bytes_t* bytes) {
+  z_bytes_drop(z_bytes_move(bytes));
+}
+
+// ---------------------------------------------------------------------------
+// Owned String
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_string_sizeof(void) {
+  return sizeof(z_owned_string_t);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_string_t* zd_string_loan(
+    const z_owned_string_t* str) {
+  return z_string_loan(str);
+}
+
+FFI_PLUGIN_EXPORT const char* zd_string_data(const z_loaned_string_t* str) {
+  return z_string_data(str);
+}
+
+FFI_PLUGIN_EXPORT size_t zd_string_len(const z_loaned_string_t* str) {
+  return z_string_len(str);
+}
+
+FFI_PLUGIN_EXPORT void zd_string_drop(z_owned_string_t* str) {
+  z_string_drop(z_string_move(str));
+}
+
+// ---------------------------------------------------------------------------
 // KeyExpr
 // ---------------------------------------------------------------------------
 

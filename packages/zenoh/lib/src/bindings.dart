@@ -301,6 +301,209 @@ class ZenohDartBindings {
         void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
       >();
 
+  /// Returns the size of z_owned_bytes_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_bytes_sizeof() {
+    return _zd_bytes_sizeof();
+  }
+
+  late final _zd_bytes_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_bytes_sizeof');
+  late final _zd_bytes_sizeof = _zd_bytes_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Copies a null-terminated string into owned bytes.
+  ///
+  /// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+  /// @param str    Null-terminated string to copy.
+  /// @return 0 on success, negative on failure.
+  int zd_bytes_copy_from_str(
+    ffi.Pointer<ffi.Opaque> bytes,
+    ffi.Pointer<ffi.Char> str,
+  ) {
+    return _zd_bytes_copy_from_str(bytes, str);
+  }
+
+  late final _zd_bytes_copy_from_strPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Char>)
+        >
+      >('zd_bytes_copy_from_str');
+  late final _zd_bytes_copy_from_str = _zd_bytes_copy_from_strPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Char>)
+      >();
+
+  /// Copies a buffer into owned bytes.
+  ///
+  /// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+  /// @param data   Pointer to the buffer data.
+  /// @param len    Length of the buffer in bytes.
+  /// @return 0 on success, negative on failure.
+  int zd_bytes_copy_from_buf(
+    ffi.Pointer<ffi.Opaque> bytes,
+    ffi.Pointer<ffi.Uint8> data,
+    int len,
+  ) {
+    return _zd_bytes_copy_from_buf(bytes, data, len);
+  }
+
+  late final _zd_bytes_copy_from_bufPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Size,
+          )
+        >
+      >('zd_bytes_copy_from_buf');
+  late final _zd_bytes_copy_from_buf = _zd_bytes_copy_from_bufPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
+  /// Converts loaned bytes to an owned string.
+  ///
+  /// @param bytes  Const pointer to a loaned bytes reference.
+  /// @param out    Pointer to an uninitialized z_owned_string_t to receive the result.
+  /// @return 0 on success, negative on failure.
+  int zd_bytes_to_string(
+    ffi.Pointer<ffi.Opaque> bytes,
+    ffi.Pointer<ffi.Opaque> out,
+  ) {
+    return _zd_bytes_to_string(bytes, out);
+  }
+
+  late final _zd_bytes_to_stringPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_bytes_to_string');
+  late final _zd_bytes_to_string = _zd_bytes_to_stringPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Obtains a const loaned reference to the bytes.
+  ///
+  /// @param bytes  Pointer to a valid z_owned_bytes_t.
+  /// @return Const pointer to the loaned bytes.
+  ffi.Pointer<ffi.Opaque> zd_bytes_loan(ffi.Pointer<ffi.Opaque> bytes) {
+    return _zd_bytes_loan(bytes);
+  }
+
+  late final _zd_bytes_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_bytes_loan');
+  late final _zd_bytes_loan = _zd_bytes_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (frees) owned bytes.
+  ///
+  /// After this call the owned bytes are in gravestone state.
+  /// A second drop is a safe no-op.
+  ///
+  /// @param bytes  Pointer to a z_owned_bytes_t to drop.
+  void zd_bytes_drop(ffi.Pointer<ffi.Opaque> bytes) {
+    return _zd_bytes_drop(bytes);
+  }
+
+  late final _zd_bytes_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_bytes_drop',
+      );
+  late final _zd_bytes_drop = _zd_bytes_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of z_owned_string_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_string_sizeof() {
+    return _zd_string_sizeof();
+  }
+
+  late final _zd_string_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_string_sizeof');
+  late final _zd_string_sizeof = _zd_string_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Obtains a const loaned reference to the owned string.
+  ///
+  /// @param str  Pointer to a valid z_owned_string_t.
+  /// @return Const pointer to the loaned string.
+  ffi.Pointer<ffi.Opaque> zd_string_loan(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_string_loan(str);
+  }
+
+  late final _zd_string_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_string_loan');
+  late final _zd_string_loan = _zd_string_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns a pointer to the data of a loaned string.
+  ///
+  /// The returned pointer is NOT guaranteed to be null-terminated.
+  ///
+  /// @param str  Const pointer to a loaned string.
+  /// @return Pointer to the string data.
+  ffi.Pointer<ffi.Char> zd_string_data(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_string_data(str);
+  }
+
+  late final _zd_string_dataPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_string_data');
+  late final _zd_string_data = _zd_string_dataPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the length of a loaned string (in bytes, NOT including any terminator).
+  ///
+  /// @param str  Const pointer to a loaned string.
+  /// @return Length of the string data in bytes.
+  int zd_string_len(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_string_len(str);
+  }
+
+  late final _zd_string_lenPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_string_len',
+      );
+  late final _zd_string_len = _zd_string_lenPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (frees) an owned string.
+  ///
+  /// After this call the owned string is in gravestone state.
+  /// A second drop is a safe no-op.
+  ///
+  /// @param str  Pointer to a z_owned_string_t to drop.
+  void zd_string_drop(ffi.Pointer<ffi.Opaque> str) {
+    return _zd_string_drop(str);
+  }
+
+  late final _zd_string_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_string_drop',
+      );
+  late final _zd_string_drop = _zd_string_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
   /// Returns the size of z_view_string_t in bytes.
   ///
   /// Used by Dart to allocate the correct amount of native memory
