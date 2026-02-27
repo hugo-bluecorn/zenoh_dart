@@ -72,4 +72,37 @@ FFI_PLUGIN_EXPORT const z_loaned_config_t* zd_config_loan(
 /// @param config  Pointer to a z_owned_config_t to drop.
 FFI_PLUGIN_EXPORT void zd_config_drop(z_owned_config_t* config);
 
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_session_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_session_sizeof(void);
+
+/// Opens a Zenoh session with the given configuration.
+///
+/// @param session  Pointer to an uninitialized z_owned_session_t.
+/// @param config   Pointer to a z_owned_config_t (consumed by z_open).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_open_session(z_owned_session_t* session,
+                                      z_owned_config_t* config);
+
+/// Obtains a const loaned reference to the session.
+///
+/// @param session  Pointer to a valid z_owned_session_t.
+/// @return Const pointer to the loaned session.
+FFI_PLUGIN_EXPORT const z_loaned_session_t* zd_session_loan(
+    const z_owned_session_t* session);
+
+/// Gracefully closes and drops the session.
+///
+/// Calls z_close for graceful shutdown, then z_session_drop to release
+/// resources. After this call the owned session is in gravestone state.
+///
+/// @param session  Pointer to a z_owned_session_t to close and drop.
+FFI_PLUGIN_EXPORT void zd_close_session(z_owned_session_t* session);
+
 #endif // ZENOH_DART_H

@@ -148,6 +148,76 @@ class ZenohDartBindings {
       );
   late final _zd_config_drop = _zd_config_dropPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of z_owned_session_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_session_sizeof() {
+    return _zd_session_sizeof();
+  }
+
+  late final _zd_session_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_session_sizeof');
+  late final _zd_session_sizeof = _zd_session_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Opens a Zenoh session with the given configuration.
+  ///
+  /// @param session  Pointer to an uninitialized z_owned_session_t.
+  /// @param config   Pointer to a z_owned_config_t (consumed by z_open).
+  /// @return 0 on success, negative on failure.
+  int zd_open_session(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> config,
+  ) {
+    return _zd_open_session(session, config);
+  }
+
+  late final _zd_open_sessionPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_open_session');
+  late final _zd_open_session = _zd_open_sessionPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Obtains a const loaned reference to the session.
+  ///
+  /// @param session  Pointer to a valid z_owned_session_t.
+  /// @return Const pointer to the loaned session.
+  ffi.Pointer<ffi.Opaque> zd_session_loan(ffi.Pointer<ffi.Opaque> session) {
+    return _zd_session_loan(session);
+  }
+
+  late final _zd_session_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_session_loan');
+  late final _zd_session_loan = _zd_session_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Gracefully closes and drops the session.
+  ///
+  /// Calls z_close for graceful shutdown, then z_session_drop to release
+  /// resources. After this call the owned session is in gravestone state.
+  ///
+  /// @param session  Pointer to a z_owned_session_t to close and drop.
+  void zd_close_session(ffi.Pointer<ffi.Opaque> session) {
+    return _zd_close_session(session);
+  }
+
+  late final _zd_close_sessionPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_close_session',
+      );
+  late final _zd_close_session = _zd_close_sessionPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {

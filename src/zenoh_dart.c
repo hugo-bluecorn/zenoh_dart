@@ -39,3 +39,26 @@ FFI_PLUGIN_EXPORT const z_loaned_config_t* zd_config_loan(
 FFI_PLUGIN_EXPORT void zd_config_drop(z_owned_config_t* config) {
   z_config_drop(z_config_move(config));
 }
+
+// ---------------------------------------------------------------------------
+// Session
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_session_sizeof(void) {
+  return sizeof(z_owned_session_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_open_session(z_owned_session_t* session,
+                                      z_owned_config_t* config) {
+  return z_open(session, z_config_move(config), NULL);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_session_t* zd_session_loan(
+    const z_owned_session_t* session) {
+  return z_session_loan(session);
+}
+
+FFI_PLUGIN_EXPORT void zd_close_session(z_owned_session_t* session) {
+  z_close(z_session_loan_mut(session), NULL);
+  z_session_drop(z_session_move(session));
+}
