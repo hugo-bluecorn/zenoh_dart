@@ -1,0 +1,24 @@
+name: ZenohDartBindings
+description: "Auto-generated FFI bindings for zenoh_dart C shim."
+output: lib/src/bindings.dart
+headers:
+  entry-points:
+    - ../../src/zenoh_dart.h
+functions:
+  include:
+    - zd_.*
+structs:
+  include:
+    - zd_.*
+enums:
+  include:
+    - zd_.*
+typedefs:
+  include:
+    - zd_.*
+globals:
+  include:
+    - zd_.*
+macros:
+  include:
+    - zd_.*

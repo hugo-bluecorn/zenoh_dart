@@ -1,0 +1,15 @@
+[submodule "extern/zenoh-c"]
+	path = extern/zenoh-c
+	url = https://github.com/eclipse-zenoh/zenoh-c.git
+[submodule "extern/zenoh-cpp"]
+	path = extern/zenoh-cpp
+	url = https://github.com/eclipse-zenoh/zenoh-cpp.git
+[submodule "extern/zenoh-kotlin"]
+	path = extern/zenoh-kotlin
+	url = https://github.com/eclipse-zenoh/zenoh-kotlin.git
+[submodule "extern/zenoh-demos"]
+	path = extern/zenoh-demos
+	url = https://github.com/eclipse-zenoh/zenoh-demos.git
+[submodule "extern/cargo-ndk"]
+	path = extern/cargo-ndk
+	url = https://github.com/bbqsrc/cargo-ndk.git
