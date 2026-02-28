@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -15,7 +15,7 @@ C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 ### Phase 1 (z_put + z_delete) — completed
 - C shim: `zd_put`, `zd_delete`
 - Dart: `Session.put()`, `Session.delete()`
-- CLI: `bin/z_put.dart`, `bin/z_delete.dart`
+- CLI: `packages/zenoh/bin/z_put.dart`, `packages/zenoh/bin/z_delete.dart`
 
 ## This Phase's Goal
 
@@ -89,7 +89,7 @@ Additionally uses `Dart_PostCObject_DL` from the Dart native API.
 
 ## Dart API Surface
 
-### New file: `lib/src/sample.dart`
+### New file: `packages/zenoh/lib/src/sample.dart`
 
 ```dart
 /// The kind of a sample (PUT or DELETE).
@@ -104,7 +104,7 @@ class Sample {
 }
 ```
 
-### New file: `lib/src/subscriber.dart`
+### New file: `packages/zenoh/lib/src/subscriber.dart`
 
 ```dart
 /// A zenoh subscriber that receives data samples as a stream.
@@ -124,7 +124,7 @@ Internal implementation:
 - Feeds `StreamController<Sample>` (broadcast)
 - `close()` calls `zd_subscriber_drop` and closes the `ReceivePort`
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Add method:
 
@@ -133,18 +133,18 @@ Add method:
 Subscriber declareSubscriber(String keyExpr);
 ```
 
-### Modify `lib/zenoh_dart.dart`
+### Modify `packages/zenoh/lib/zenoh.dart`
 
 Add exports for `Sample`, `SampleKind`, `Subscriber`.
 
 ## CLI Example to Create
 
-### `bin/z_sub.dart`
+### `packages/zenoh/bin/z_sub.dart`
 
 Mirrors `extern/zenoh-c/examples/z_sub.c`:
 
 ```
-Usage: dart run bin/z_sub.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_sub.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>  (default: 'demo/example/**')
@@ -161,11 +161,11 @@ Behavior:
 
 ## Verification
 
-1. `dart run ffigen --config ffigen.yaml` — regenerate bindings
-2. `flutter analyze` — no errors
-3. **Integration test (pub→sub)**: Run `bin/z_sub.dart` in terminal 1, then
-   `bin/z_put.dart` in terminal 2 — subscriber should print the received sample
-4. **Integration test (delete)**: Run `bin/z_sub.dart`, then `bin/z_delete.dart` —
+1. `cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml` — regenerate bindings
+2. `fvm dart analyze packages/zenoh` — no errors
+3. **Integration test (pub->sub)**: Run `packages/zenoh/bin/z_sub.dart` in terminal 1, then
+   `packages/zenoh/bin/z_put.dart` in terminal 2 — subscriber should print the received sample
+4. **Integration test (delete)**: Run `packages/zenoh/bin/z_sub.dart`, then `packages/zenoh/bin/z_delete.dart` —
    subscriber should print DELETE kind
 5. **Unit test**: Declare subscriber, close it, no crash or leak
 6. **Unit test**: Verify `Stream<Sample>` closes when subscriber is closed

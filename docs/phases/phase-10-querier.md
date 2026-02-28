@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -66,7 +66,7 @@ FFI_PLUGIN_EXPORT void zd_querier_drop(z_owned_querier_t* querier);
 
 ## Dart API Surface
 
-### New file: `lib/src/querier.dart`
+### New file: `packages/zenoh/lib/src/querier.dart`
 
 ```dart
 /// A declared querier for repeated queries to the same key expression.
@@ -85,7 +85,7 @@ class Querier {
 }
 ```
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 ```dart
 class Session {
@@ -101,12 +101,12 @@ class Session {
 
 ## CLI Example to Create
 
-### `bin/z_querier.dart`
+### `packages/zenoh/bin/z_querier.dart`
 
 Mirrors `extern/zenoh-c/examples/z_querier.c`:
 
 ```
-Usage: dart run bin/z_querier.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_querier.dart [OPTIONS]
 
 Options:
     -s, --selector <SELECTOR>  (default: 'demo/example/**')
@@ -124,7 +124,7 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: Run `bin/z_queryable.dart` + `bin/z_querier.dart` — querier prints periodic replies
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: Run `packages/zenoh/bin/z_queryable.dart` + `packages/zenoh/bin/z_querier.dart` — querier prints periodic replies
 3. **Unit test**: Querier.get() stream completes after timeout with no queryable
 4. **Unit test**: Matching listener fires when queryable appears/disappears

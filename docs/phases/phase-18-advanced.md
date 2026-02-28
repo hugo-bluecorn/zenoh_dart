@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -117,7 +117,7 @@ Also uses `zc_config_insert_json5` (from Phase 0) for timestamp configuration.
 
 ## Dart API Surface
 
-### New file: `lib/src/advanced_publisher.dart`
+### New file: `packages/zenoh/lib/src/advanced_publisher.dart`
 
 ```dart
 /// An advanced publisher with caching, detection, and miss detection.
@@ -151,7 +151,7 @@ class AdvancedPublisherOptions {
 }
 ```
 
-### New file: `lib/src/advanced_subscriber.dart`
+### New file: `packages/zenoh/lib/src/advanced_subscriber.dart`
 
 ```dart
 /// An advanced subscriber with history recovery and miss detection.
@@ -202,7 +202,7 @@ class AdvancedSubscriberOptions {
 }
 ```
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 ```dart
 class Session {
@@ -220,18 +220,18 @@ class Session {
 }
 ```
 
-### Modify `lib/zenoh_dart.dart`
+### Modify `packages/zenoh/lib/zenoh.dart`
 
 Add exports for `AdvancedPublisher`, `AdvancedSubscriber`, options, `MissEvent`.
 
 ## CLI Examples to Create
 
-### `bin/z_advanced_pub.dart`
+### `packages/zenoh/bin/z_advanced_pub.dart`
 
 Mirrors `extern/zenoh-c/examples/z_advanced_pub.c`:
 
 ```
-Usage: dart run bin/z_advanced_pub.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_advanced_pub.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-advanced-pub')
@@ -249,12 +249,12 @@ Behavior:
 5. Run until SIGINT
 6. Close
 
-### `bin/z_advanced_sub.dart`
+### `packages/zenoh/bin/z_advanced_sub.dart`
 
 Mirrors `extern/zenoh-c/examples/z_advanced_sub.c`:
 
 ```
-Usage: dart run bin/z_advanced_sub.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_advanced_sub.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-advanced-pub')
@@ -275,19 +275,19 @@ Behavior:
 
 ```bash
 # Terminal 1: Start advanced publisher (publishes with cache)
-dart run bin/z_advanced_pub.dart --cache 10
+fvm dart run -C packages/zenoh bin/z_advanced_pub.dart --cache 10
 
 # Wait a few seconds (publisher caches samples)
 
 # Terminal 2: Start advanced subscriber with history
-dart run bin/z_advanced_sub.dart --history --recovery
+fvm dart run -C packages/zenoh bin/z_advanced_sub.dart --history --recovery
 # → Should receive cached samples from publisher's history
 # → Should detect any sample gaps
 ```
 
 ## Verification
 
-1. `flutter analyze` — no errors
+1. `fvm dart analyze packages/zenoh` — no errors
 2. **Integration test**: Start `z_advanced_pub.dart`, wait, start `z_advanced_sub.dart --history` — subscriber receives cached history
 3. **Integration test**: Miss detection fires when simulating gaps
 4. **Unit test**: AdvancedPublisher with cache options works

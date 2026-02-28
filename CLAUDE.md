@@ -24,6 +24,19 @@ zenoh-dart/                     # git repo root
   scripts/                      # build scripts
 ```
 
+## Current Status
+
+**Phase 0 Bootstrap: COMPLETE** — 29 C shim functions, 5 Dart API classes, 33 integration tests.
+
+Available Dart API classes:
+- `Config` — Session configuration with JSON5 insertion
+- `Session` — Open/close zenoh sessions (peer mode)
+- `KeyExpr` — Key expression creation and validation
+- `ZBytes` — Binary payload container with string round-trip
+- `ZenohException` — Error type for zenoh operations
+
+Phases 1–18 (put/sub/pub/query/SHM/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
+
 ## FVM Requirement
 
 **Dart and Flutter are NOT on PATH.** ALL commands must use `fvm`:
@@ -71,6 +84,11 @@ See `docs/build/01-build-zenoh-c.md` for the full build plan and rationale.
 
 RPATH is set to `$ORIGIN` on Linux for self-contained deployment.
 
+**C shim build:** Running `cmake --build build` from the repo root produces `build/libzenoh_dart.so`. Tests need both this and `libzenohc.so` on `LD_LIBRARY_PATH`:
+```bash
+LD_LIBRARY_PATH=extern/zenoh-c/target/release:build
+```
+
 ### Android cross-compilation
 
 ```bash
@@ -88,8 +106,14 @@ cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml
 # Analyze Dart code
 fvm dart analyze packages/zenoh
 
-# Run tests (requires native libs on LD_LIBRARY_PATH)
-cd packages/zenoh && fvm dart test
+# Run all tests (requires native libs on LD_LIBRARY_PATH)
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test
+
+# Run a single test file
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test test/session_test.dart
+
+# Run a single test by name
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test --name "opens session"
 
 # Melos bootstrap (from monorepo root)
 fvm dart run melos bootstrap
@@ -107,7 +131,8 @@ Native C code in `src/` is compiled into a shared library and loaded at runtime 
 
 - **Short-lived native functions**: Call directly from any isolate (e.g., `zd_put()`)
 - **Long-lived native functions**: Must run on a helper isolate to avoid blocking. Uses `SendPort`/`ReceivePort` request-response pattern with `Completer`-based futures.
-- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`.
+- **`zd_` prefix**: All C shim symbols (functions, structs, enums, typedefs) must use the `zd_` prefix to avoid collisions with zenoh-c's `z_`/`zc_` namespace. The ffigen.yaml filters on `zd_.*` — symbols without this prefix won't appear in bindings.dart.
+- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
 - **Single-load library**: Only `libzenoh_dart.so` is loaded explicitly in Dart. The OS linker resolves `libzenohc.so` automatically via the `DT_NEEDED` entry.
 
 ### Dynamic Library Names by Platform

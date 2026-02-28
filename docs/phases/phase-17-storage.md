@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -65,7 +65,7 @@ FFI_PLUGIN_EXPORT bool zd_keyexpr_includes(
 
 ## Dart API Surface
 
-### Modify `lib/src/keyexpr.dart`
+### Modify `packages/zenoh/lib/src/keyexpr.dart`
 
 ```dart
 class KeyExpr {
@@ -83,12 +83,12 @@ The storage example composes existing subscriber + queryable.
 
 ## CLI Example to Create
 
-### `bin/z_storage.dart`
+### `packages/zenoh/bin/z_storage.dart`
 
 Mirrors `extern/zenoh-c/examples/z_storage.c`:
 
 ```
-Usage: dart run bin/z_storage.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_storage.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>  (default: 'demo/example/**')
@@ -110,27 +110,27 @@ Behavior:
 
 ```bash
 # Terminal 1: Start storage
-dart run bin/z_storage.dart
+fvm dart run -C packages/zenoh bin/z_storage.dart
 
 # Terminal 2: Put some data
-dart run bin/z_put.dart -k "demo/example/key1" -p "value1"
-dart run bin/z_put.dart -k "demo/example/key2" -p "value2"
+fvm dart run -C packages/zenoh bin/z_put.dart -k "demo/example/key1" -p "value1"
+fvm dart run -C packages/zenoh bin/z_put.dart -k "demo/example/key2" -p "value2"
 
 # Terminal 3: Query the storage
-dart run bin/z_get.dart -s "demo/example/**"
+fvm dart run -C packages/zenoh bin/z_get.dart -s "demo/example/**"
 # → Should return both key1 and key2 with their values
 
 # Terminal 2: Delete a key
-dart run bin/z_delete.dart -k "demo/example/key1"
+fvm dart run -C packages/zenoh bin/z_delete.dart -k "demo/example/key1"
 
 # Terminal 3: Query again
-dart run bin/z_get.dart -s "demo/example/**"
+fvm dart run -C packages/zenoh bin/z_get.dart -s "demo/example/**"
 # → Should return only key2
 ```
 
 ## Verification
 
-1. `flutter analyze` — no errors
+1. `fvm dart analyze packages/zenoh` — no errors
 2. **Unit test**: `KeyExpr.intersects()` with matching keyexprs returns true
 3. **Unit test**: `KeyExpr.intersects()` with non-matching keyexprs returns false
 4. **Unit test**: `KeyExpr.includes()` works correctly

@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -62,7 +62,7 @@ Enum values from zenoh-c:
 
 ## Dart API Surface
 
-### New file: `lib/src/enums.dart` (extend if exists)
+### New file: `packages/zenoh/lib/src/enums.dart` (extend if exists)
 
 ```dart
 /// Congestion control strategy for publishers.
@@ -83,7 +83,7 @@ enum Priority {
 }
 ```
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Extend publisher declaration with new options:
 
@@ -100,12 +100,12 @@ Publisher declarePublisher(
 
 ## CLI Examples to Create
 
-### `bin/z_pub_thr.dart`
+### `packages/zenoh/bin/z_pub_thr.dart`
 
 Mirrors `extern/zenoh-c/examples/z_pub_thr.c`:
 
 ```
-Usage: dart run bin/z_pub_thr.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_pub_thr.dart [OPTIONS]
 
 Options:
     -p, --payload-size <SIZE>   (default: 8)
@@ -120,12 +120,12 @@ Behavior:
 4. Tight loop: publish payload clone as fast as possible
 5. Run until SIGINT
 
-### `bin/z_sub_thr.dart`
+### `packages/zenoh/bin/z_sub_thr.dart`
 
 Mirrors `extern/zenoh-c/examples/z_sub_thr.c`:
 
 ```
-Usage: dart run bin/z_sub_thr.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_sub_thr.dart [OPTIONS]
 
 Options:
     -n, --samples <NUM>    (default: 100000, messages per measurement round)
@@ -141,8 +141,8 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: Run `bin/z_sub_thr.dart` + `bin/z_pub_thr.dart` — subscriber reports throughput
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: Run `packages/zenoh/bin/z_sub_thr.dart` + `packages/zenoh/bin/z_pub_thr.dart` — subscriber reports throughput
 3. **Integration test**: Run C `z_sub_thr` + Dart `z_pub_thr.dart` — cross-language throughput
 4. **Unit test**: Publisher with CongestionControl.block works
 5. **Unit test**: Publisher with different Priority values works
