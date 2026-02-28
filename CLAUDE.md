@@ -27,6 +27,7 @@ zenoh-dart/                     # git repo root
 ## Current Status
 
 **Phase 0 Bootstrap: COMPLETE** — 29 C shim functions, 5 Dart API classes, 33 integration tests.
+**Phase P1 Packaging: COMPLETE** — Build infrastructure done in Phase 0. Tier-2 prebuilt placement (`native/linux/x86_64/libzenohc.so`) intentionally deferred — it's a 30-second `mkdir + cp` whenever needed (CI setup, new contributor onboarding, pub.dev prep). The CMake 3-tier discovery, single-load `native_lib.dart`, Android build script, and RPATH configuration are all in place.
 
 Available Dart API classes:
 - `Config` — Session configuration with JSON5 insertion
@@ -207,6 +208,25 @@ tests calling through FFI into the real native code — these are integration
 tests by nature. Do NOT mock the FFI layer; call through to the real
 `libzenohc.so` and `libzenoh_dart.so`.
 
+### Reference Architecture for API Design
+
+Our dependency chain is: **Rust (zenoh core) → zenoh-c (C bindings) →
+C shim (zd_*) → Dart FFI → Dart API**. We reference two layers:
+
+- **zenoh-c** is our contract boundary. Every function we call, every
+  options struct we fill, every return code we check is defined here.
+  The C headers and tests are the authoritative spec.
+- **zenoh-cpp** is our structural peer. It wraps the same zenoh-c API
+  from another language, making it the best template for API design
+  (options classes, error handling, Session vs Publisher split).
+
+Do NOT reference the Rust source (`eclipse-zenoh/zenoh`) during planning
+or implementation. It is one layer too deep — we cannot call Rust APIs,
+only C APIs. The Rust codebase would overwhelm planning context and is
+the wrong abstraction level. If a specific phase hits ambiguity that
+zenoh-c and zenoh-cpp cannot resolve, escalate to CA for ad-hoc
+investigation.
+
 ### Reference Tests in Submodules
 
 The `extern/zenoh-c/tests/` and `extern/zenoh-cpp/tests/` directories contain
@@ -228,6 +248,53 @@ tests that serve as both behavioral specifications and structural templates:
 When planning a phase, read the corresponding zenoh-c test (e.g.,
 `z_api_payload_test.c` for bytes, `z_int_pub_sub_test.c` for pub/sub) to
 understand what behaviors to verify and what edge cases to cover.
+
+### Cross-Language API Parity Check
+
+Before finalizing a phase plan or implementation, verify the Dart API against
+the C and C++ equivalents in the extern submodules. This catches missing
+semantics that the phase doc may not spell out explicitly.
+
+**During planning (tdd-planner)**, read these for each new C shim function:
+
+1. **C options struct** — Find `z_<operation>_options_t` in
+   `extern/zenoh-c/include/zenoh_commons.h`. List every field. Confirm which
+   fields the current phase exposes and which are explicitly deferred (NULL
+   options = defaults). Document deferred fields in the plan so future phases
+   know what remains.
+2. **C move/consume semantics** — Check `extern/zenoh-c/tests/z_api_drop_options.c`
+   and similar tests. Identify which parameters are consumed by `z_*_move()`.
+   Every consumed parameter needs a corresponding `markConsumed()` call in
+   Dart. When multiple parameters are consumed in one call (e.g., payload +
+   attachment in `z_put`), the plan must account for all of them.
+3. **C++ wrapper** — Read the corresponding method in
+   `extern/zenoh-cpp/include/zenoh/api/session.hxx` (or `publisher.hxx`,
+   `queryable.hxx`, etc.). Note the C++ options class fields and whether the
+   Session-level and Publisher-level APIs differ. The Dart API should follow
+   the same split when both levels exist.
+
+**During implementation (tdd-implementer)**, verify:
+
+4. **Return code semantics** — zenoh-c returns 0 on success, negative on
+   error. Use `!= 0` consistently in Dart (not `< 0`), since this is
+   defensive against future positive error codes.
+5. **Error handling parity** — C++ throws `ZException` with a message and
+   error code. Dart must throw `ZenohException` with equivalent information.
+   Read the C++ `__ZENOH_RESULT_CHECK` macro messages for consistent wording.
+6. **Cleanup on all paths** — If a C++ method has RAII cleanup (destructors
+   on scope exit), the Dart equivalent needs explicit `try/finally` or helper
+   methods (like `_withKeyExpr`) to guarantee the same cleanup.
+
+**Quick reference — what to read per phase:**
+
+| What | Where |
+|------|-------|
+| C options structs | `extern/zenoh-c/include/zenoh_commons.h` — search `z_<op>_options_t` |
+| C move semantics | `extern/zenoh-c/tests/z_api_drop_options.c` |
+| C examples | `extern/zenoh-c/examples/z_<op>.c` |
+| C++ Session API | `extern/zenoh-cpp/include/zenoh/api/session.hxx` |
+| C++ Publisher API | `extern/zenoh-cpp/include/zenoh/api/publisher.hxx` |
+| C++ tests | `extern/zenoh-cpp/tests/universal/network/*.cxx` |
 
 ### Phase Docs as Source of Truth
 
@@ -279,3 +346,7 @@ Use the primary Dart module as `<scope>` in commit messages:
 - `test(session): ...`, `feat(session): ...`
 - `test(keyexpr): ...`, `feat(keyexpr): ...`
 - `test(z-put): ...` for CLI examples
+
+## Session Directives
+
+When /tdd-plan completes, always show the FULL plan text produced by the planner agent — every slice with Given/When/Then, acceptance criteria, phase tracking, and dependencies. Never summarize or abbreviate the plan output.
