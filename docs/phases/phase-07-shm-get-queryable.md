@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -90,7 +90,7 @@ All other SHM functions from Phase 4 are reused as-is.
 
 ## Dart API Surface
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Extend `Session.get()` to accept an optional payload:
 
@@ -104,7 +104,7 @@ Stream<Reply> get(
 });
 ```
 
-### Modify `lib/src/query.dart`
+### Modify `packages/zenoh/lib/src/query.dart`
 
 The `Query.payload` property (from Phase 6) already returns `ZBytes?`.
 Since `ZBytes.isShmBacked` was added in Phase 4, SHM detection on incoming
@@ -121,12 +121,12 @@ with existing `Query.reply()` and `Session.get()`.
 
 ## CLI Examples to Create
 
-### `bin/z_get_shm.dart`
+### `packages/zenoh/bin/z_get_shm.dart`
 
 Mirrors `extern/zenoh-c/examples/z_get_shm.c`:
 
 ```
-Usage: dart run bin/z_get_shm.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_get_shm.dart [OPTIONS]
 
 Options:
     -s, --selector <SELECTOR>  (default: 'demo/example/**')
@@ -143,12 +143,12 @@ Behavior:
 6. Print replies
 7. Close
 
-### `bin/z_queryable_shm.dart`
+### `packages/zenoh/bin/z_queryable_shm.dart`
 
 Mirrors `extern/zenoh-c/examples/z_queryable_shm.c`:
 
 ```
-Usage: dart run bin/z_queryable_shm.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_queryable_shm.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-queryable')
@@ -170,9 +170,9 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: Run `bin/z_queryable_shm.dart` + `bin/z_get_shm.dart` — end-to-end SHM query/reply
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: Run `packages/zenoh/bin/z_queryable_shm.dart` + `packages/zenoh/bin/z_get_shm.dart` — end-to-end SHM query/reply
 3. **Integration test**: Run Dart `z_queryable_shm.dart` + C `z_get` — cross-language SHM
-4. **Integration test**: Run Dart `z_queryable.dart` (non-SHM) + `z_get_shm.dart` — SHM query to non-SHM queryable
+4. **Integration test**: Run Dart `z_queryable.dart` (non-SHM) + `packages/zenoh/bin/z_get_shm.dart` — SHM query to non-SHM queryable
 5. **Unit test**: `Session.get()` with SHM payload works
 6. **Unit test**: `Query.reply()` with SHM bytes works

@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -110,7 +110,7 @@ FFI_PLUGIN_EXPORT void zd_reply_drop(z_owned_reply_t* reply);
 
 ## Dart API Surface
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Add channel-based alternatives:
 
@@ -160,12 +160,12 @@ class ReplyReceiver {
 
 ## CLI Examples to Create
 
-### `bin/z_queryable_with_channels.dart`
+### `packages/zenoh/bin/z_queryable_with_channels.dart`
 
 Mirrors `extern/zenoh-c/examples/z_queryable_with_channels.c`:
 
 ```
-Usage: dart run bin/z_queryable_with_channels.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_queryable_with_channels.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-queryable')
@@ -178,12 +178,12 @@ Behavior:
 3. Loop: recv() query, print info, reply with value
 4. Exit when closed
 
-### `bin/z_non_blocking_get.dart`
+### `packages/zenoh/bin/z_non_blocking_get.dart`
 
 Mirrors `extern/zenoh-c/examples/z_non_blocking_get.c`:
 
 ```
-Usage: dart run bin/z_non_blocking_get.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_non_blocking_get.dart [OPTIONS]
 
 Options:
     -s, --selector <SELECTOR>  (default: 'demo/example/**')
@@ -199,8 +199,8 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: `z_queryable_with_channels.dart` + `z_get.dart` — channel queryable works
-3. **Integration test**: `z_queryable.dart` + `z_non_blocking_get.dart` — non-blocking polling works
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: `packages/zenoh/bin/z_queryable_with_channels.dart` + `packages/zenoh/bin/z_get.dart` — channel queryable works
+3. **Integration test**: `packages/zenoh/bin/z_queryable.dart` + `packages/zenoh/bin/z_non_blocking_get.dart` — non-blocking polling works
 4. **Unit test**: ChannelQueryable.recv() returns null after close
 5. **Unit test**: ReplyReceiver.tryRecv() returns null when no data, throws on disconnect

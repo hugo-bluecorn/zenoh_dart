@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -125,7 +125,7 @@ Internal `_zd_query_callback` implementation:
 
 ## Dart API Surface
 
-### New file: `lib/src/reply.dart`
+### New file: `packages/zenoh/lib/src/reply.dart`
 
 ```dart
 /// A reply received from a query.
@@ -147,7 +147,7 @@ class ReplyError {
 }
 ```
 
-### New file: `lib/src/query.dart`
+### New file: `packages/zenoh/lib/src/query.dart`
 
 ```dart
 /// A query received by a queryable.
@@ -169,7 +169,7 @@ class Query {
 }
 ```
 
-### New file: `lib/src/queryable.dart`
+### New file: `packages/zenoh/lib/src/queryable.dart`
 
 ```dart
 /// A queryable that handles incoming queries.
@@ -182,7 +182,7 @@ class Queryable {
 }
 ```
 
-### New file: `lib/src/enums.dart`
+### New file: `packages/zenoh/lib/src/enums.dart`
 
 ```dart
 /// Target for query routing.
@@ -193,7 +193,7 @@ enum QueryTarget {
 }
 ```
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Add methods:
 
@@ -216,18 +216,18 @@ class Session {
 }
 ```
 
-### Modify `lib/zenoh_dart.dart`
+### Modify `packages/zenoh/lib/zenoh.dart`
 
 Add exports for `Reply`, `ReplyError`, `Query`, `Queryable`, `QueryTarget`.
 
 ## CLI Examples to Create
 
-### `bin/z_queryable.dart`
+### `packages/zenoh/bin/z_queryable.dart`
 
 Mirrors `extern/zenoh-c/examples/z_queryable.c`:
 
 ```
-Usage: dart run bin/z_queryable.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_queryable.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-queryable')
@@ -242,12 +242,12 @@ Behavior:
 4. Run until SIGINT
 5. Close
 
-### `bin/z_get.dart`
+### `packages/zenoh/bin/z_get.dart`
 
 Mirrors `extern/zenoh-c/examples/z_get.c`:
 
 ```
-Usage: dart run bin/z_get.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_get.dart [OPTIONS]
 
 Options:
     -s, --selector <SELECTOR>  (default: 'demo/example/**')
@@ -264,9 +264,9 @@ Behavior:
 
 ## Verification
 
-1. `dart run ffigen --config ffigen.yaml` — regenerate bindings
-2. `flutter analyze` — no errors
-3. **Integration test**: Run `bin/z_queryable.dart` in terminal 1, `bin/z_get.dart` in terminal 2 — get prints the reply
+1. `cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml` — regenerate bindings
+2. `fvm dart analyze packages/zenoh` — no errors
+3. **Integration test**: Run `packages/zenoh/bin/z_queryable.dart` in terminal 1, `packages/zenoh/bin/z_get.dart` in terminal 2 — get prints the reply
 4. **Integration test**: Run with zenoh-c `z_queryable` and Dart `z_get.dart` (cross-language)
 5. **Unit test**: Query stream completes (finite) after timeout with no queryable
 6. **Unit test**: Queryable stream produces queries, reply works, drop works

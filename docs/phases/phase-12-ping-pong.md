@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -92,7 +92,7 @@ FFI_PLUGIN_EXPORT void zd_slice_drop(z_owned_slice_t* slice);
 
 ## Dart API Surface
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 ```dart
 class Session {
@@ -102,7 +102,7 @@ class Session {
 }
 ```
 
-### Modify `lib/src/bytes.dart`
+### Modify `packages/zenoh/lib/src/bytes.dart`
 
 ```dart
 class ZBytes {
@@ -114,7 +114,7 @@ class ZBytes {
 }
 ```
 
-### Modify `lib/src/publisher.dart`
+### Modify `packages/zenoh/lib/src/publisher.dart`
 
 Add `isExpress` parameter to publisher declaration:
 
@@ -129,12 +129,12 @@ Publisher declarePublisher(
 
 ## CLI Examples to Create
 
-### `bin/z_pong.dart`
+### `packages/zenoh/bin/z_pong.dart`
 
 Mirrors `extern/zenoh-c/examples/z_pong.c`:
 
 ```
-Usage: dart run bin/z_pong.dart
+Usage: fvm dart run -C packages/zenoh bin/z_pong.dart
 ```
 
 Behavior:
@@ -144,12 +144,12 @@ Behavior:
 4. For each received sample: clone payload, publish on "test/pong"
 5. Run until SIGINT
 
-### `bin/z_ping.dart`
+### `packages/zenoh/bin/z_ping.dart`
 
 Mirrors `extern/zenoh-c/examples/z_ping.c`:
 
 ```
-Usage: dart run bin/z_ping.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_ping.dart [OPTIONS]
 
 Options:
     -p, --payload-size <SIZE>  (default: 8)
@@ -173,8 +173,8 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: Run `bin/z_pong.dart` + `bin/z_ping.dart` — ping prints latency results
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: Run `packages/zenoh/bin/z_pong.dart` + `packages/zenoh/bin/z_ping.dart` — ping prints latency results
 3. **Integration test**: Run C `z_pong` + Dart `z_ping.dart` — cross-language latency
 4. **Unit test**: `ZBytes.clone()` produces independent copy
 5. **Unit test**: `ZBytes.toBytes()` returns correct raw bytes

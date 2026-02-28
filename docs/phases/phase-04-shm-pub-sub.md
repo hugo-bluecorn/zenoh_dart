@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 **SHM (Shared Memory) is a first-class feature** — it is the primary reason for
@@ -175,7 +175,7 @@ FFI_PLUGIN_EXPORT int zd_shm_try_reloan_mut(
 
 ## Dart API Surface
 
-### New file: `lib/src/shm_provider.dart`
+### New file: `packages/zenoh/lib/src/shm_provider.dart`
 
 ```dart
 /// Manages a POSIX shared memory pool for zero-copy data transfer.
@@ -194,7 +194,7 @@ class ShmProvider {
 }
 ```
 
-### New file: `lib/src/shm_buffer.dart`
+### New file: `packages/zenoh/lib/src/shm_buffer.dart`
 
 ```dart
 /// A mutable shared memory buffer — writable via raw pointer access.
@@ -226,7 +226,7 @@ class ShmBuffer {
 }
 ```
 
-### Modify `lib/src/bytes.dart`
+### Modify `packages/zenoh/lib/src/bytes.dart`
 
 Add SHM detection to `ZBytes`:
 
@@ -243,18 +243,18 @@ class ZBytes {
 }
 ```
 
-### Modify `lib/zenoh_dart.dart`
+### Modify `packages/zenoh/lib/zenoh.dart`
 
 Add exports for `ShmProvider`, `ShmMutBuffer`, `ShmBuffer`.
 
 ## CLI Examples to Create
 
-### `bin/z_pub_shm.dart`
+### `packages/zenoh/bin/z_pub_shm.dart`
 
 Mirrors `extern/zenoh-c/examples/z_pub_shm.c`:
 
 ```
-Usage: dart run bin/z_pub_shm.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_pub_shm.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>    (default: 'demo/example/zenoh-dart-pub')
@@ -273,12 +273,12 @@ Behavior:
    e. Sleep 1 second
 5. Clean up
 
-### `bin/z_sub_shm.dart`
+### `packages/zenoh/bin/z_sub_shm.dart`
 
 Mirrors `extern/zenoh-c/examples/z_sub_shm.c`:
 
 ```
-Usage: dart run bin/z_sub_shm.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_sub_shm.dart [OPTIONS]
 
 Options:
     -k, --key <KEYEXPR>  (default: 'demo/example/**')
@@ -330,11 +330,11 @@ subscriber.stream.listen((sample) {
 
 ## Verification
 
-1. `dart run ffigen --config ffigen.yaml` — regenerate bindings
-2. `flutter analyze` — no errors
+1. `cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml` — regenerate bindings
+2. `fvm dart analyze packages/zenoh` — no errors
 3. **Unit test**: Create SHM provider, allocate buffer, write data, read back, verify
 4. **Unit test**: Allocate, convert to bytes, check `isShmBacked` returns true
 5. **Unit test**: Create `ZBytes.fromString()`, check `isShmBacked` returns false
-6. **Integration test**: Run `bin/z_sub_shm.dart` + `bin/z_pub_shm.dart` — subscriber detects SHM
-7. **Integration test**: Run `bin/z_sub_shm.dart` + `bin/z_put.dart` — subscriber detects RAW
+6. **Integration test**: Run `packages/zenoh/bin/z_sub_shm.dart` + `packages/zenoh/bin/z_pub_shm.dart` — subscriber detects SHM
+7. **Integration test**: Run `packages/zenoh/bin/z_sub_shm.dart` + `packages/zenoh/bin/z_put.dart` — subscriber detects RAW
 8. **Unit test**: Provider alloc with insufficient pool size handles error correctly

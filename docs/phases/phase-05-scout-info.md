@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -87,7 +87,7 @@ FFI_PLUGIN_EXPORT int zd_whatami_to_view_string(int whatami, z_view_string_t* ou
 
 ## Dart API Surface
 
-### New file: `lib/src/id.dart`
+### New file: `packages/zenoh/lib/src/id.dart`
 
 ```dart
 /// A unique zenoh node identifier (16-byte ID).
@@ -97,7 +97,7 @@ class ZenohId {
 }
 ```
 
-### New file: `lib/src/hello.dart`
+### New file: `packages/zenoh/lib/src/hello.dart`
 
 ```dart
 /// Information about a discovered zenoh node.
@@ -108,7 +108,7 @@ class Hello {
 }
 ```
 
-### New file: `lib/src/scout.dart`
+### New file: `packages/zenoh/lib/src/scout.dart`
 
 ```dart
 /// Scout the network for zenoh routers and peers.
@@ -116,7 +116,7 @@ class Hello {
 Stream<Hello> scout({Config? config});
 ```
 
-### Modify `lib/src/session.dart`
+### Modify `packages/zenoh/lib/src/session.dart`
 
 Add properties/methods:
 
@@ -133,18 +133,18 @@ class Session {
 }
 ```
 
-### Modify `lib/zenoh_dart.dart`
+### Modify `packages/zenoh/lib/zenoh.dart`
 
 Add exports for `ZenohId`, `Hello`, `scout`.
 
 ## CLI Examples to Create
 
-### `bin/z_scout.dart`
+### `packages/zenoh/bin/z_scout.dart`
 
 Mirrors `extern/zenoh-c/examples/z_scout.c`:
 
 ```
-Usage: dart run bin/z_scout.dart
+Usage: fvm dart run -C packages/zenoh bin/z_scout.dart
 ```
 
 Behavior:
@@ -152,12 +152,12 @@ Behavior:
 2. Print each discovered entity: whatami, ZID, locators
 3. Exit when scouting completes
 
-### `bin/z_info.dart`
+### `packages/zenoh/bin/z_info.dart`
 
 Mirrors `extern/zenoh-c/examples/z_info.c`:
 
 ```
-Usage: dart run bin/z_info.dart
+Usage: fvm dart run -C packages/zenoh bin/z_info.dart
 ```
 
 Behavior:
@@ -169,9 +169,9 @@ Behavior:
 
 ## Verification
 
-1. `dart run ffigen --config ffigen.yaml` — regenerate bindings
-2. `flutter analyze` — no errors
-3. **Integration test**: Run `bin/z_scout.dart` with a zenoh router running — prints router info
-4. **Integration test**: Run `bin/z_info.dart` connected to a router — prints ZIDs
+1. `cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml` — regenerate bindings
+2. `fvm dart analyze packages/zenoh` — no errors
+3. **Integration test**: Run `packages/zenoh/bin/z_scout.dart` with a zenoh router running — prints router info
+4. **Integration test**: Run `packages/zenoh/bin/z_info.dart` connected to a router — prints ZIDs
 5. **Unit test**: `ZenohId.toHexString()` produces valid hex string
 6. **Unit test**: `Session.zid` returns non-zero ID after open

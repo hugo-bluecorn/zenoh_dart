@@ -1,5 +1,27 @@
 # Phase 0: Bootstrap (Infrastructure)
 
+> **Status: COMPLETED** (2026-02-28)
+>
+> Phase 0 was implemented via TDD with 5 slices and 33 integration tests.
+> The actual implementation has 29 C shim functions (vs 23 in the original spec).
+>
+> Key corrections discovered during implementation:
+> 1. `zd_init_dart_api_dl` returns `intptr_t` (not `int`)
+> 2. `zd_config_insert_json5` takes mutable `z_owned_config_t*` (not `const z_loaned_config_t*`)
+> 3. `zd_keyexpr_as_view_string` returns `void` (not `int`)
+> 4. `zd_bytes_copy_from_str` and `zd_bytes_copy_from_buf` return `int` (not `void`)
+> 5. `zd_close_session` does graceful `z_close()` then `z_session_drop()`
+> 6. `z_open` takes three parameters (session, config_move, NULL options)
+> 7. View string has no standalone data/len — shim composes via `z_view_string_loan()`
+> 8. Zenoh strings are NOT null-terminated — must use data+len
+> 9. Empty keyexpr returns Z_EINVAL (-1)
+> 10. Drop functions use move pattern: `z_TYPE_drop(z_TYPE_move(&owned))`
+> 11. Dart SDK headers must be copied to `src/dart/`
+> 12. `zd_string_loan` added (required for owned string access)
+> 13. `zd_bytes_from_static_str` dropped (unsafe from Dart FFI)
+> 14. sizeof helpers added for all opaque types (6 functions)
+> 15. Double-drop safety confirmed for all owned types
+
 ## Project Context
 
 `zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2.

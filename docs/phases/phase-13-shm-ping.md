@@ -2,7 +2,7 @@
 
 ## Project Context
 
-`zenoh_dart` is a Dart FFI package providing bindings for zenoh-c v1.7.2 via a
+`zenoh` is a pure Dart FFI package providing bindings for zenoh-c v1.7.2 via a
 C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ## Prior Phases
@@ -13,7 +13,7 @@ C shim layer. See `docs/phases/phase-00-bootstrap.md` for full architecture.
 
 ### Phase 12 (Ping/Pong) — completed
 - Background subscriber, `ZBytes.clone()`, `ZBytes.toBytes()`, publisher express mode
-- CLI: `bin/z_pong.dart`, `bin/z_ping.dart`
+- CLI: `packages/zenoh/bin/z_pong.dart`, `packages/zenoh/bin/z_ping.dart`
 
 ## This Phase's Goal
 
@@ -30,7 +30,7 @@ Unlike non-SHM ping (which copies payload bytes each publish), SHM ping:
 3. In the ping loop, clones the bytes reference (shallow copy — same underlying SHM)
 4. Each `publisher.put(shmBytes.clone())` publishes the same shared memory with minimal overhead
 
-The pong side reuses the existing `bin/z_pong.dart` from Phase 12 (it works
+The pong side reuses the existing `packages/zenoh/bin/z_pong.dart` from Phase 12 (it works
 with both SHM and non-SHM payloads transparently).
 
 ## C Shim Functions Needed
@@ -47,7 +47,7 @@ No new C shim functions — this phase composes existing functions:
 
 ## Dart API Surface
 
-### Modify `lib/src/shm_buffer.dart`
+### Modify `packages/zenoh/lib/src/shm_buffer.dart`
 
 Add method to convert mutable to immutable:
 
@@ -66,12 +66,12 @@ All functionality composes from existing classes.
 
 ## CLI Example to Create
 
-### `bin/z_ping_shm.dart`
+### `packages/zenoh/bin/z_ping_shm.dart`
 
 Mirrors `extern/zenoh-c/examples/z_ping_shm.c`:
 
 ```
-Usage: dart run bin/z_ping_shm.dart [OPTIONS]
+Usage: fvm dart run -C packages/zenoh bin/z_ping_shm.dart [OPTIONS]
 
 Options:
     -p, --payload-size <SIZE>  (default: 8)
@@ -112,8 +112,8 @@ Behavior:
 
 ## Verification
 
-1. `flutter analyze` — no errors
-2. **Integration test**: Run `bin/z_pong.dart` + `bin/z_ping_shm.dart` — SHM ping with latency results
+1. `fvm dart analyze packages/zenoh` — no errors
+2. **Integration test**: Run `packages/zenoh/bin/z_pong.dart` + `packages/zenoh/bin/z_ping_shm.dart` — SHM ping with latency results
 3. **Compare**: Run both `z_ping.dart` and `z_ping_shm.dart` against same `z_pong.dart` — SHM should show lower latency
 4. **Unit test**: `ShmMutBuffer.toImmutable()` produces valid ShmBuffer
 5. **Unit test**: `shmBytes.clone()` produces valid bytes that can be published
