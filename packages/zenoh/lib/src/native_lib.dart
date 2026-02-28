@@ -19,9 +19,7 @@ DynamicLibrary openZenohDartLibrary() {
   if (Platform.isWindows) {
     return DynamicLibrary.open('zenoh_dart.dll');
   }
-  throw UnsupportedError(
-    'Unsupported platform: ${Platform.operatingSystem}',
-  );
+  throw UnsupportedError('Unsupported platform: ${Platform.operatingSystem}');
 }
 
 /// Lazy singleton for the FFI bindings.
@@ -39,9 +37,7 @@ ZenohDartBindings _initBindings() {
   // Initialize Dart API DL -- must succeed before any native port usage.
   final result = b.zd_init_dart_api_dl(NativeApi.initializeApiDLData);
   if (result != 0) {
-    throw StateError(
-      'Failed to initialize Dart API DL (code: $result)',
-    );
+    throw StateError('Failed to initialize Dart API DL (code: $result)');
   }
 
   return b;

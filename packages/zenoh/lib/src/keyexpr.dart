@@ -21,10 +21,12 @@ class KeyExpr {
   /// Throws [ZenohException] if [expr] is not a valid key expression
   /// (e.g., empty string).
   KeyExpr(String expr)
-      : _kePtr = calloc.allocate(bindings.zd_view_keyexpr_sizeof()),
-        _nativeStr = expr.toNativeUtf8() {
-    final rc =
-        bindings.zd_view_keyexpr_from_str(_kePtr.cast(), _nativeStr.cast());
+    : _kePtr = calloc.allocate(bindings.zd_view_keyexpr_sizeof()),
+      _nativeStr = expr.toNativeUtf8() {
+    final rc = bindings.zd_view_keyexpr_from_str(
+      _kePtr.cast(),
+      _nativeStr.cast(),
+    );
     if (rc != 0) {
       malloc.free(_nativeStr);
       calloc.free(_kePtr);
@@ -37,8 +39,9 @@ class KeyExpr {
   /// Throws [StateError] if this [KeyExpr] has been disposed.
   String get value {
     _ensureNotDisposed();
-    final Pointer<Void> viewStr =
-        calloc.allocate(bindings.zd_view_string_sizeof());
+    final Pointer<Void> viewStr = calloc.allocate(
+      bindings.zd_view_string_sizeof(),
+    );
     bindings.zd_keyexpr_as_view_string(
       bindings.zd_view_keyexpr_loan(_kePtr.cast()),
       viewStr.cast(),

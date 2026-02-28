@@ -19,10 +19,7 @@ void main() {
 
       // When: insertJson5 is called with a valid key and JSON5 value
       // Then: no exception is thrown
-      expect(
-        () => config.insertJson5('mode', '"peer"'),
-        returnsNormally,
-      );
+      expect(() => config.insertJson5('mode', '"peer"'), returnsNormally);
 
       config.dispose();
     });

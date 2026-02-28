@@ -68,8 +68,7 @@ class ZBytes {
   String toStr() {
     _ensureNotDisposed();
     final loaned = bindings.zd_bytes_loan(_ptr.cast());
-    final Pointer<Void> ownedStr =
-        calloc.allocate(bindings.zd_string_sizeof());
+    final Pointer<Void> ownedStr = calloc.allocate(bindings.zd_string_sizeof());
     final rc = bindings.zd_bytes_to_string(loaned, ownedStr.cast());
     if (rc != 0) {
       calloc.free(ownedStr);
