@@ -68,7 +68,40 @@ class Session {
   void put(String keyExpr, String value) {
     _ensureOpen();
 
-    // Validate key expression
+    _withKeyExpr(keyExpr, (loanedSession, loanedKe) {
+      // Create bytes payload from string
+      final Pointer<Void> bytesPtr = calloc.allocate(
+        bindings.zd_bytes_sizeof(),
+      );
+      final nativeValue = value.toNativeUtf8();
+      final bytesRc = bindings.zd_bytes_copy_from_str(
+        bytesPtr.cast(),
+        nativeValue.cast(),
+      );
+      malloc.free(nativeValue);
+
+      if (bytesRc != 0) {
+        calloc.free(bytesPtr);
+        throw ZenohException('Failed to create payload', bytesRc);
+      }
+
+      final putRc = bindings.zd_put(loanedSession, loanedKe, bytesPtr.cast());
+      calloc.free(bytesPtr);
+      if (putRc != 0) {
+        throw ZenohException('Failed to put', putRc);
+      }
+    });
+  }
+
+  /// Creates a validated view key expression and loaned session, passes them
+  /// to [action], and ensures cleanup of native resources afterward.
+  ///
+  /// Throws [ZenohException] if [keyExpr] is not a valid key expression.
+  void _withKeyExpr(
+    String keyExpr,
+    void Function(Pointer<Opaque> loanedSession, Pointer<Opaque> loanedKe)
+        action,
+  ) {
     final Pointer<Void> kePtr = calloc.allocate(
       bindings.zd_view_keyexpr_sizeof(),
     );
@@ -84,37 +117,13 @@ class Session {
       throw ZenohException('Invalid key expression: "$keyExpr"', keRc);
     }
 
-    // Create bytes payload from string
-    final Pointer<Void> bytesPtr = calloc.allocate(
-      bindings.zd_bytes_sizeof(),
-    );
-    final nativeValue = value.toNativeUtf8();
-    final bytesRc = bindings.zd_bytes_copy_from_str(
-      bytesPtr.cast(),
-      nativeValue.cast(),
-    );
-    malloc.free(nativeValue);
-
-    if (bytesRc != 0) {
-      malloc.free(nativeKeyExpr);
-      calloc.free(kePtr);
-      calloc.free(bytesPtr);
-      throw ZenohException('Failed to create payload', bytesRc);
-    }
-
-    // Perform the put
     try {
       final loanedSession = bindings.zd_session_loan(_ptr.cast());
       final loanedKe = bindings.zd_view_keyexpr_loan(kePtr.cast());
-      final putRc = bindings.zd_put(loanedSession, loanedKe, bytesPtr.cast());
-      if (putRc != 0) {
-        throw ZenohException('Failed to put', putRc);
-      }
+      action(loanedSession, loanedKe);
     } finally {
-      // Clean up keyexpr resources (bytes are consumed by zd_put)
       malloc.free(nativeKeyExpr);
       calloc.free(kePtr);
-      calloc.free(bytesPtr);
     }
   }
 
