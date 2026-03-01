@@ -6,6 +6,7 @@ const defaultPayload = 'Put from Dart!';
 
 void main(List<String> arguments) {
   final parser = ArgParser()
+    ..addFlag('help', abbr: 'h', negatable: false, help: 'Show this help')
     ..addOption('key', abbr: 'k', defaultsTo: defaultKey,
         help: 'The key expression to write to')
     ..addOption('payload', abbr: 'p', defaultsTo: defaultPayload,
@@ -21,8 +22,7 @@ void main(List<String> arguments) {
     return;
   }
 
-  // Handle --help (package:args adds it automatically when we check)
-  if (arguments.contains('--help') || arguments.contains('-h')) {
+  if (args.flag('help')) {
     print('Usage: z_put [OPTIONS]');
     print(parser.usage);
     return;
