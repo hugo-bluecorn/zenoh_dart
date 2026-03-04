@@ -28,11 +28,11 @@ void main() {
       expect(result.stdout as String, contains('Putting Data'));
     });
 
-    test('accepts custom key and value', () async {
+    test('accepts custom key and payload', () async {
       final result = await runZPut([
         '--key',
         'demo/test',
-        '--value',
+        '--payload',
         'Custom value',
       ]);
       expect(result.exitCode, equals(0), reason: 'stderr: ${result.stderr}');

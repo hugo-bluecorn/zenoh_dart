@@ -7,11 +7,11 @@ const defaultValue = 'Put from Dart!';
 void main(List<String> arguments) {
   final parser = ArgParser()
     ..addOption('key', abbr: 'k', defaultsTo: defaultKeyExpr)
-    ..addOption('value', abbr: 'v', defaultsTo: defaultValue);
+    ..addOption('payload', abbr: 'p', defaultsTo: defaultValue);
 
   final results = parser.parse(arguments);
   final keyExpr = results.option('key')!;
-  final value = results.option('value')!;
+  final value = results.option('payload')!;
 
   print('Opening session...');
   final session = Session.open();
