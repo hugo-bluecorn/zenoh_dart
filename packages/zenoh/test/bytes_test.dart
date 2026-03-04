@@ -93,6 +93,20 @@ void main() {
       expect(result, equals(largeString));
       zbytes.dispose();
     });
+
+    test('toStr after dispose throws StateError', () {
+      final bytes = ZBytes.fromString('hello');
+      bytes.dispose();
+      expect(() => bytes.toStr(), throwsStateError);
+    });
+
+    test('toStr can be called multiple times', () {
+      final bytes = ZBytes.fromString('reuse me');
+      expect(bytes.toStr(), equals('reuse me'));
+      expect(bytes.toStr(), equals('reuse me'));
+      expect(bytes.toStr(), equals('reuse me'));
+      bytes.dispose();
+    });
   });
 
   group('Barrel export', () {

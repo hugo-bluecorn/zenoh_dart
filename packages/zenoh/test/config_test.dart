@@ -1,6 +1,7 @@
 import 'package:test/test.dart';
 import 'package:zenoh/src/config.dart';
 import 'package:zenoh/src/exceptions.dart';
+import 'package:zenoh/src/session.dart';
 
 void main() {
   group('Config lifecycle', () {
@@ -61,6 +62,29 @@ void main() {
       );
 
       config.dispose();
+    });
+
+    test('insertJson5 after dispose throws StateError', () {
+      final config = Config();
+      config.dispose();
+      expect(() => config.insertJson5('mode', '"peer"'), throwsStateError);
+    });
+
+    test('insertJson5 with invalid JSON5 value throws ZenohException', () {
+      final config = Config();
+      // 'peer' without quotes is invalid JSON5 for a string field
+      expect(
+        () => config.insertJson5('mode', 'not_valid_json5'),
+        throwsA(isA<ZenohException>()),
+      );
+      config.dispose();
+    });
+
+    test('insertJson5 after consumed throws StateError', () {
+      final config = Config();
+      final session = Session.open(config: config);
+      expect(() => config.insertJson5('mode', '"peer"'), throwsStateError);
+      session.close();
     });
   });
 }

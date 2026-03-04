@@ -48,5 +48,11 @@ void main() {
       ke.dispose();
       expect(() => ke.dispose(), returnsNormally);
     });
+
+    test('value after dispose throws StateError', () {
+      final ke = KeyExpr('demo/test');
+      ke.dispose();
+      expect(() => ke.value, throwsStateError);
+    });
   });
 }
