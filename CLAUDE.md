@@ -28,15 +28,16 @@ zenoh-dart/                     # git repo root
 
 **Phase 0 Bootstrap: COMPLETE** — 29 C shim functions, 5 Dart API classes, 33 integration tests.
 **Phase P1 Packaging: COMPLETE** — Build infrastructure done in Phase 0. Tier-2 prebuilt placement (`native/linux/x86_64/libzenohc.so`) intentionally deferred — it's a 30-second `mkdir + cp` whenever needed (CI setup, new contributor onboarding, pub.dev prep). The CMake 3-tier discovery, single-load `native_lib.dart`, Android build script, and RPATH configuration are all in place.
+**Phase 1 Put/Delete: COMPLETE** — 31 C shim functions, 56 integration tests. `Session.put`, `Session.putBytes`, and `Session.deleteResource` implemented with CLI examples `z_put.dart` and `z_delete.dart`.
 
 Available Dart API classes:
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close zenoh sessions (peer mode)
+- `Session` — Open/close zenoh sessions (peer mode); `put(keyExpr, value)`, `putBytes(keyExpr, payload)`, `deleteResource(keyExpr)` one-shot operations
 - `KeyExpr` — Key expression creation and validation
-- `ZBytes` — Binary payload container with string round-trip
+- `ZBytes` — Binary payload container with string round-trip; `markConsumed()` for FFI ownership semantics
 - `ZenohException` — Error type for zenoh operations
 
-Phases 1–18 (put/sub/pub/query/SHM/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
+Phases 2–18 (sub/pub/query/SHM/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
 
 ## FVM Requirement
 
