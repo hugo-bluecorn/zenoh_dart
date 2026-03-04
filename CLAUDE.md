@@ -121,6 +121,21 @@ cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../b
 fvm dart run melos bootstrap
 ```
 
+### CLI examples
+
+CLI examples live in `packages/zenoh/bin/` and require `LD_LIBRARY_PATH` during development (native libraries are not on the system linker path).
+
+```bash
+# Run a CLI example (e.g., z_put)
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run bin/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+```
+
+CLI flags must mirror zenoh-c's examples (`extern/zenoh-c/examples/z_*.c`). When adding a new CLI example in any phase:
+1. Match the zenoh-c flag names and short forms exactly (e.g., `-k`/`--key`, `-p`/`--payload`)
+2. Document the full usage (with `LD_LIBRARY_PATH`) in the README.md CLI Examples section
+3. The `/tdd-finalize-docs` agent must include CLI usage in the README update
+
 ## Architecture
 
 ### FFI Package Structure
