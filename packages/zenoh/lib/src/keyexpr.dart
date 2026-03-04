@@ -34,6 +34,12 @@ class KeyExpr {
     }
   }
 
+  /// Internal: returns the native pointer for use by Session.
+  Pointer<Void> get nativePtr {
+    _ensureNotDisposed();
+    return _kePtr;
+  }
+
   /// Returns the key expression as a Dart string.
   ///
   /// Throws [StateError] if this [KeyExpr] has been disposed.

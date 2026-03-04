@@ -553,6 +553,65 @@ class ZenohDartBindings {
       );
   late final _zd_view_string_len = _zd_view_string_lenPtr
       .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Publishes data on the given key expression.
+  ///
+  /// The payload is consumed (moved) by this call -- the caller must not
+  /// use the owned bytes after calling zd_put.
+  ///
+  /// @param session  Const pointer to a loaned session.
+  /// @param keyexpr  Const pointer to a loaned key expression.
+  /// @param payload  Pointer to an owned bytes (consumed via z_bytes_move).
+  /// @return 0 on success, negative on failure.
+  int zd_put(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+    ffi.Pointer<ffi.Opaque> payload,
+  ) {
+    return _zd_put(session, keyexpr, payload);
+  }
+
+  late final _zd_putPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+          )
+        >
+      >('zd_put');
+  late final _zd_put = _zd_putPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+        )
+      >();
+
+  /// Deletes a resource on the given key expression.
+  ///
+  /// @param session  Const pointer to a loaned session.
+  /// @param keyexpr  Const pointer to a loaned key expression.
+  /// @return 0 on success, negative on failure.
+  int zd_delete(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+  ) {
+    return _zd_delete(session, keyexpr);
+  }
+
+  late final _zd_deletePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_delete');
+  late final _zd_delete = _zd_deletePtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
 }
 
 final class UnnamedStruct extends ffi.Struct {

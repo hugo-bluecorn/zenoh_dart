@@ -2,8 +2,10 @@ import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
 
+import 'bytes.dart';
 import 'config.dart';
 import 'exceptions.dart';
+import 'keyexpr.dart';
 import 'native_lib.dart';
 
 /// A Zenoh session.
@@ -66,5 +68,79 @@ class Session {
     _closed = true;
     bindings.zd_close_session(_ptr.cast());
     calloc.free(_ptr);
+  }
+
+  void _ensureOpen() {
+    if (_closed) throw StateError('Session has been closed');
+  }
+
+  /// Publishes a string [value] on the given [keyExpr].
+  ///
+  /// Throws [ZenohException] if the key expression is invalid or the put fails.
+  /// Throws [StateError] if the session has been closed.
+  void put(String keyExpr, String value) {
+    _ensureOpen();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final payload = ZBytes.fromString(value);
+      final rc = bindings.zd_put(
+        bindings.zd_session_loan(_ptr.cast()),
+        bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()),
+        payload.nativePtr.cast(),
+      );
+      payload.markConsumed();
+      if (rc != 0) {
+        throw ZenohException('Put failed', rc);
+      }
+    } finally {
+      ke.dispose();
+    }
+  }
+
+  /// Publishes a [ZBytes] [payload] on the given [keyExpr].
+  ///
+  /// The payload is consumed by this call and must not be reused.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid or the put fails.
+  /// Throws [StateError] if the session has been closed, or the payload
+  /// has been disposed or already consumed.
+  void putBytes(String keyExpr, ZBytes payload) {
+    _ensureOpen();
+    // Validate payload state before allocating KeyExpr
+    final payloadPtr = payload.nativePtr;
+    final ke = KeyExpr(keyExpr);
+    try {
+      final rc = bindings.zd_put(
+        bindings.zd_session_loan(_ptr.cast()),
+        bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()),
+        payloadPtr.cast(),
+      );
+      payload.markConsumed();
+      if (rc != 0) {
+        throw ZenohException('Put failed', rc);
+      }
+    } finally {
+      ke.dispose();
+    }
+  }
+
+  /// Deletes a resource on the given [keyExpr].
+  ///
+  /// Throws [ZenohException] if the key expression is invalid or the delete fails.
+  /// Throws [StateError] if the session has been closed.
+  void deleteResource(String keyExpr) {
+    _ensureOpen();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final rc = bindings.zd_delete(
+        bindings.zd_session_loan(_ptr.cast()),
+        bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()),
+      );
+      if (rc != 0) {
+        throw ZenohException('Delete failed', rc);
+      }
+    } finally {
+      ke.dispose();
+    }
   }
 }

@@ -258,4 +258,31 @@ FFI_PLUGIN_EXPORT const char* zd_view_string_data(const z_view_string_t* str);
 /// @return Length of the string data in bytes.
 FFI_PLUGIN_EXPORT size_t zd_view_string_len(const z_view_string_t* str);
 
+// ---------------------------------------------------------------------------
+// Put / Delete
+// ---------------------------------------------------------------------------
+
+/// Publishes data on the given key expression.
+///
+/// The payload is consumed (moved) by this call -- the caller must not
+/// use the owned bytes after calling zd_put.
+///
+/// @param session  Const pointer to a loaned session.
+/// @param keyexpr  Const pointer to a loaned key expression.
+/// @param payload  Pointer to an owned bytes (consumed via z_bytes_move).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_put(
+    const z_loaned_session_t* session,
+    const z_loaned_keyexpr_t* keyexpr,
+    z_owned_bytes_t* payload);
+
+/// Deletes a resource on the given key expression.
+///
+/// @param session  Const pointer to a loaned session.
+/// @param keyexpr  Const pointer to a loaned key expression.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_delete(
+    const z_loaned_session_t* session,
+    const z_loaned_keyexpr_t* keyexpr);
+
 #endif // ZENOH_DART_H

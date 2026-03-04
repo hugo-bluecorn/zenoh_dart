@@ -160,3 +160,24 @@ FFI_PLUGIN_EXPORT size_t zd_view_string_len(const z_view_string_t* str) {
   const z_loaned_string_t* loaned = z_view_string_loan(str);
   return z_string_len(loaned);
 }
+
+// ---------------------------------------------------------------------------
+// Put / Delete
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT int zd_put(
+    const z_loaned_session_t* session,
+    const z_loaned_keyexpr_t* keyexpr,
+    z_owned_bytes_t* payload) {
+  z_put_options_t opts;
+  z_put_options_default(&opts);
+  return z_put(session, keyexpr, z_bytes_move(payload), &opts);
+}
+
+FFI_PLUGIN_EXPORT int zd_delete(
+    const z_loaned_session_t* session,
+    const z_loaned_keyexpr_t* keyexpr) {
+  z_delete_options_t opts;
+  z_delete_options_default(&opts);
+  return z_delete(session, keyexpr, &opts);
+}

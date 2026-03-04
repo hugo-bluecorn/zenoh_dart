@@ -15,6 +15,7 @@ import 'native_lib.dart';
 class ZBytes {
   final Pointer<Void> _ptr;
   bool _disposed = false;
+  bool _consumed = false;
 
   ZBytes._(this._ptr);
 
@@ -65,8 +66,21 @@ class ZBytes {
   ///
   /// Throws [StateError] if this [ZBytes] has been disposed.
   /// Throws [ZenohException] if the conversion fails.
+  /// Internal: returns the native pointer for use by Session.put/putBytes.
+  Pointer<Void> get nativePtr {
+    _ensureNotDisposed();
+    _ensureNotConsumed();
+    return _ptr;
+  }
+
+  /// Internal: called by Session after consuming the bytes via z_bytes_move.
+  void markConsumed() {
+    _consumed = true;
+  }
+
   String toStr() {
     _ensureNotDisposed();
+    _ensureNotConsumed();
     final loaned = bindings.zd_bytes_loan(_ptr.cast());
     final Pointer<Void> ownedStr = calloc.allocate(bindings.zd_string_sizeof());
     final rc = bindings.zd_bytes_to_string(loaned, ownedStr.cast());
@@ -88,6 +102,7 @@ class ZBytes {
   /// Safe to call multiple times -- subsequent calls are no-ops.
   void dispose() {
     if (_disposed) return;
+    if (_consumed) return;
     _disposed = true;
     bindings.zd_bytes_drop(_ptr.cast());
     calloc.free(_ptr);
@@ -95,5 +110,9 @@ class ZBytes {
 
   void _ensureNotDisposed() {
     if (_disposed) throw StateError('ZBytes has been disposed');
+  }
+
+  void _ensureNotConsumed() {
+    if (_consumed) throw StateError('ZBytes has been consumed');
   }
 }
