@@ -87,10 +87,7 @@ void main() {
     });
 
     test('put succeeds with valid key expression', () {
-      expect(
-        () => session.put('demo/example/test', 'hello'),
-        returnsNormally,
-      );
+      expect(() => session.put('demo/example/test', 'hello'), returnsNormally);
     });
 
     test('putBytes succeeds and consumes the payload', () {
@@ -99,19 +96,18 @@ void main() {
       // Payload should be consumed -- toStr() should throw
       expect(
         () => payload.toStr(),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('consumed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('consumed'),
+          ),
+        ),
       );
     });
 
     test('put with invalid key expression throws ZenohException', () {
-      expect(
-        () => session.put('', 'hello'),
-        throwsA(isA<ZenohException>()),
-      );
+      expect(() => session.put('', 'hello'), throwsA(isA<ZenohException>()));
     });
 
     test('putBytes with already-disposed ZBytes throws StateError', () {
@@ -119,11 +115,13 @@ void main() {
       payload.dispose();
       expect(
         () => session.putBytes('demo/example/test', payload),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('disposed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('disposed'),
+          ),
+        ),
       );
     });
 
@@ -132,11 +130,13 @@ void main() {
       session.putBytes('demo/example/test', payload);
       expect(
         () => session.putBytes('demo/example/test', payload),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('consumed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('consumed'),
+          ),
+        ),
       );
     });
 
@@ -145,11 +145,13 @@ void main() {
       closedSession.close();
       expect(
         () => closedSession.put('demo/example/test', 'hello'),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('closed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
       );
     });
 
@@ -159,11 +161,13 @@ void main() {
       final payload = ZBytes.fromString('hello');
       expect(
         () => closedSession.putBytes('demo/example/test', payload),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('closed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
       );
       payload.dispose();
     });
@@ -180,11 +184,13 @@ void main() {
       closedSession.close();
       expect(
         () => closedSession.deleteResource('demo/example/test'),
-        throwsA(isA<StateError>().having(
-          (e) => e.message,
-          'message',
-          contains('closed'),
-        )),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
       );
     });
 
@@ -196,12 +202,14 @@ void main() {
       );
     });
 
-    test('deleteResource with invalid key expression throws ZenohException',
-        () {
-      expect(
-        () => session.deleteResource(''),
-        throwsA(isA<ZenohException>()),
-      );
-    });
+    test(
+      'deleteResource with invalid key expression throws ZenohException',
+      () {
+        expect(
+          () => session.deleteResource(''),
+          throwsA(isA<ZenohException>()),
+        );
+      },
+    );
   });
 }

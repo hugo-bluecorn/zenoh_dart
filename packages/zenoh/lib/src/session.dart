@@ -142,10 +142,7 @@ class Session {
   /// Throws [StateError] if the session has been closed.
   void deleteResource(String keyExpr) {
     _withKeyExpr(keyExpr, (loanedSession, loanedKe) {
-      final rc = bindings.zd_delete(
-        loanedSession.cast(),
-        loanedKe.cast(),
-      );
+      final rc = bindings.zd_delete(loanedSession.cast(), loanedKe.cast());
       if (rc != 0) {
         throw ZenohException('Delete failed', rc);
       }
