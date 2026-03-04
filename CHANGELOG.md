@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0 (Unreleased)
+
+### Added
+- `Session.put(keyExpr, value)`: one-shot string publish on a key expression
+- `Session.putBytes(keyExpr, payload)`: one-shot ZBytes publish with payload consumption semantics
+- `Session.deleteResource(keyExpr)`: one-shot delete on a key expression (fire-and-forget)
+- `Session._ensureOpen()` guard: throws `StateError` on operations after `close()`
+- `ZBytes.markConsumed()` and consumed-state guard matching the `Config` pattern
+- `ZBytes.nativePtr` getter with disposed/consumed guards for FFI interop
+- `KeyExpr.nativePtr` getter for FFI interop
+- C shim `zd_put()`: forwards to `z_put()` with default options and `z_bytes_move()` payload consumption
+- C shim `zd_delete()`: forwards to `z_delete()` with default options
+- CLI example `z_put.dart`: opens session, puts data with `--key`/`--payload` options, closes session
+- CLI example `z_delete.dart`: opens session, deletes key with `--key` option, closes session
+- 17 new tests (56 total) covering put/putBytes/deleteResource operations and CLI examples
+
 ## 0.1.0 (Unreleased)
 
 ### Added
