@@ -13,6 +13,8 @@ void main(List<String> arguments) {
   final keyExpr = results.option('key')!;
   final value = results.option('payload')!;
 
+  Zenoh.initLog('error');
+
   print('Opening session...');
   final session = Session.open();
 
