@@ -7,6 +7,7 @@ import 'config.dart';
 import 'exceptions.dart';
 import 'keyexpr.dart';
 import 'native_lib.dart';
+import 'subscriber.dart';
 
 /// A Zenoh session.
 ///
@@ -147,5 +148,26 @@ class Session {
         throw ZenohException('Delete failed', rc);
       }
     });
+  }
+
+  /// Declares a subscriber on the given [keyExpr].
+  ///
+  /// Returns a [Subscriber] whose [Subscriber.stream] delivers [Sample]s.
+  /// Call [Subscriber.close] when done to undeclare and release resources.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Subscriber declareSubscriber(String keyExpr) {
+    _ensureOpen();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final loanedSession =
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+      final loanedKe =
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+      return Subscriber.declare(loanedSession, loanedKe);
+    } finally {
+      ke.dispose();
+    }
   }
 }

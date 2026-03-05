@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0 (Unreleased)
+
+### Added
+- `Subscriber` class: callback-based subscriber with `Stream<Sample>` delivery via NativePort bridge pattern
+- `Sample` class: received data with `keyExpr`, `payload`, `kind`, `attachment` fields
+- `SampleKind` enum: `put` and `delete` sample kinds
+- `Session.declareSubscriber(keyExpr)`: declare a subscriber on a key expression, returns `Subscriber`
+- C shim `zd_declare_subscriber()`: declares subscriber with NativePort callback bridge (Dart_CObject array posted via Dart_PostCObject_DL)
+- C shim `zd_subscriber_drop()`: undeclares and drops subscriber
+- C shim `zd_subscriber_sizeof()`: returns sizeof(z_owned_subscriber_t)
+- CLI example `z_sub.dart`: subscribes to key expression with `-k`/`--key`, `-e`/`--connect`, `-l`/`--listen` flags
+- `-e`/`--connect` and `-l`/`--listen` flags added to `z_put.dart` for explicit endpoint configuration
+- 22 new tests (80 total) covering subscriber lifecycle, NativePort bridge delivery, stream close, multi-subscriber independence, and CLI
+
 ## 0.2.0 (Unreleased)
 
 ### Added

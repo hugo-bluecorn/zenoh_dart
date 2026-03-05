@@ -29,15 +29,20 @@ zenoh-dart/                     # git repo root
 **Phase 0 Bootstrap: COMPLETE** — 29 C shim functions, 5 Dart API classes, 33 integration tests.
 **Phase P1 Packaging: COMPLETE** — Build infrastructure done in Phase 0. Tier-2 prebuilt placement (`native/linux/x86_64/libzenohc.so`) intentionally deferred — it's a 30-second `mkdir + cp` whenever needed (CI setup, new contributor onboarding, pub.dev prep). The CMake 3-tier discovery, single-load `native_lib.dart`, Android build script, and RPATH configuration are all in place.
 **Phase 1 Put/Delete: COMPLETE** — 31 C shim functions, 56 integration tests. `Session.put`, `Session.putBytes`, and `Session.deleteResource` implemented with CLI examples `z_put.dart` and `z_delete.dart`.
+**Phase 2 Subscriber: COMPLETE** — 34 C shim functions, 80 integration tests. `Session.declareSubscriber`, `Subscriber`, `Sample`, `SampleKind` implemented via NativePort callback bridge with CLI example `z_sub.dart`.
 
 Available Dart API classes:
+- `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`)
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close zenoh sessions (peer mode); `put(keyExpr, value)`, `putBytes(keyExpr, payload)`, `deleteResource(keyExpr)` one-shot operations
+- `Session` — Open/close zenoh sessions (peer mode); `put(keyExpr, value)`, `putBytes(keyExpr, payload)`, `deleteResource(keyExpr)` one-shot operations; `declareSubscriber(keyExpr)` returns a `Subscriber`
 - `KeyExpr` — Key expression creation and validation
 - `ZBytes` — Binary payload container with string round-trip; `markConsumed()` for FFI ownership semantics
+- `Subscriber` — Callback-based subscriber delivering samples via `Stream<Sample>`; `close()` undeclares and frees the native subscriber
+- `Sample` — Received data with `keyExpr`, `payload`, `kind` (`SampleKind`), and optional `attachment` fields
+- `SampleKind` — Enum with `put` and `delete` values
 - `ZenohException` — Error type for zenoh operations
 
-Phases 2–18 (sub/pub/query/SHM/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
+Phases 3–18 (pub/query/SHM/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
 
 ## FVM Requirement
 
@@ -126,9 +131,17 @@ fvm dart run melos bootstrap
 CLI examples live in `packages/zenoh/bin/` and require `LD_LIBRARY_PATH` during development (native libraries are not on the system linker path).
 
 ```bash
-# Run a CLI example (e.g., z_put)
+# Put data on a key expression
 cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run bin/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Delete a key expression
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run bin/z_delete.dart -k demo/example/test
+
+# Subscribe to a key expression (runs until Ctrl-C)
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run bin/z_sub.dart -k 'demo/example/**'
 ```
 
 CLI flags must mirror zenoh-c's examples (`extern/zenoh-c/examples/z_*.c`). When adding a new CLI example in any phase:
@@ -373,6 +386,28 @@ Use the primary Dart module as `<scope>` in commit messages:
 - `test(session): ...`, `feat(session): ...`
 - `test(keyexpr): ...`, `feat(keyexpr): ...`
 - `test(z-put): ...` for CLI examples
+
+## Documentation Finalization Guide
+
+When `/tdd-finalize-docs` runs after a release, update these specific sections:
+
+### CLAUDE.md updates
+1. **"Current Status" section** — Add a status line for the completed phase: `**Phase N Name: COMPLETE** — X C shim functions, Y integration tests. <brief description>.`
+2. **"Available Dart API classes" list** — Add new classes with one-line descriptions. Keep alphabetical by category (static utils, config, session, data types, exceptions).
+3. **"CLI examples" code block** — Add new CLI examples with full `LD_LIBRARY_PATH` command. Include a comment describing what the command does. Verify ALL existing CLI examples are present (check `packages/zenoh/bin/z_*.dart` against the code block).
+4. **"Phases N–18" line** — Update the starting phase number.
+
+### README.md updates
+1. **Architecture diagram** — Update the top-line class list in the ASCII diagram.
+2. **Phase status blocks** — Add a new status block for the completed phase with: C shim function count, new API surface, CLI example, test count.
+3. **"Phases N–18" line** — Update the starting phase number.
+4. **"CLI Examples" section** — Add new CLI commands with `LD_LIBRARY_PATH`. Verify ALL existing CLI examples are present (check `packages/zenoh/bin/z_*.dart`).
+5. **"Phase Roadmap" table** — Mark the completed phase row with `— **COMPLETE**`.
+
+### Verification checklist
+- Cross-check `packages/zenoh/bin/z_*.dart` against CLI example sections in both CLAUDE.md and README.md — every CLI binary must be documented.
+- Cross-check `packages/zenoh/lib/zenoh.dart` exports against "Available Dart API classes" — every exported class/enum must be listed.
+- Run `fvm dart analyze packages/zenoh` to confirm no issues.
 
 ## Session Directives
 

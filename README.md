@@ -6,7 +6,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 
 ```
 ┌─────────────────────────────┐
-│   Dart API (packages/zenoh)  │  Config, Session (put/putBytes/deleteResource), KeyExpr, ZBytes
+│   Dart API (packages/zenoh)  │  Config, Session (put/putBytes/deleteResource/declareSubscriber), KeyExpr, ZBytes, Subscriber, Sample
 ├─────────────────────────────┤
 │   Generated FFI Bindings     │  bindings.dart (auto-generated via ffigen)
 ├─────────────────────────────┤
@@ -31,7 +31,15 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - CLI examples: `z_put.dart`, `z_delete.dart`
 - 56 integration tests passing
 
-Phases 2–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
+**Phase 2 — Subscribe: COMPLETE**
+
+- 34 C shim functions (added `zd_declare_subscriber`, `zd_subscriber_drop`, `zd_subscriber_sizeof`)
+- `Session.declareSubscriber()` returns a `Subscriber` with `Stream<Sample>` delivery via NativePort callback bridge
+- `Sample` class with `keyExpr`, `payload`, `kind`, `attachment` fields; `SampleKind` enum (`put`, `delete`)
+- CLI example: `z_sub.dart`
+- 80 integration tests passing
+
+Phases 3–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 
 ## Packages
 
@@ -92,6 +100,10 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 # Delete a key expression
 LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run bin/z_delete.dart -k demo/example/test
+
+# Subscribe to a key expression (runs until Ctrl-C; combine with z_put in another terminal)
+LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run bin/z_sub.dart -k 'demo/example/**'
 ```
 
 ## Phase Roadmap
@@ -100,7 +112,7 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 |-------|------|-------------|
 | 0 | [Bootstrap](docs/phases/phase-00-bootstrap.md) | Session, Config, KeyExpr, ZBytes infrastructure — **COMPLETE** |
 | 1 | [Put / Delete](docs/phases/phase-01-put-delete.md) | Basic key-value put and delete operations — **COMPLETE** |
-| 2 | [Subscribe](docs/phases/phase-02-sub.md) | Subscriber for receiving publications |
+| 2 | [Subscribe](docs/phases/phase-02-sub.md) | Subscriber for receiving publications — **COMPLETE** |
 | 3 | [Publish](docs/phases/phase-03-pub.md) | Publisher with matched listener support |
 | 4 | [SHM Pub/Sub](docs/phases/phase-04-shm-pub-sub.md) | Shared-memory pub/sub for zero-copy |
 | 5 | [Scout / Info](docs/phases/phase-05-scout-info.md) | Network discovery and session info |

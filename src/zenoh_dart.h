@@ -285,4 +285,40 @@ FFI_PLUGIN_EXPORT int zd_delete(
     const z_loaned_session_t* session,
     const z_loaned_keyexpr_t* keyexpr);
 
+// ---------------------------------------------------------------------------
+// Subscriber
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_subscriber_t in bytes.
+///
+/// Used by Dart to allocate the correct amount of native memory
+/// for opaque zenoh types.
+FFI_PLUGIN_EXPORT size_t zd_subscriber_sizeof(void);
+
+/// Declares a subscriber on the given key expression.
+///
+/// Samples are posted to the Dart isolate via `Dart_PostCObject_DL` on
+/// the given native port. Each sample is sent as a `Dart_CObject` array
+/// of 4 elements: [keyexpr(string), payload(Uint8List), kind(int64),
+/// attachment(null or Uint8List)].
+///
+/// @param session     Const pointer to a loaned session.
+/// @param subscriber  Pointer to an uninitialized z_owned_subscriber_t.
+/// @param keyexpr     Const pointer to a loaned key expression.
+/// @param dart_port   The Dart native port to post samples to.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_declare_subscriber(
+    const z_loaned_session_t* session,
+    z_owned_subscriber_t* subscriber,
+    const z_loaned_keyexpr_t* keyexpr,
+    int64_t dart_port);
+
+/// Drops (undeclares and frees) a subscriber.
+///
+/// After this call the owned subscriber is in gravestone state.
+/// A second drop is a safe no-op.
+///
+/// @param subscriber  Pointer to a z_owned_subscriber_t to drop.
+FFI_PLUGIN_EXPORT void zd_subscriber_drop(z_owned_subscriber_t* subscriber);
+
 #endif // ZENOH_DART_H
