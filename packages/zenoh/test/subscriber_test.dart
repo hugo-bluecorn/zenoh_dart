@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:test/test.dart';
+import 'package:zenoh/src/config.dart';
 import 'package:zenoh/src/exceptions.dart';
 import 'package:zenoh/src/sample.dart';
 import 'package:zenoh/src/session.dart';
@@ -93,9 +94,29 @@ void main() {
     late Session session1;
     late Session session2;
 
-    setUpAll(() {
-      session1 = Session.open();
-      session2 = Session.open();
+    setUpAll(() async {
+      // Sessions must be explicitly connected via TCP for same-process
+      // peer-to-peer routing (multicast scouting doesn't work within
+      // a single process).
+      final config1 = Config();
+      config1.insertJson5(
+        'listen/endpoints',
+        '["tcp/127.0.0.1:17448"]',
+      );
+      session1 = Session.open(config: config1);
+
+      // Small delay to let session1's listener bind
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5(
+        'connect/endpoints',
+        '["tcp/127.0.0.1:17448"]',
+      );
+      session2 = Session.open(config: config2);
+
+      // Allow session link establishment
+      await Future<void>.delayed(const Duration(seconds: 1));
     });
 
     tearDownAll(() {
