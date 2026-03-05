@@ -5,5 +5,7 @@ export 'src/bytes.dart';
 export 'src/config.dart';
 export 'src/exceptions.dart';
 export 'src/keyexpr.dart';
+export 'src/sample.dart';
 export 'src/session.dart';
+export 'src/subscriber.dart';
 export 'src/zenoh.dart';

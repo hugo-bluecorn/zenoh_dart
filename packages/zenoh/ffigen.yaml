@@ -90,3 +90,23 @@ type-map:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque
+    z_owned_subscriber_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_subscriber_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_subscriber_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_closure_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_closure_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque

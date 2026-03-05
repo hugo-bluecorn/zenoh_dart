@@ -612,6 +612,78 @@ class ZenohDartBindings {
       .asFunction<
         int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
       >();
+
+  /// Returns the size of z_owned_subscriber_t in bytes.
+  ///
+  /// Used by Dart to allocate the correct amount of native memory
+  /// for opaque zenoh types.
+  int zd_subscriber_sizeof() {
+    return _zd_subscriber_sizeof();
+  }
+
+  late final _zd_subscriber_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_subscriber_sizeof');
+  late final _zd_subscriber_sizeof = _zd_subscriber_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a subscriber on the given key expression.
+  ///
+  /// Samples are posted to the Dart isolate via `Dart_PostCObject_DL` on
+  /// the given native port. Each sample is sent as a `Dart_CObject` array
+  /// of 4 elements: [keyexpr(string), payload(Uint8List), kind(int64),
+  /// attachment(null or Uint8List)].
+  ///
+  /// @param session     Const pointer to a loaned session.
+  /// @param subscriber  Pointer to an uninitialized z_owned_subscriber_t.
+  /// @param keyexpr     Const pointer to a loaned key expression.
+  /// @param dart_port   The Dart native port to post samples to.
+  /// @return 0 on success, negative on failure.
+  int zd_declare_subscriber(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> subscriber,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+    int dart_port,
+  ) {
+    return _zd_declare_subscriber(session, subscriber, keyexpr, dart_port);
+  }
+
+  late final _zd_declare_subscriberPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Int64,
+          )
+        >
+      >('zd_declare_subscriber');
+  late final _zd_declare_subscriber = _zd_declare_subscriberPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          int,
+        )
+      >();
+
+  /// Drops (undeclares and frees) a subscriber.
+  ///
+  /// After this call the owned subscriber is in gravestone state.
+  /// A second drop is a safe no-op.
+  ///
+  /// @param subscriber  Pointer to a z_owned_subscriber_t to drop.
+  void zd_subscriber_drop(ffi.Pointer<ffi.Opaque> subscriber) {
+    return _zd_subscriber_drop(subscriber);
+  }
+
+  late final _zd_subscriber_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_subscriber_drop',
+      );
+  late final _zd_subscriber_drop = _zd_subscriber_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {
