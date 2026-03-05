@@ -10,6 +10,8 @@ void main(List<String> arguments) {
   final results = parser.parse(arguments);
   final keyExpr = results.option('key')!;
 
+  Zenoh.initLog('error');
+
   print('Opening session...');
   final session = Session.open();
 
