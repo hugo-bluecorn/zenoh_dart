@@ -219,7 +219,15 @@ static void _zd_sample_callback(z_loaned_sample_t* sample, void* context) {
   // 4. Attachment (nullable)
   const z_loaned_bytes_t* attachment = z_sample_attachment(sample);
 
-  // Build Dart_CObject array: [keyexpr, payload, kind, attachment]
+  // 5. Encoding as string
+  const z_loaned_encoding_t* encoding = z_sample_encoding(sample);
+  z_owned_string_t encoding_str;
+  z_encoding_to_string(encoding, &encoding_str);
+  const z_loaned_string_t* enc_loaned = z_string_loan(&encoding_str);
+  size_t enc_len = z_string_len(enc_loaned);
+  const char* enc_data = z_string_data(enc_loaned);
+
+  // Build Dart_CObject array: [keyexpr, payload, kind, attachment, encoding]
   Dart_CObject c_keyexpr;
   c_keyexpr.type = Dart_CObject_kString;
   // z_string_data may not be null-terminated, so copy to a buffer
@@ -252,17 +260,26 @@ static void _zd_sample_callback(z_loaned_sample_t* sample, void* context) {
     c_attachment.type = Dart_CObject_kNull;
   }
 
-  Dart_CObject* elements[4] = {&c_keyexpr, &c_payload, &c_kind, &c_attachment};
+  Dart_CObject c_encoding;
+  char* enc_buf = (char*)malloc(enc_len + 1);
+  memcpy(enc_buf, enc_data, enc_len);
+  enc_buf[enc_len] = '\0';
+  c_encoding.type = Dart_CObject_kString;
+  c_encoding.value.as_string = enc_buf;
+
+  Dart_CObject* elements[5] = {&c_keyexpr, &c_payload, &c_kind, &c_attachment, &c_encoding};
   Dart_CObject c_array;
   c_array.type = Dart_CObject_kArray;
-  c_array.value.as_array.length = 4;
+  c_array.value.as_array.length = 5;
   c_array.value.as_array.values = elements;
 
   Dart_PostCObject_DL(ctx->dart_port, &c_array);
 
   // Cleanup
   free(key_buf);
+  free(enc_buf);
   z_string_drop(z_string_move(&payload_str));
+  z_string_drop(z_string_move(&encoding_str));
   if (has_attachment) {
     z_string_drop(z_string_move(&attachment_str));
   }

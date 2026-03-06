@@ -24,11 +24,15 @@ class Sample {
   /// Optional attachment metadata as a UTF-8 string.
   final String? attachment;
 
+  /// The encoding of the payload as a MIME type string, or null if unknown.
+  final String? encoding;
+
   /// Creates a [Sample] with the given fields.
   const Sample({
     required this.keyExpr,
     required this.payload,
     required this.kind,
     this.attachment,
+    this.encoding,
   });
 }

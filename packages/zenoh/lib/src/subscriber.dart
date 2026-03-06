@@ -42,6 +42,7 @@ class Subscriber {
         final payloadBytes = message[1] as Uint8List;
         final kind = message[2] as int;
         final attachmentBytes = message[3] as Uint8List?;
+        final encoding = message.length > 4 ? message[4] as String? : null;
 
         final sample = Sample(
           keyExpr: keyExpr,
@@ -50,6 +51,7 @@ class Subscriber {
           attachment: attachmentBytes != null
               ? utf8.decode(attachmentBytes)
               : null,
+          encoding: encoding,
         );
         controller.add(sample);
       }

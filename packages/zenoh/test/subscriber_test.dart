@@ -36,6 +36,25 @@ void main() {
       );
       expect(sampleNoAttachment.attachment, isNull);
     });
+
+    test('accepts optional encoding parameter', () {
+      final sample = Sample(
+        keyExpr: 'demo/test',
+        payload: 'hello',
+        kind: SampleKind.put,
+        encoding: 'text/plain',
+      );
+      expect(sample.encoding, equals('text/plain'));
+    });
+
+    test('defaults encoding to null', () {
+      final sample = Sample(
+        keyExpr: 'demo/test',
+        payload: 'hello',
+        kind: SampleKind.put,
+      );
+      expect(sample.encoding, isNull);
+    });
   });
 
   group('Subscriber lifecycle', () {
@@ -192,6 +211,25 @@ void main() {
         subscriber.stream.first.timeout(const Duration(seconds: 2)),
         throwsA(isA<TimeoutException>()),
       );
+    });
+
+    test('receives encoding from published data', () async {
+      final subscriber = session2.declareSubscriber('zenoh/dart/test/enc');
+      addTearDown(subscriber.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      session1.put('zenoh/dart/test/enc', 'hello');
+
+      final sample = await subscriber.stream.first.timeout(
+        const Duration(seconds: 5),
+      );
+
+      // Session.put uses default encoding; verify encoding field is populated
+      expect(sample.encoding, isNotNull);
+      expect(sample.keyExpr, equals('zenoh/dart/test/enc'));
+      expect(sample.payload, equals('hello'));
+      expect(sample.kind, equals(SampleKind.put));
     });
 
     test('receives DELETE sample from session.deleteResource', () async {
