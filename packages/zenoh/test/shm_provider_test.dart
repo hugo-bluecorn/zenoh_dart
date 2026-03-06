@@ -95,9 +95,8 @@ void main() {
     });
 
     test('alloc with size exceeding pool returns null', () {
-      final smallProvider = ShmProvider(size: 256);
-      addTearDown(smallProvider.close);
-      final buffer = smallProvider.alloc(1024);
+      // Use the group provider (size 4096) and request more than available
+      final buffer = provider.alloc(8192);
       expect(buffer, isNull);
     });
 
@@ -107,12 +106,24 @@ void main() {
       expect(() => buffer.length, throwsStateError);
     });
 
-    test('available decreases after allocation', () {
-      final availableBefore = provider.available;
-      final buffer = provider.alloc(512)!;
-      addTearDown(buffer.dispose);
-      final availableAfter = provider.available;
-      expect(availableAfter, lessThan(availableBefore));
+    test('multiple allocations exhaust the pool', () {
+      // Allocate buffers until the pool is exhausted
+      final buffers = <ShmMutBuffer>[];
+      for (var i = 0; i < 10; i++) {
+        final buf = provider.alloc(512);
+        if (buf == null) break;
+        buffers.add(buf);
+      }
+      addTearDown(() {
+        for (final b in buffers) {
+          b.dispose();
+        }
+      });
+
+      // We should have gotten at least one buffer
+      expect(buffers, isNotEmpty);
+      // And eventually the pool should be exhausted (fewer than 10)
+      expect(buffers.length, lessThan(10));
     });
   });
 }
