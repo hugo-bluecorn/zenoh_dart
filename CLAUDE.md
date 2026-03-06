@@ -31,6 +31,7 @@ zenoh-dart/                     # git repo root
 **Phase 1 Put/Delete: COMPLETE** — 31 C shim functions, 56 integration tests. `Session.put`, `Session.putBytes`, and `Session.deleteResource` implemented with CLI examples `z_put.dart` and `z_delete.dart`.
 **Phase 2 Subscriber: COMPLETE** — 34 C shim functions, 80 integration tests. `Session.declareSubscriber`, `Subscriber`, `Sample`, `SampleKind` implemented via NativePort callback bridge with CLI example `z_sub.dart`.
 **Phase 3 Publisher: COMPLETE** — 43 C shim functions, 120 integration tests. `Publisher` with `put`/`putBytes`/`deleteResource`/`keyExpr`/`hasMatchingSubscribers`/`matchingStatus`/`close`; `Encoding`, `CongestionControl`, `Priority` types; `Sample.encoding` field; CLI example `z_pub.dart`.
+**Phase 4 SHM Provider: COMPLETE** — 56 C shim functions, 148 integration tests. `ShmProvider`, `ShmMutBuffer` with zero-copy alloc/write/publish; SHM-published data received transparently by standard subscribers; CLI example `z_pub_shm.dart`.
 
 Available Dart API classes:
 - `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`)
@@ -45,9 +46,11 @@ Available Dart API classes:
 - `Encoding` — MIME type wrapper with 10 predefined constants (`textPlain`, `applicationJson`, etc.) and custom constructor
 - `CongestionControl` — Enum with `block` and `drop` congestion control strategies
 - `Priority` — Enum with 7 priority levels from `realTime` to `background`
+- `ShmProvider` — POSIX shared memory provider with `alloc()`, `allocGcDefragBlocking()`, `available`, and `close()`
+- `ShmMutBuffer` — Mutable SHM buffer with `data` pointer (zero-copy write), `length`, `toBytes()` (zero-copy conversion to `ZBytes`), and `dispose()`
 - `ZenohException` — Error type for zenoh operations
 
-Phases 4–18 (SHM/query/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
+Phases 5–18 (scout/query/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
 
 ## FVM Requirement
 
@@ -151,6 +154,10 @@ cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../b
 # Publish in a loop on a key expression (runs until Ctrl-C)
 cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
 ```
 
 CLI flags must mirror zenoh-c's examples (`extern/zenoh-c/examples/z_*.c`). When adding a new CLI example in any phase:
