@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:test/test.dart';
 import 'package:zenoh/zenoh.dart';
 
@@ -124,6 +126,61 @@ void main() {
       expect(buffers, isNotEmpty);
       // And eventually the pool should be exhausted (fewer than 10)
       expect(buffers.length, lessThan(10));
+    });
+
+    test('data returns writable pointer', () {
+      final buffer = provider.alloc(128)!;
+      addTearDown(buffer.dispose);
+      final ptr = buffer.data;
+      expect(ptr, isNotNull);
+    });
+
+    test('data written via pointer survives toBytes round-trip', () {
+      final buffer = provider.alloc(128)!;
+      final message = 'hello shm';
+      final encoded = utf8.encode(message);
+      buffer.data.asTypedList(buffer.length).setAll(0, encoded);
+
+      final zbytes = buffer.toBytes(encoded.length);
+      addTearDown(zbytes.dispose);
+      expect(zbytes.toStr(), equals(message));
+    });
+
+    test('toBytes consumes the buffer', () {
+      final buffer = provider.alloc(128)!;
+      final message = 'test';
+      final encoded = utf8.encode(message);
+      buffer.data.asTypedList(buffer.length).setAll(0, encoded);
+
+      final zbytes = buffer.toBytes(encoded.length);
+      addTearDown(zbytes.dispose);
+      expect(zbytes, isNotNull);
+
+      // Subsequent operations on buffer should throw StateError
+      expect(() => buffer.length, throwsStateError);
+      expect(() => buffer.data, throwsStateError);
+    });
+
+    test('toBytes after dispose throws StateError', () {
+      final buffer = provider.alloc(128)!;
+      buffer.dispose();
+      expect(() => buffer.toBytes(0), throwsStateError);
+    });
+
+    test('toBytes called twice throws StateError on second call', () {
+      final buffer = provider.alloc(128)!;
+      final zbytes = buffer.toBytes(0);
+      addTearDown(zbytes.dispose);
+
+      expect(() => buffer.toBytes(0), throwsStateError);
+    });
+
+    test('data after toBytes throws StateError', () {
+      final buffer = provider.alloc(128)!;
+      final zbytes = buffer.toBytes(0);
+      addTearDown(zbytes.dispose);
+
+      expect(() => buffer.data, throwsStateError);
     });
   });
 }
