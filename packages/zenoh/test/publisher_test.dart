@@ -327,4 +327,164 @@ void main() {
       },
     );
   });
+
+  group('Matching status one-shot', () {
+    late Session session1;
+    late Session session2;
+
+    setUpAll(() async {
+      final config1 = Config();
+      config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17454"]');
+      session1 = Session.open(config: config1);
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17454"]');
+      session2 = Session.open(config: config2);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+    });
+
+    tearDownAll(() {
+      session1.close();
+      session2.close();
+    });
+
+    test('hasMatchingSubscribers returns false when no subscribers exist',
+        () async {
+      final publisher =
+          session1.declarePublisher('zenoh/dart/test/match-none');
+      addTearDown(publisher.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      expect(publisher.hasMatchingSubscribers(), isFalse);
+    });
+
+    test('hasMatchingSubscribers returns true when a subscriber exists',
+        () async {
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/match-yes');
+      addTearDown(subscriber.close);
+      final publisher =
+          session1.declarePublisher('zenoh/dart/test/match-yes');
+      addTearDown(publisher.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      expect(publisher.hasMatchingSubscribers(), isTrue);
+    });
+
+    test('matchingStatus is null when listener not enabled', () {
+      final publisher = session1.declarePublisher('zenoh/dart/test/match-null');
+      addTearDown(publisher.close);
+      expect(publisher.matchingStatus, isNull);
+    });
+
+    test('hasMatchingSubscribers after close throws StateError', () {
+      final publisher =
+          session1.declarePublisher('zenoh/dart/test/match-closed');
+      publisher.close();
+      expect(
+        () => publisher.hasMatchingSubscribers(),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
+  group('Matching status stream', () {
+    late Session session1;
+    late Session session2;
+
+    setUpAll(() async {
+      final config1 = Config();
+      config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17455"]');
+      session1 = Session.open(config: config1);
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17455"]');
+      session2 = Session.open(config: config2);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+    });
+
+    tearDownAll(() {
+      session1.close();
+      session2.close();
+    });
+
+    test('matchingStatus stream emits true when subscriber appears',
+        () async {
+      final publisher = session1.declarePublisher(
+        'zenoh/dart/test/match-stream',
+        enableMatchingListener: true,
+      );
+      addTearDown(publisher.close);
+
+      expect(publisher.matchingStatus, isNotNull);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      // Declare subscriber to trigger matching
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/match-stream');
+      addTearDown(subscriber.close);
+
+      final status = await publisher.matchingStatus!.first.timeout(
+        const Duration(seconds: 5),
+      );
+      expect(status, isTrue);
+    });
+
+    test('matchingStatus stream emits false when subscriber disappears',
+        () async {
+      final publisher = session1.declarePublisher(
+        'zenoh/dart/test/match-stream2',
+        enableMatchingListener: true,
+      );
+      addTearDown(publisher.close);
+
+      final statuses = <bool>[];
+      final gotFalse = Completer<void>();
+      publisher.matchingStatus!.listen((status) {
+        statuses.add(status);
+        if (status == false && statuses.length > 1) {
+          if (!gotFalse.isCompleted) gotFalse.complete();
+        }
+      });
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      // Declare then close subscriber
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/match-stream2');
+
+      // Wait for routing propagation
+      await Future<void>.delayed(const Duration(seconds: 2));
+
+      subscriber.close();
+
+      // Wait for "false" status
+      await gotFalse.future.timeout(const Duration(seconds: 5));
+      expect(statuses, contains(true));
+      expect(statuses.last, isFalse);
+    });
+
+    test('matchingStatus stream closes when publisher is closed', () async {
+      final publisher = session1.declarePublisher(
+        'zenoh/dart/test/match-close',
+        enableMatchingListener: true,
+      );
+
+      final doneCompleter = Completer<void>();
+      publisher.matchingStatus!.listen((_) {}, onDone: doneCompleter.complete);
+
+      publisher.close();
+
+      await doneCompleter.future.timeout(const Duration(seconds: 5));
+    });
+  });
 }
