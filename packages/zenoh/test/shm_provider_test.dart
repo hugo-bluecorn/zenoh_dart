@@ -52,4 +52,67 @@ void main() {
       }
     });
   });
+
+  group('ShmMutBuffer', () {
+    late ShmProvider provider;
+
+    setUp(() {
+      provider = ShmProvider(size: 4096);
+    });
+
+    tearDown(() {
+      provider.close();
+    });
+
+    test('alloc returns ShmMutBuffer on success', () {
+      final buffer = provider.alloc(128);
+      addTearDown(() => buffer?.dispose());
+      expect(buffer, isNotNull);
+    });
+
+    test('length returns the allocated size', () {
+      final buffer = provider.alloc(128)!;
+      addTearDown(buffer.dispose);
+      expect(buffer.length, equals(128));
+    });
+
+    test('allocGcDefragBlocking returns ShmMutBuffer with correct length', () {
+      final buffer = provider.allocGcDefragBlocking(256);
+      addTearDown(() => buffer?.dispose());
+      expect(buffer, isNotNull);
+      expect(buffer!.length, equals(256));
+    });
+
+    test('dispose frees the buffer without error', () {
+      final buffer = provider.alloc(128)!;
+      expect(() => buffer.dispose(), returnsNormally);
+    });
+
+    test('dispose is idempotent', () {
+      final buffer = provider.alloc(128)!;
+      buffer.dispose();
+      expect(() => buffer.dispose(), returnsNormally);
+    });
+
+    test('alloc with size exceeding pool returns null', () {
+      final smallProvider = ShmProvider(size: 256);
+      addTearDown(smallProvider.close);
+      final buffer = smallProvider.alloc(1024);
+      expect(buffer, isNull);
+    });
+
+    test('operations after dispose throw StateError', () {
+      final buffer = provider.alloc(128)!;
+      buffer.dispose();
+      expect(() => buffer.length, throwsStateError);
+    });
+
+    test('available decreases after allocation', () {
+      final availableBefore = provider.available;
+      final buffer = provider.alloc(512)!;
+      addTearDown(buffer.dispose);
+      final availableAfter = provider.available;
+      expect(availableAfter, lessThan(availableBefore));
+    });
+  });
 }
