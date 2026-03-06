@@ -35,6 +35,12 @@ migrate_working_dir/
 # TDD workflow
 .tdd-progress.md
 
+# Claude Code agent state
+.claude/
+
+# Coverage artifacts
+packages/*/coverage/
+
 # zenoh-c build artifacts
 extern/zenoh-c/build/
 extern/zenoh-c/target/
