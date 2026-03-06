@@ -134,3 +134,27 @@ type-map:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque
+    z_owned_shm_provider_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_shm_provider_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_shm_provider_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_shm_mut_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_shm_mut_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_shm_mut_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque

@@ -451,3 +451,85 @@ FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
   }
   return rc;
 }
+
+// ---------------------------------------------------------------------------
+// Shared Memory (SHM)
+// ---------------------------------------------------------------------------
+#if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)
+
+FFI_PLUGIN_EXPORT size_t zd_shm_provider_sizeof(void) {
+  return sizeof(z_owned_shm_provider_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_shm_provider_new(z_owned_shm_provider_t* provider,
+                                          size_t total_size) {
+  return z_shm_provider_default_new(provider, total_size);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_shm_provider_t* zd_shm_provider_loan(
+    const z_owned_shm_provider_t* provider) {
+  return z_shm_provider_loan(provider);
+}
+
+FFI_PLUGIN_EXPORT void zd_shm_provider_drop(z_owned_shm_provider_t* provider) {
+  z_shm_provider_drop(z_shm_provider_move(provider));
+}
+
+FFI_PLUGIN_EXPORT size_t zd_shm_provider_available(
+    const z_loaned_shm_provider_t* provider) {
+  return z_shm_provider_available(provider);
+}
+
+FFI_PLUGIN_EXPORT size_t zd_shm_mut_sizeof(void) {
+  return sizeof(z_owned_shm_mut_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_shm_provider_alloc(
+    const z_loaned_shm_provider_t* provider,
+    z_owned_shm_mut_t* buf,
+    size_t size) {
+  z_buf_layout_alloc_result_t result;
+  z_shm_provider_alloc(&result, provider, size);
+  if (result.status == ZC_BUF_LAYOUT_ALLOC_STATUS_OK) {
+    *buf = result.buf;
+    return 0;
+  }
+  return -1;
+}
+
+FFI_PLUGIN_EXPORT int zd_shm_provider_alloc_gc_defrag_blocking(
+    const z_loaned_shm_provider_t* provider,
+    z_owned_shm_mut_t* buf,
+    size_t size) {
+  z_buf_layout_alloc_result_t result;
+  z_shm_provider_alloc_gc_defrag_blocking(&result, provider, size);
+  if (result.status == ZC_BUF_LAYOUT_ALLOC_STATUS_OK) {
+    *buf = result.buf;
+    return 0;
+  }
+  return -1;
+}
+
+FFI_PLUGIN_EXPORT z_loaned_shm_mut_t* zd_shm_mut_loan_mut(
+    z_owned_shm_mut_t* buf) {
+  return z_shm_mut_loan_mut(buf);
+}
+
+FFI_PLUGIN_EXPORT uint8_t* zd_shm_mut_data_mut(z_loaned_shm_mut_t* buf) {
+  return z_shm_mut_data_mut(buf);
+}
+
+FFI_PLUGIN_EXPORT size_t zd_shm_mut_len(const z_loaned_shm_mut_t* buf) {
+  return z_shm_mut_len(buf);
+}
+
+FFI_PLUGIN_EXPORT int zd_bytes_from_shm_mut(z_owned_bytes_t* bytes,
+                                            z_owned_shm_mut_t* buf) {
+  return z_bytes_from_shm_mut(bytes, z_shm_mut_move(buf));
+}
+
+FFI_PLUGIN_EXPORT void zd_shm_mut_drop(z_owned_shm_mut_t* buf) {
+  z_shm_mut_drop(z_shm_mut_move(buf));
+}
+
+#endif // Z_FEATURE_SHARED_MEMORY && Z_FEATURE_UNSTABLE_API
