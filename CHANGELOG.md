@@ -1,5 +1,15 @@
 # Changelog
+## 0.5.0 (Unreleased)
 
+### Added
+- `ShmProvider` class: POSIX shared memory provider with `alloc()`, `allocGcDefragBlocking()`, `available`, and `close()`
+- `ShmMutBuffer` class: mutable SHM buffer with `data` pointer (zero-copy write), `length`, `toBytes()` (zero-copy conversion to ZBytes), and `dispose()`
+- SHM-published data received transparently by standard subscribers via existing `Publisher.putBytes()`
+- C shim: 13 `zd_shm_*` functions guarded with `#if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)`
+- `src/CMakeLists.txt`: `-DZ_FEATURE_SHARED_MEMORY -DZ_FEATURE_UNSTABLE_API` compile definitions
+- ffigen.yaml: 6 SHM opaque type mappings (`z_owned_shm_provider_t`, `z_loaned_shm_provider_t`, `z_moved_shm_provider_t`, `z_owned_shm_mut_t`, `z_loaned_shm_mut_t`, `z_moved_shm_mut_t`)
+- CLI example `z_pub_shm.dart`: SHM publisher with `-k`/`--key`, `-p`/`--payload`, `--add-matching-listener`, `-e`/`--connect`, `-l`/`--listen` flags
+- 28 new tests (148 total) covering SHM provider lifecycle, buffer allocation/properties, data pointer/toBytes, SHM pub/sub integration, and CLI
 ## 0.4.0 (Unreleased)
 
 ### Added

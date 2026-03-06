@@ -15,6 +15,10 @@ set_target_properties(zenoh_dart PROPERTIES
 )
 
 target_compile_definitions(zenoh_dart PUBLIC DART_SHARED_LIB)
+target_compile_definitions(zenoh_dart PRIVATE
+  Z_FEATURE_SHARED_MEMORY
+  Z_FEATURE_UNSTABLE_API
+)
 
 # Dart API DL headers
 target_include_directories(zenoh_dart PRIVATE

@@ -6,7 +6,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 
 ```
 ┌─────────────────────────────┐
-│   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes
+│   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes, ShmProvider, ShmMutBuffer
 ├─────────────────────────────┤
 │   Generated FFI Bindings     │  bindings.dart (auto-generated via ffigen)
 ├─────────────────────────────┤
@@ -48,7 +48,16 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - CLI example: `z_pub.dart`
 - 120 integration tests passing
 
-Phases 4–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
+**Phase 4 — SHM Pub/Sub: COMPLETE**
+
+- 56 C shim functions (added 13 `zd_shm_*` functions guarded by `Z_FEATURE_SHARED_MEMORY`/`Z_FEATURE_UNSTABLE_API`)
+- `ShmProvider` class with `alloc()`, `allocGcDefragBlocking()`, `available`, and `close()`
+- `ShmMutBuffer` class with `data` pointer (zero-copy write), `length`, `toBytes()` (zero-copy conversion to `ZBytes`), and `dispose()`
+- SHM-published data received transparently by standard subscribers via `Publisher.putBytes()`
+- CLI example: `z_pub_shm.dart`
+- 148 integration tests passing
+
+Phases 5–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 
 ## Packages
 
@@ -117,6 +126,10 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 # Publish in a loop on a key expression (runs until Ctrl-C)
 LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
+LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
 ```
 
 ## Phase Roadmap
@@ -127,7 +140,7 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 | 1 | [Put / Delete](docs/phases/phase-01-put-delete.md) | Basic key-value put and delete operations — **COMPLETE** |
 | 2 | [Subscribe](docs/phases/phase-02-sub.md) | Subscriber for receiving publications — **COMPLETE** |
 | 3 | [Publish](docs/phases/phase-03-pub.md) | Publisher with matched listener support — **COMPLETE** |
-| 4 | [SHM Pub/Sub](docs/phases/phase-04-shm-pub-sub.md) | Shared-memory pub/sub for zero-copy |
+| 4 | [SHM Pub/Sub](docs/phases/phase-04-shm-pub-sub.md) | Shared-memory pub/sub for zero-copy — **COMPLETE** |
 | 5 | [Scout / Info](docs/phases/phase-05-scout-info.md) | Network discovery and session info |
 | 6 | [Get / Queryable](docs/phases/phase-06-get-queryable.md) | Request/reply query pattern |
 | 7 | [SHM Get/Queryable](docs/phases/phase-07-shm-get-queryable.md) | Shared-memory queries |

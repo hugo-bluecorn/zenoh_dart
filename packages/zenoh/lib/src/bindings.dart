@@ -887,6 +887,218 @@ class ZenohDartBindings {
           .asFunction<
             int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Int>)
           >();
+
+  /// Returns the size of z_owned_shm_provider_t in bytes.
+  int zd_shm_provider_sizeof() {
+    return _zd_shm_provider_sizeof();
+  }
+
+  late final _zd_shm_provider_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>(
+        'zd_shm_provider_sizeof',
+      );
+  late final _zd_shm_provider_sizeof = _zd_shm_provider_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Creates a default SHM provider with the given total size.
+  ///
+  /// @param provider  Pointer to an uninitialized z_owned_shm_provider_t.
+  /// @param total_size  Total size of the SHM pool in bytes.
+  /// @return 0 on success, negative on failure.
+  int zd_shm_provider_new(ffi.Pointer<ffi.Opaque> provider, int total_size) {
+    return _zd_shm_provider_new(provider, total_size);
+  }
+
+  late final _zd_shm_provider_newPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Size)>
+      >('zd_shm_provider_new');
+  late final _zd_shm_provider_new = _zd_shm_provider_newPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>, int)>();
+
+  /// Obtains a const loaned reference to the SHM provider.
+  ffi.Pointer<ffi.Opaque> zd_shm_provider_loan(
+    ffi.Pointer<ffi.Opaque> provider,
+  ) {
+    return _zd_shm_provider_loan(provider);
+  }
+
+  late final _zd_shm_provider_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_shm_provider_loan');
+  late final _zd_shm_provider_loan = _zd_shm_provider_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (frees) the SHM provider.
+  void zd_shm_provider_drop(ffi.Pointer<ffi.Opaque> provider) {
+    return _zd_shm_provider_drop(provider);
+  }
+
+  late final _zd_shm_provider_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_shm_provider_drop',
+      );
+  late final _zd_shm_provider_drop = _zd_shm_provider_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the available (free) bytes in the SHM provider.
+  int zd_shm_provider_available(ffi.Pointer<ffi.Opaque> provider) {
+    return _zd_shm_provider_available(provider);
+  }
+
+  late final _zd_shm_provider_availablePtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_shm_provider_available',
+      );
+  late final _zd_shm_provider_available = _zd_shm_provider_availablePtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of z_owned_shm_mut_t in bytes.
+  int zd_shm_mut_sizeof() {
+    return _zd_shm_mut_sizeof();
+  }
+
+  late final _zd_shm_mut_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_shm_mut_sizeof');
+  late final _zd_shm_mut_sizeof = _zd_shm_mut_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Allocates a mutable SHM buffer from the provider.
+  ///
+  /// @param provider  Const pointer to a loaned SHM provider.
+  /// @param buf       Pointer to an uninitialized z_owned_shm_mut_t.
+  /// @param size      Size of the buffer to allocate.
+  /// @return 0 on success, negative on failure.
+  int zd_shm_provider_alloc(
+    ffi.Pointer<ffi.Opaque> provider,
+    ffi.Pointer<ffi.Opaque> buf,
+    int size,
+  ) {
+    return _zd_shm_provider_alloc(provider, buf, size);
+  }
+
+  late final _zd_shm_provider_allocPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Size,
+          )
+        >
+      >('zd_shm_provider_alloc');
+  late final _zd_shm_provider_alloc = _zd_shm_provider_allocPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>, int)
+      >();
+
+  /// Allocates a mutable SHM buffer with GC + defrag + blocking.
+  ///
+  /// @param provider  Const pointer to a loaned SHM provider.
+  /// @param buf       Pointer to an uninitialized z_owned_shm_mut_t.
+  /// @param size      Size of the buffer to allocate.
+  /// @return 0 on success, negative on failure.
+  int zd_shm_provider_alloc_gc_defrag_blocking(
+    ffi.Pointer<ffi.Opaque> provider,
+    ffi.Pointer<ffi.Opaque> buf,
+    int size,
+  ) {
+    return _zd_shm_provider_alloc_gc_defrag_blocking(provider, buf, size);
+  }
+
+  late final _zd_shm_provider_alloc_gc_defrag_blockingPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Size,
+          )
+        >
+      >('zd_shm_provider_alloc_gc_defrag_blocking');
+  late final _zd_shm_provider_alloc_gc_defrag_blocking =
+      _zd_shm_provider_alloc_gc_defrag_blockingPtr
+          .asFunction<
+            int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>, int)
+          >();
+
+  /// Obtains a mutable loaned reference to the SHM buffer.
+  ffi.Pointer<ffi.Opaque> zd_shm_mut_loan_mut(ffi.Pointer<ffi.Opaque> buf) {
+    return _zd_shm_mut_loan_mut(buf);
+  }
+
+  late final _zd_shm_mut_loan_mutPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_shm_mut_loan_mut');
+  late final _zd_shm_mut_loan_mut = _zd_shm_mut_loan_mutPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns a mutable pointer to the SHM buffer data.
+  ffi.Pointer<ffi.Uint8> zd_shm_mut_data_mut(ffi.Pointer<ffi.Opaque> buf) {
+    return _zd_shm_mut_data_mut(buf);
+  }
+
+  late final _zd_shm_mut_data_mutPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_shm_mut_data_mut');
+  late final _zd_shm_mut_data_mut = _zd_shm_mut_data_mutPtr
+      .asFunction<ffi.Pointer<ffi.Uint8> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the length of the SHM buffer.
+  int zd_shm_mut_len(ffi.Pointer<ffi.Opaque> buf) {
+    return _zd_shm_mut_len(buf);
+  }
+
+  late final _zd_shm_mut_lenPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_shm_mut_len',
+      );
+  late final _zd_shm_mut_len = _zd_shm_mut_lenPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Converts a mutable SHM buffer into owned bytes (consuming the buffer).
+  ///
+  /// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+  /// @param buf    Pointer to a z_owned_shm_mut_t (consumed).
+  /// @return 0 on success, negative on failure.
+  int zd_bytes_from_shm_mut(
+    ffi.Pointer<ffi.Opaque> bytes,
+    ffi.Pointer<ffi.Opaque> buf,
+  ) {
+    return _zd_bytes_from_shm_mut(bytes, buf);
+  }
+
+  late final _zd_bytes_from_shm_mutPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_bytes_from_shm_mut');
+  late final _zd_bytes_from_shm_mut = _zd_bytes_from_shm_mutPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Drops (frees) a mutable SHM buffer.
+  void zd_shm_mut_drop(ffi.Pointer<ffi.Opaque> buf) {
+    return _zd_shm_mut_drop(buf);
+  }
+
+  late final _zd_shm_mut_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_shm_mut_drop',
+      );
+  late final _zd_shm_mut_drop = _zd_shm_mut_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {
@@ -1072,9 +1284,44 @@ final class pthread_barrierattr_t extends ffi.Union {
   external int __align;
 }
 
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned ZShmMut slice.
+final class z_owned_shm_mut_t extends ffi.Struct {
+  @ffi.Array.multi([80])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned ShmProvider's PrecomputedLayout.
+final class z_loaned_precomputed_layout_t extends ffi.Struct {
+  @ffi.Array.multi([40])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned ShmProvider's PrecomputedLayout.
+final class z_owned_precomputed_layout_t extends ffi.Struct {
+  @ffi.Array.multi([40])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned ShmProvider.
+final class z_loaned_shm_provider_t extends ffi.Struct {
+  @ffi.Array.multi([104])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
 /// A loaned Zenoh data.
 final class z_loaned_bytes_t extends ffi.Struct {
-  @ffi.Array.multi([32])
+  @ffi.Array.multi([40])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned ZShm slice.
+final class z_loaned_shm_t extends ffi.Struct {
+  @ffi.Array.multi([80])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1082,7 +1329,7 @@ final class z_loaned_bytes_t extends ffi.Struct {
 ///
 /// To minimize copies and reallocations, Zenoh may provide data in several separate buffers.
 final class z_owned_bytes_t extends ffi.Struct {
-  @ffi.Array.multi([32])
+  @ffi.Array.multi([40])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1095,6 +1342,13 @@ final class z_loaned_slice_t extends ffi.Struct {
 /// A loaned string.
 final class z_loaned_string_t extends ffi.Struct {
   @ffi.Array.multi([32])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned ZShm slice.
+final class z_owned_shm_t extends ffi.Struct {
+  @ffi.Array.multi([80])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1117,13 +1371,41 @@ final class z_view_slice_t extends ffi.Struct {
 
 /// An loaned writer for payload.
 final class z_loaned_bytes_writer_t extends ffi.Struct {
-  @ffi.Array.multi([56])
+  @ffi.Array.multi([64])
   external ffi.Array<ffi.Uint8> _0;
 }
 
 /// An owned writer for payload.
 final class z_owned_bytes_writer_t extends ffi.Struct {
-  @ffi.Array.multi([56])
+  @ffi.Array.multi([64])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned cancellation token, which can be used to interrupt GET queries.
+final class z_loaned_cancellation_token_t extends ffi.Struct {
+  @ffi.Array.multi([24])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned cancellation token, which can be used to interrupt GET queries.
+final class z_owned_cancellation_token_t extends ffi.Struct {
+  @ffi.Array.multi([24])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned ChunkAllocResult.
+final class z_owned_chunk_alloc_result_t extends ffi.Struct {
+  @ffi.Array.multi([48])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A pointer in SHM Segment.
+final class z_owned_ptr_in_segment_t extends ffi.Struct {
+  @ffi.Array.multi([24])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1151,9 +1433,22 @@ final class z_loaned_closure_hello_t extends ffi.Struct {
   external int _2;
 }
 
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief Loaned closure.
+final class z_loaned_closure_matching_status_t extends ffi.Struct {
+  @ffi.Size()
+  external int _0;
+
+  @ffi.Size()
+  external int _1;
+
+  @ffi.Size()
+  external int _2;
+}
+
 /// A loaned Zenoh query.
 final class z_loaned_query_t extends ffi.Struct {
-  @ffi.Array.multi([136])
+  @ffi.Array.multi([144])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1171,7 +1466,7 @@ final class z_loaned_closure_query_t extends ffi.Struct {
 
 /// A loaned reply.
 final class z_loaned_reply_t extends ffi.Struct {
-  @ffi.Array.multi([184])
+  @ffi.Array.multi([248])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1189,7 +1484,7 @@ final class z_loaned_closure_reply_t extends ffi.Struct {
 
 /// A loaned Zenoh sample.
 final class z_loaned_sample_t extends ffi.Struct {
-  @ffi.Array.multi([184])
+  @ffi.Array.multi([224])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1294,13 +1589,21 @@ final class z_owned_keyexpr_t extends ffi.Struct {
 
 /// An owned Zenoh <a href="https://zenoh.io/docs/manual/abstractions/#publisher"> publisher </a>.
 final class z_owned_publisher_t extends ffi.Struct {
-  @ffi.Array.multi([104])
+  @ffi.Array.multi([112])
   external ffi.Array<ffi.Uint8> _0;
 }
 
 /// The <a href="https://zenoh.io/docs/manual/abstractions/#encoding"> encoding </a> of Zenoh data.
 final class z_owned_encoding_t extends ffi.Struct {
-  @ffi.Array.multi([40])
+  @ffi.Array.multi([48])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// An owned Zenoh querier.
+///
+/// Sends queries to matching queryables.
+final class z_owned_querier_t extends ffi.Struct {
+  @ffi.Array.multi([80])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1323,7 +1626,7 @@ final class z_owned_subscriber_t extends ffi.Struct {
 
 /// A loaned Zenoh encoding.
 final class z_loaned_encoding_t extends ffi.Struct {
-  @ffi.Array.multi([40])
+  @ffi.Array.multi([48])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1355,7 +1658,7 @@ final class z_loaned_fifo_handler_query_t extends ffi.Struct {
 ///
 /// Queries are atomically reference-counted, letting you extract them from the callback that handed them to you by cloning.
 final class z_owned_query_t extends ffi.Struct {
-  @ffi.Array.multi([136])
+  @ffi.Array.multi([144])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1367,7 +1670,7 @@ final class z_loaned_fifo_handler_reply_t extends ffi.Struct {
 
 /// An owned reply from a Queryable to a `z_get()`.
 final class z_owned_reply_t extends ffi.Struct {
-  @ffi.Array.multi([184])
+  @ffi.Array.multi([248])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1382,7 +1685,7 @@ final class z_loaned_fifo_handler_sample_t extends ffi.Struct {
 /// This is a read only type that can only be constructed by cloning a `z_loaned_sample_t`.
 /// Like all owned types, it should be freed using z_drop or z_sample_drop.
 final class z_owned_sample_t extends ffi.Struct {
-  @ffi.Array.multi([184])
+  @ffi.Array.multi([224])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1408,6 +1711,22 @@ final class z_owned_liveliness_token_t extends ffi.Struct {
   external ffi.Array<ffi.Uint8> _0;
 }
 
+/// @brief An owned Zenoh matching listener.
+///
+/// A listener that sends notifications when the [`MatchingStatus`] of a publisher or querier changes.
+/// Dropping the corresponding publisher, also drops matching listener.
+final class z_owned_matching_listener_t extends ffi.Struct {
+  @ffi.Array.multi([24])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned MemoryLayout.
+final class z_owned_memory_layout_t extends ffi.Struct {
+  @ffi.Array.multi([16])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
 /// An owned mutex.
 final class z_owned_mutex_t extends ffi.Struct {
   @ffi.Array.multi([24])
@@ -1416,7 +1735,7 @@ final class z_owned_mutex_t extends ffi.Struct {
 
 /// A Zenoh reply error - a combination of reply error payload and its encoding.
 final class z_owned_reply_err_t extends ffi.Struct {
-  @ffi.Array.multi([72])
+  @ffi.Array.multi([88])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1444,6 +1763,34 @@ final class z_owned_session_t extends ffi.Struct {
   external ffi.Array<ffi.Uint8> _0;
 }
 
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned shared ShmProvider.
+final class z_owned_shared_shm_provider_t extends ffi.Struct {
+  @ffi.Array.multi([104])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned SHM Client.
+final class z_owned_shm_client_t extends ffi.Struct {
+  @ffi.Array.multi([16])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned SHM Client Storage
+final class z_owned_shm_client_storage_t extends ffi.Struct {
+  @ffi.Array.multi([8])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief An owned ShmProvider.
+final class z_owned_shm_provider_t extends ffi.Struct {
+  @ffi.Array.multi([104])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
 /// An owned Zenoh task.
 final class z_owned_task_t extends ffi.Struct {
   @ffi.Array.multi([24])
@@ -1461,9 +1808,35 @@ final class z_loaned_liveliness_token_t extends ffi.Struct {
   external ffi.Array<ffi.Uint8> _0;
 }
 
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned MemoryLayout.
+final class z_loaned_memory_layout_t extends ffi.Struct {
+  @ffi.Array.multi([16])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// A loaned SHM Client Storage.
+final class z_loaned_shm_client_storage_t extends ffi.Struct {
+  @ffi.Array.multi([8])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned pointer in SHM Segment.
+final class z_loaned_ptr_in_segment_t extends ffi.Struct {
+  @ffi.Array.multi([24])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
 /// A loaned Zenoh publisher.
 final class z_loaned_publisher_t extends ffi.Struct {
-  @ffi.Array.multi([104])
+  @ffi.Array.multi([112])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// A loaned Zenoh queryable.
+final class z_loaned_querier_t extends ffi.Struct {
+  @ffi.Array.multi([80])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1475,7 +1848,7 @@ final class z_loaned_queryable_t extends ffi.Struct {
 
 /// A loaned Zenoh reply error.
 final class z_loaned_reply_err_t extends ffi.Struct {
-  @ffi.Array.multi([72])
+  @ffi.Array.multi([88])
   external ffi.Array<ffi.Uint8> _0;
 }
 
@@ -1497,6 +1870,20 @@ final class z_loaned_ring_handler_sample_t extends ffi.Struct {
   external ffi.Array<ffi.Uint8> _0;
 }
 
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned shared ShmProvider.
+final class z_loaned_shared_shm_provider_t extends ffi.Struct {
+  @ffi.Array.multi([104])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
+/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
+/// @brief A loaned ZShmMut slice.
+final class z_loaned_shm_mut_t extends ffi.Struct {
+  @ffi.Array.multi([80])
+  external ffi.Array<ffi.Uint8> _0;
+}
+
 /// A loaned string array.
 final class z_loaned_string_array_t extends ffi.Struct {
   @ffi.Array.multi([24])
@@ -1515,8 +1902,20 @@ final class z_view_keyexpr_t extends ffi.Struct {
   external ffi.Array<ffi.Uint8> _0;
 }
 
+final class z_moved_precomputed_layout_t extends ffi.Struct {
+  external z_owned_precomputed_layout_t _this;
+}
+
 final class z_moved_bytes_t extends ffi.Struct {
   external z_owned_bytes_t _this;
+}
+
+final class z_moved_shm_t extends ffi.Struct {
+  external z_owned_shm_t _this;
+}
+
+final class z_moved_shm_mut_t extends ffi.Struct {
+  external z_owned_shm_mut_t _this;
 }
 
 final class z_moved_slice_t extends ffi.Struct {
@@ -1529,6 +1928,18 @@ final class z_moved_string_t extends ffi.Struct {
 
 final class z_moved_bytes_writer_t extends ffi.Struct {
   external z_owned_bytes_writer_t _this;
+}
+
+final class z_moved_cancellation_token_t extends ffi.Struct {
+  external z_owned_cancellation_token_t _this;
+}
+
+final class z_moved_chunk_alloc_result_t extends ffi.Struct {
+  external z_owned_chunk_alloc_result_t _this;
+}
+
+final class z_moved_ptr_in_segment_t extends ffi.Struct {
+  external z_owned_ptr_in_segment_t _this;
 }
 
 /// @brief A hello message-processing closure.
@@ -1586,19 +1997,6 @@ final class z_owned_closure_matching_status_t extends ffi.Struct {
     ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void> context)>
   >
   _drop;
-}
-
-/// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
-/// @brief Loaned closure.
-final class z_loaned_closure_matching_status_t extends ffi.Struct {
-  @ffi.Size()
-  external int _0;
-
-  @ffi.Size()
-  external int _1;
-
-  @ffi.Size()
-  external int _2;
 }
 
 /// @warning This API has been marked as unstable: it works as advertised, but it may be changed in a future release.
@@ -1724,14 +2122,6 @@ final class z_moved_encoding_t extends ffi.Struct {
   external z_owned_encoding_t _this;
 }
 
-/// An owned Zenoh querier.
-///
-/// Sends queries to matching queryables.
-final class z_owned_querier_t extends ffi.Struct {
-  @ffi.Array.multi([80])
-  external ffi.Array<ffi.Uint8> _0;
-}
-
 final class z_moved_fifo_handler_query_t extends ffi.Struct {
   external z_owned_fifo_handler_query_t _this;
 }
@@ -1748,15 +2138,6 @@ final class z_moved_hello_t extends ffi.Struct {
   external z_owned_hello_t _this;
 }
 
-/// @brief An owned Zenoh matching listener.
-///
-/// A listener that sends notifications when the [`MatchingStatus`] of a publisher or querier changes.
-/// Dropping the corresponding publisher, also drops matching listener.
-final class z_owned_matching_listener_t extends ffi.Struct {
-  @ffi.Array.multi([24])
-  external ffi.Array<ffi.Uint8> _0;
-}
-
 final class z_moved_keyexpr_t extends ffi.Struct {
   external z_owned_keyexpr_t _this;
 }
@@ -1769,18 +2150,16 @@ final class z_moved_matching_listener_t extends ffi.Struct {
   external z_owned_matching_listener_t _this;
 }
 
+final class z_moved_memory_layout_t extends ffi.Struct {
+  external z_owned_memory_layout_t _this;
+}
+
 final class z_moved_mutex_t extends ffi.Struct {
   external z_owned_mutex_t _this;
 }
 
 final class z_moved_publisher_t extends ffi.Struct {
   external z_owned_publisher_t _this;
-}
-
-/// A loaned Zenoh queryable.
-final class z_loaned_querier_t extends ffi.Struct {
-  @ffi.Array.multi([80])
-  external ffi.Array<ffi.Uint8> _0;
 }
 
 final class z_moved_querier_t extends ffi.Struct {
@@ -1821,6 +2200,22 @@ final class z_moved_sample_t extends ffi.Struct {
 
 final class z_moved_session_t extends ffi.Struct {
   external z_owned_session_t _this;
+}
+
+final class z_moved_shared_shm_provider_t extends ffi.Struct {
+  external z_owned_shared_shm_provider_t _this;
+}
+
+final class z_moved_shm_client_t extends ffi.Struct {
+  external z_owned_shm_client_t _this;
+}
+
+final class z_moved_shm_client_storage_t extends ffi.Struct {
+  external z_owned_shm_client_storage_t _this;
+}
+
+final class z_moved_shm_provider_t extends ffi.Struct {
+  external z_owned_shm_provider_t _this;
 }
 
 final class z_moved_string_array_t extends ffi.Struct {

@@ -11,5 +11,7 @@ export 'src/priority.dart';
 export 'src/publisher.dart';
 export 'src/sample.dart';
 export 'src/session.dart';
+export 'src/shm_mut_buffer.dart';
+export 'src/shm_provider.dart';
 export 'src/subscriber.dart';
 export 'src/zenoh.dart';

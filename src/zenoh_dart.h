@@ -394,4 +394,79 @@ FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
     const z_loaned_publisher_t* publisher,
     int* matching);
 
+// ---------------------------------------------------------------------------
+// Shared Memory (SHM)
+// ---------------------------------------------------------------------------
+#if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)
+
+/// Returns the size of z_owned_shm_provider_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_shm_provider_sizeof(void);
+
+/// Creates a default SHM provider with the given total size.
+///
+/// @param provider  Pointer to an uninitialized z_owned_shm_provider_t.
+/// @param total_size  Total size of the SHM pool in bytes.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_shm_provider_new(z_owned_shm_provider_t* provider,
+                                          size_t total_size);
+
+/// Obtains a const loaned reference to the SHM provider.
+FFI_PLUGIN_EXPORT const z_loaned_shm_provider_t* zd_shm_provider_loan(
+    const z_owned_shm_provider_t* provider);
+
+/// Drops (frees) the SHM provider.
+FFI_PLUGIN_EXPORT void zd_shm_provider_drop(z_owned_shm_provider_t* provider);
+
+/// Returns the available (free) bytes in the SHM provider.
+FFI_PLUGIN_EXPORT size_t zd_shm_provider_available(
+    const z_loaned_shm_provider_t* provider);
+
+/// Returns the size of z_owned_shm_mut_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_shm_mut_sizeof(void);
+
+/// Allocates a mutable SHM buffer from the provider.
+///
+/// @param provider  Const pointer to a loaned SHM provider.
+/// @param buf       Pointer to an uninitialized z_owned_shm_mut_t.
+/// @param size      Size of the buffer to allocate.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_shm_provider_alloc(
+    const z_loaned_shm_provider_t* provider,
+    z_owned_shm_mut_t* buf,
+    size_t size);
+
+/// Allocates a mutable SHM buffer with GC + defrag + blocking.
+///
+/// @param provider  Const pointer to a loaned SHM provider.
+/// @param buf       Pointer to an uninitialized z_owned_shm_mut_t.
+/// @param size      Size of the buffer to allocate.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_shm_provider_alloc_gc_defrag_blocking(
+    const z_loaned_shm_provider_t* provider,
+    z_owned_shm_mut_t* buf,
+    size_t size);
+
+/// Obtains a mutable loaned reference to the SHM buffer.
+FFI_PLUGIN_EXPORT z_loaned_shm_mut_t* zd_shm_mut_loan_mut(
+    z_owned_shm_mut_t* buf);
+
+/// Returns a mutable pointer to the SHM buffer data.
+FFI_PLUGIN_EXPORT uint8_t* zd_shm_mut_data_mut(z_loaned_shm_mut_t* buf);
+
+/// Returns the length of the SHM buffer.
+FFI_PLUGIN_EXPORT size_t zd_shm_mut_len(const z_loaned_shm_mut_t* buf);
+
+/// Converts a mutable SHM buffer into owned bytes (consuming the buffer).
+///
+/// @param bytes  Pointer to an uninitialized z_owned_bytes_t.
+/// @param buf    Pointer to a z_owned_shm_mut_t (consumed).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_bytes_from_shm_mut(z_owned_bytes_t* bytes,
+                                            z_owned_shm_mut_t* buf);
+
+/// Drops (frees) a mutable SHM buffer.
+FFI_PLUGIN_EXPORT void zd_shm_mut_drop(z_owned_shm_mut_t* buf);
+
+#endif // Z_FEATURE_SHARED_MEMORY && Z_FEATURE_UNSTABLE_API
+
 #endif // ZENOH_DART_H

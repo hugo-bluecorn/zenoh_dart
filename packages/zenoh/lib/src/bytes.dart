@@ -19,6 +19,11 @@ class ZBytes {
 
   ZBytes._(this._ptr);
 
+  /// Creates [ZBytes] wrapping an existing native z_owned_bytes_t pointer.
+  ///
+  /// Used internally by [ShmMutBuffer.toBytes] for zero-copy conversion.
+  ZBytes.fromNative(this._ptr);
+
   /// Creates [ZBytes] by copying the given [value] string.
   ///
   /// Throws [ZenohException] if the native copy fails.
