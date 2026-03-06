@@ -684,6 +684,209 @@ class ZenohDartBindings {
       );
   late final _zd_subscriber_drop = _zd_subscriber_dropPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of z_owned_publisher_t in bytes.
+  int zd_publisher_sizeof() {
+    return _zd_publisher_sizeof();
+  }
+
+  late final _zd_publisher_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_publisher_sizeof');
+  late final _zd_publisher_sizeof = _zd_publisher_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a publisher on the given key expression.
+  ///
+  /// @param session             Const pointer to a loaned session.
+  /// @param publisher           Pointer to an uninitialized z_owned_publisher_t.
+  /// @param keyexpr             Const pointer to a loaned key expression.
+  /// @param encoding            MIME type string for default encoding (NULL = default).
+  /// @param congestion_control  Congestion control strategy (-1 = default/block).
+  /// @param priority            Message priority (-1 = default/data=5).
+  /// @return 0 on success, negative on failure.
+  int zd_declare_publisher(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> publisher,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+    ffi.Pointer<ffi.Char> encoding,
+    int congestion_control,
+    int priority,
+  ) {
+    return _zd_declare_publisher(
+      session,
+      publisher,
+      keyexpr,
+      encoding,
+      congestion_control,
+      priority,
+    );
+  }
+
+  late final _zd_declare_publisherPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int,
+            ffi.Int,
+          )
+        >
+      >('zd_declare_publisher');
+  late final _zd_declare_publisher = _zd_declare_publisherPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          int,
+        )
+      >();
+
+  /// Obtains a const loaned reference to the publisher.
+  ffi.Pointer<ffi.Opaque> zd_publisher_loan(ffi.Pointer<ffi.Opaque> publisher) {
+    return _zd_publisher_loan(publisher);
+  }
+
+  late final _zd_publisher_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_publisher_loan');
+  late final _zd_publisher_loan = _zd_publisher_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (undeclares and frees) a publisher.
+  void zd_publisher_drop(ffi.Pointer<ffi.Opaque> publisher) {
+    return _zd_publisher_drop(publisher);
+  }
+
+  late final _zd_publisher_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_publisher_drop',
+      );
+  late final _zd_publisher_drop = _zd_publisher_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Publishes data through the publisher.
+  ///
+  /// @param publisher   Const pointer to a loaned publisher.
+  /// @param payload     Pointer to owned bytes (consumed via z_bytes_move).
+  /// @param encoding    MIME type string for per-put encoding override (NULL = publisher default).
+  /// @param attachment  Pointer to owned bytes for attachment (consumed if non-NULL, NULL = no attachment).
+  /// @return 0 on success, negative on failure.
+  int zd_publisher_put(
+    ffi.Pointer<ffi.Opaque> publisher,
+    ffi.Pointer<ffi.Opaque> payload,
+    ffi.Pointer<ffi.Char> encoding,
+    ffi.Pointer<ffi.Opaque> attachment,
+  ) {
+    return _zd_publisher_put(publisher, payload, encoding, attachment);
+  }
+
+  late final _zd_publisher_putPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Opaque>,
+          )
+        >
+      >('zd_publisher_put');
+  late final _zd_publisher_put = _zd_publisher_putPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Opaque>,
+        )
+      >();
+
+  /// Sends a DELETE through the publisher.
+  int zd_publisher_delete(ffi.Pointer<ffi.Opaque> publisher) {
+    return _zd_publisher_delete(publisher);
+  }
+
+  late final _zd_publisher_deletePtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_publisher_delete',
+      );
+  late final _zd_publisher_delete = _zd_publisher_deletePtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the key expression of a publisher.
+  ffi.Pointer<ffi.Opaque> zd_publisher_keyexpr(
+    ffi.Pointer<ffi.Opaque> publisher,
+  ) {
+    return _zd_publisher_keyexpr(publisher);
+  }
+
+  late final _zd_publisher_keyexprPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_publisher_keyexpr');
+  late final _zd_publisher_keyexpr = _zd_publisher_keyexprPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Declares a background matching listener on the publisher.
+  ///
+  /// Matching status changes are posted to the Dart isolate via the given
+  /// native port as Int64 values (1 = matching, 0 = not matching).
+  ///
+  /// @param publisher  Const pointer to a loaned publisher.
+  /// @param dart_port  The Dart native port to post matching status to.
+  /// @return 0 on success, negative on failure.
+  int zd_publisher_declare_background_matching_listener(
+    ffi.Pointer<ffi.Opaque> publisher,
+    int dart_port,
+  ) {
+    return _zd_publisher_declare_background_matching_listener(
+      publisher,
+      dart_port,
+    );
+  }
+
+  late final _zd_publisher_declare_background_matching_listenerPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Int64)>
+      >('zd_publisher_declare_background_matching_listener');
+  late final _zd_publisher_declare_background_matching_listener =
+      _zd_publisher_declare_background_matching_listenerPtr
+          .asFunction<int Function(ffi.Pointer<ffi.Opaque>, int)>();
+
+  /// Gets the current matching status of a publisher.
+  ///
+  /// @param publisher  Const pointer to a loaned publisher.
+  /// @param matching   Out parameter: filled with 0 (no match) or 1 (match).
+  /// @return 0 on success, negative on failure.
+  int zd_publisher_get_matching_status(
+    ffi.Pointer<ffi.Opaque> publisher,
+    ffi.Pointer<ffi.Int> matching,
+  ) {
+    return _zd_publisher_get_matching_status(publisher, matching);
+  }
+
+  late final _zd_publisher_get_matching_statusPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Int>)
+        >
+      >('zd_publisher_get_matching_status');
+  late final _zd_publisher_get_matching_status =
+      _zd_publisher_get_matching_statusPtr
+          .asFunction<
+            int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Int>)
+          >();
 }
 
 final class UnnamedStruct extends ffi.Struct {

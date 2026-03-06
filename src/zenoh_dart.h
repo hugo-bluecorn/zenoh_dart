@@ -321,4 +321,77 @@ FFI_PLUGIN_EXPORT int zd_declare_subscriber(
 /// @param subscriber  Pointer to a z_owned_subscriber_t to drop.
 FFI_PLUGIN_EXPORT void zd_subscriber_drop(z_owned_subscriber_t* subscriber);
 
+// ---------------------------------------------------------------------------
+// Publisher
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_publisher_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_publisher_sizeof(void);
+
+/// Declares a publisher on the given key expression.
+///
+/// @param session             Const pointer to a loaned session.
+/// @param publisher           Pointer to an uninitialized z_owned_publisher_t.
+/// @param keyexpr             Const pointer to a loaned key expression.
+/// @param encoding            MIME type string for default encoding (NULL = default).
+/// @param congestion_control  Congestion control strategy (-1 = default/block).
+/// @param priority            Message priority (-1 = default/data=5).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_declare_publisher(
+    const z_loaned_session_t* session,
+    z_owned_publisher_t* publisher,
+    const z_loaned_keyexpr_t* keyexpr,
+    const char* encoding,
+    int congestion_control,
+    int priority);
+
+/// Obtains a const loaned reference to the publisher.
+FFI_PLUGIN_EXPORT const z_loaned_publisher_t* zd_publisher_loan(
+    const z_owned_publisher_t* publisher);
+
+/// Drops (undeclares and frees) a publisher.
+FFI_PLUGIN_EXPORT void zd_publisher_drop(z_owned_publisher_t* publisher);
+
+/// Publishes data through the publisher.
+///
+/// @param publisher   Const pointer to a loaned publisher.
+/// @param payload     Pointer to owned bytes (consumed via z_bytes_move).
+/// @param encoding    MIME type string for per-put encoding override (NULL = publisher default).
+/// @param attachment  Pointer to owned bytes for attachment (consumed if non-NULL, NULL = no attachment).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_publisher_put(
+    const z_loaned_publisher_t* publisher,
+    z_owned_bytes_t* payload,
+    const char* encoding,
+    z_owned_bytes_t* attachment);
+
+/// Sends a DELETE through the publisher.
+FFI_PLUGIN_EXPORT int zd_publisher_delete(
+    const z_loaned_publisher_t* publisher);
+
+/// Returns the key expression of a publisher.
+FFI_PLUGIN_EXPORT const z_loaned_keyexpr_t* zd_publisher_keyexpr(
+    const z_loaned_publisher_t* publisher);
+
+/// Declares a background matching listener on the publisher.
+///
+/// Matching status changes are posted to the Dart isolate via the given
+/// native port as Int64 values (1 = matching, 0 = not matching).
+///
+/// @param publisher  Const pointer to a loaned publisher.
+/// @param dart_port  The Dart native port to post matching status to.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_publisher_declare_background_matching_listener(
+    const z_loaned_publisher_t* publisher,
+    int64_t dart_port);
+
+/// Gets the current matching status of a publisher.
+///
+/// @param publisher  Const pointer to a loaned publisher.
+/// @param matching   Out parameter: filled with 0 (no match) or 1 (match).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
+    const z_loaned_publisher_t* publisher,
+    int* matching);
+
 #endif // ZENOH_DART_H

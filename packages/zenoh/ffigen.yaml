@@ -110,3 +110,27 @@ type-map:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque
+    z_owned_publisher_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_publisher_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_publisher_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_closure_matching_status_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_closure_matching_status_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_matching_status_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque

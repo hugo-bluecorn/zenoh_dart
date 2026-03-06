@@ -4,9 +4,13 @@ import 'package:ffi/ffi.dart';
 
 import 'bytes.dart';
 import 'config.dart';
+import 'congestion_control.dart';
+import 'encoding.dart';
 import 'exceptions.dart';
 import 'keyexpr.dart';
 import 'native_lib.dart';
+import 'priority.dart';
+import 'publisher.dart';
 import 'subscriber.dart';
 
 /// A Zenoh session.
@@ -148,6 +152,40 @@ class Session {
         throw ZenohException('Delete failed', rc);
       }
     });
+  }
+
+  /// Declares a publisher on the given [keyExpr].
+  ///
+  /// Returns a [Publisher] that can efficiently publish multiple messages
+  /// to the same key expression. Call [Publisher.close] when done.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Publisher declarePublisher(
+    String keyExpr, {
+    Encoding? encoding,
+    CongestionControl congestionControl = CongestionControl.block,
+    Priority priority = Priority.data,
+    bool enableMatchingListener = false,
+  }) {
+    _ensureOpen();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final loanedSession =
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+      final loanedKe =
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+      return Publisher.declare(
+        loanedSession,
+        loanedKe,
+        encoding: encoding,
+        congestionControl: congestionControl,
+        priority: priority,
+        enableMatchingListener: enableMatchingListener,
+      );
+    } finally {
+      ke.dispose();
+    }
   }
 
   /// Declares a subscriber on the given [keyExpr].

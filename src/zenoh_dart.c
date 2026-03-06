@@ -322,3 +322,132 @@ FFI_PLUGIN_EXPORT int zd_declare_subscriber(
 FFI_PLUGIN_EXPORT void zd_subscriber_drop(z_owned_subscriber_t* subscriber) {
   z_subscriber_drop(z_subscriber_move(subscriber));
 }
+
+// ---------------------------------------------------------------------------
+// Publisher
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_publisher_sizeof(void) {
+  return sizeof(z_owned_publisher_t);
+}
+
+FFI_PLUGIN_EXPORT int zd_declare_publisher(
+    const z_loaned_session_t* session,
+    z_owned_publisher_t* publisher,
+    const z_loaned_keyexpr_t* keyexpr,
+    const char* encoding,
+    int congestion_control,
+    int priority) {
+  z_publisher_options_t opts;
+  z_publisher_options_default(&opts);
+
+  z_owned_encoding_t owned_encoding;
+  if (encoding != NULL) {
+    z_encoding_from_str(&owned_encoding, encoding);
+    opts.encoding = z_encoding_move(&owned_encoding);
+  }
+  if (congestion_control >= 0) {
+    opts.congestion_control = (z_congestion_control_t)congestion_control;
+  }
+  if (priority >= 0) {
+    opts.priority = (z_priority_t)priority;
+  }
+
+  return z_declare_publisher(session, publisher, keyexpr, &opts);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_publisher_t* zd_publisher_loan(
+    const z_owned_publisher_t* publisher) {
+  return z_publisher_loan(publisher);
+}
+
+FFI_PLUGIN_EXPORT void zd_publisher_drop(z_owned_publisher_t* publisher) {
+  z_publisher_drop(z_publisher_move(publisher));
+}
+
+FFI_PLUGIN_EXPORT int zd_publisher_put(
+    const z_loaned_publisher_t* publisher,
+    z_owned_bytes_t* payload,
+    const char* encoding,
+    z_owned_bytes_t* attachment) {
+  z_publisher_put_options_t opts;
+  z_publisher_put_options_default(&opts);
+
+  z_owned_encoding_t owned_encoding;
+  if (encoding != NULL) {
+    z_encoding_from_str(&owned_encoding, encoding);
+    opts.encoding = z_encoding_move(&owned_encoding);
+  }
+  if (attachment != NULL) {
+    opts.attachment = z_bytes_move(attachment);
+  }
+
+  return z_publisher_put(publisher, z_bytes_move(payload), &opts);
+}
+
+FFI_PLUGIN_EXPORT int zd_publisher_delete(
+    const z_loaned_publisher_t* publisher) {
+  z_publisher_delete_options_t opts;
+  z_publisher_delete_options_default(&opts);
+  return z_publisher_delete(publisher, &opts);
+}
+
+FFI_PLUGIN_EXPORT const z_loaned_keyexpr_t* zd_publisher_keyexpr(
+    const z_loaned_publisher_t* publisher) {
+  return z_publisher_keyexpr(publisher);
+}
+
+/// Context struct for matching status callback.
+typedef struct {
+  Dart_Port_DL dart_port;
+} zd_matching_context_t;
+
+/// Matching status callback: posts matching status to Dart.
+static void _zd_matching_status_callback(
+    const z_matching_status_t* status, void* context) {
+  zd_matching_context_t* ctx = (zd_matching_context_t*)context;
+
+  Dart_CObject c_matching;
+  c_matching.type = Dart_CObject_kInt64;
+  c_matching.value.as_int64 = status->matching ? 1 : 0;
+
+  Dart_PostCObject_DL(ctx->dart_port, &c_matching);
+}
+
+/// Drop callback for matching status context.
+static void _zd_matching_drop(void* context) {
+  free(context);
+}
+
+FFI_PLUGIN_EXPORT int zd_publisher_declare_background_matching_listener(
+    const z_loaned_publisher_t* publisher,
+    int64_t dart_port) {
+  zd_matching_context_t* ctx =
+      (zd_matching_context_t*)malloc(sizeof(zd_matching_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+
+  z_owned_closure_matching_status_t callback;
+  z_closure_matching_status(
+      &callback, _zd_matching_status_callback, _zd_matching_drop, ctx);
+
+  int rc = z_publisher_declare_background_matching_listener(
+      publisher, z_closure_matching_status_move(&callback));
+
+  if (rc != 0) {
+    z_closure_matching_status_drop(z_closure_matching_status_move(&callback));
+  }
+
+  return rc;
+}
+
+FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
+    const z_loaned_publisher_t* publisher,
+    int* matching) {
+  z_matching_status_t status;
+  int rc = z_publisher_get_matching_status(publisher, &status);
+  if (rc == 0) {
+    *matching = status.matching ? 1 : 0;
+  }
+  return rc;
+}
