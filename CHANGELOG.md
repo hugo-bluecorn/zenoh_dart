@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.4.0 (Unreleased)
+
+### Added
+- `Publisher` class: declared publisher with `put()`, `putBytes()`, `deleteResource()`, `keyExpr`, `hasMatchingSubscribers()`, `matchingStatus` stream, and `close()`
+- `Encoding` class: MIME type wrapper with 10 predefined constants (textPlain, applicationJson, etc.) and custom constructor
+- `CongestionControl` enum: `block` and `drop` congestion control strategies
+- `Priority` enum: 7 priority levels from `realTime` to `background`
+- `Session.declarePublisher()`: declare a publisher with optional encoding, congestionControl, priority, and enableMatchingListener
+- `Sample.encoding` field: nullable String for received sample encoding (non-breaking)
+- C shim subscriber callback updated to extract and post encoding as 5th Dart_CObject array element
+- C shim `zd_publisher_sizeof()`, `zd_declare_publisher()`, `zd_publisher_loan()`, `zd_publisher_drop()`, `zd_publisher_put()`, `zd_publisher_delete()`, `zd_publisher_keyexpr()`, `zd_publisher_declare_background_matching_listener()`, `zd_publisher_get_matching_status()`
+- CLI example `z_pub.dart`: publishes in a loop with `-k`/`--key`, `-p`/`--payload`, `-a`/`--attach`, `-e`/`--connect`, `-l`/`--listen`, `--add-matching-listener` flags
+- 40 new tests (120 total) covering publisher lifecycle, put/putBytes, delete, encoding, matching status, QoS options, pub/sub integration, and CLI
+
 ## 0.3.0 (Unreleased)
 
 ### Added
