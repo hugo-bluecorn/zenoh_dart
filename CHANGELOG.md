@@ -1,4 +1,18 @@
 # Changelog
+## 0.6.0 (Unreleased)
+
+### Added
+- `ZenohId` class: 16-byte identifier with hex formatting, equality, and hashCode
+- `WhatAmI` enum: router, peer, client values mapping zenoh-c bitmask (1, 2, 4)
+- `Hello` class: scouting result with zid, whatami, and locators fields
+- `Session.zid`: returns the session's own `ZenohId`
+- `Session.routersZid()`: returns connected router ZIDs via synchronous buffer collection
+- `Session.peersZid()`: returns connected peer ZIDs via synchronous buffer collection
+- `Zenoh.scout()`: discovers zenoh entities on the network via NativePort callback bridge
+- C shim: 6 new `zd_info_*`/`zd_scout`/`zd_id_to_string`/`zd_whatami_to_view_string` functions (62 total)
+- CLI example `z_info.dart`: prints session ZID, router ZIDs, and peer ZIDs with `-e`/`--connect`, `-l`/`--listen` flags
+- CLI example `z_scout.dart`: discovers zenoh entities with `-e`/`--connect`, `-l`/`--listen` flags
+- 30 new tests (178 total) covering ZenohId/WhatAmI value types, session info queries, scout discovery, and CLI examples
 ## 0.5.0 (Unreleased)
 
 ### Added
