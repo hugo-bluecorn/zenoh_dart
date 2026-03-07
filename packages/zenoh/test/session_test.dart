@@ -263,5 +263,87 @@ void main() {
         ),
       );
     });
+
+    test('routersZid returns a list', () {
+      final result = session.routersZid();
+      expect(result, isA<List<ZenohId>>());
+    });
+
+    test('peersZid returns a list', () {
+      final result = session.peersZid();
+      expect(result, isA<List<ZenohId>>());
+    });
+
+    test('routersZid on closed session throws StateError', () {
+      final closedSession = Session.open();
+      closedSession.close();
+      expect(
+        () => closedSession.routersZid(),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
+      );
+    });
+
+    test('peersZid on closed session throws StateError', () {
+      final closedSession = Session.open();
+      closedSession.close();
+      expect(
+        () => closedSession.peersZid(),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('Session peer discovery', () {
+    late Session session1;
+    late Session session2;
+
+    setUpAll(() async {
+      final config1 = Config();
+      config1.insertJson5(
+          'listen/endpoints', '["tcp/127.0.0.1:17460"]');
+      session1 = Session.open(config: config1);
+
+      // Wait for listener to bind
+      await Future.delayed(Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5(
+          'connect/endpoints', '["tcp/127.0.0.1:17460"]');
+      session2 = Session.open(config: config2);
+
+      // Wait for link establishment
+      await Future.delayed(Duration(seconds: 1));
+    });
+
+    tearDownAll(() {
+      session2.close();
+      session1.close();
+    });
+
+    test('two connected sessions see each other as peers', () {
+      final peers1 = session1.peersZid();
+      final peers2 = session2.peersZid();
+
+      expect(peers1.contains(session2.zid), isTrue,
+          reason: 'session1 should see session2 as a peer');
+      expect(peers2.contains(session1.zid), isTrue,
+          reason: 'session2 should see session1 as a peer');
+    });
+
+    test('two connected sessions have different ZIDs', () {
+      expect(session1.zid, isNot(equals(session2.zid)));
+    });
   });
 }
