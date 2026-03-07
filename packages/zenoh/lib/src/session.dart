@@ -96,51 +96,41 @@ class Session {
     }
   }
 
-  /// Returns the [ZenohId]s of all connected routers.
-  ///
-  /// May return an empty list if no router is connected (e.g., in peer mode).
-  ///
-  /// Throws [StateError] if the session has been closed.
-  List<ZenohId> routersZid() {
+  /// Collects ZenohIds using a native info function that fills a buffer.
+  List<ZenohId> _collectZids(
+    int Function(Pointer<Opaque>, Pointer<Uint8>, int) nativeCall,
+  ) {
     _ensureOpen();
     const maxCount = 64;
     final outIds = calloc<Uint8>(maxCount * 16);
     try {
       final loanedSession = bindings.zd_session_loan(_ptr.cast());
-      final count = bindings.zd_info_routers_zid(loanedSession, outIds, maxCount);
-      final result = <ZenohId>[];
-      for (var i = 0; i < count; i++) {
-        result.add(ZenohId(
-            Uint8List.fromList(outIds.asTypedList(maxCount * 16).sublist(i * 16, (i + 1) * 16))));
-      }
-      return result;
+      final count = nativeCall(loanedSession, outIds, maxCount);
+      final allBytes = outIds.asTypedList(count * 16);
+      return [
+        for (var i = 0; i < count; i++)
+          ZenohId(Uint8List.fromList(allBytes.sublist(i * 16, (i + 1) * 16))),
+      ];
     } finally {
       calloc.free(outIds);
     }
   }
+
+  /// Returns the [ZenohId]s of all connected routers.
+  ///
+  /// May return an empty list if no router is connected (e.g., in peer mode).
+  ///
+  /// Throws [StateError] if the session has been closed.
+  List<ZenohId> routersZid() =>
+      _collectZids(bindings.zd_info_routers_zid);
 
   /// Returns the [ZenohId]s of all connected peers.
   ///
   /// May return an empty list if no peer is connected.
   ///
   /// Throws [StateError] if the session has been closed.
-  List<ZenohId> peersZid() {
-    _ensureOpen();
-    const maxCount = 64;
-    final outIds = calloc<Uint8>(maxCount * 16);
-    try {
-      final loanedSession = bindings.zd_session_loan(_ptr.cast());
-      final count = bindings.zd_info_peers_zid(loanedSession, outIds, maxCount);
-      final result = <ZenohId>[];
-      for (var i = 0; i < count; i++) {
-        result.add(ZenohId(
-            Uint8List.fromList(outIds.asTypedList(maxCount * 16).sublist(i * 16, (i + 1) * 16))));
-      }
-      return result;
-    } finally {
-      calloc.free(outIds);
-    }
-  }
+  List<ZenohId> peersZid() =>
+      _collectZids(bindings.zd_info_peers_zid);
 
   /// Executes [action] with a loaned session and a loaned key expression,
   /// guaranteeing cleanup of the key expression in all cases.
