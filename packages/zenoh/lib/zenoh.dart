@@ -6,6 +6,7 @@ export 'src/config.dart';
 export 'src/congestion_control.dart';
 export 'src/encoding.dart';
 export 'src/exceptions.dart';
+export 'src/hello.dart';
 export 'src/id.dart';
 export 'src/keyexpr.dart';
 export 'src/priority.dart';

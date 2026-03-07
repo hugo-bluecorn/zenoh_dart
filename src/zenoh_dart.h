@@ -435,6 +435,36 @@ FFI_PLUGIN_EXPORT int zd_info_peers_zid(const z_loaned_session_t* session,
                                         uint8_t* out_ids, int max_count);
 
 // ---------------------------------------------------------------------------
+// Scout
+// ---------------------------------------------------------------------------
+
+/// Scouts for zenoh entities on the network.
+///
+/// Each discovered hello is posted to the Dart native port as a
+/// Dart_CObject array of 3 elements:
+///   [0] TypedData(Uint8, 16 bytes) -- ZID
+///   [1] Int64 -- whatami value
+///   [2] String -- locators joined with ';'
+///
+/// After z_scout returns, a null sentinel is posted to signal completion.
+///
+/// @param config      Pointer to an owned config (consumed). NULL = default config.
+/// @param dart_port   The Dart native port to post Hello messages to.
+/// @param timeout_ms  Scouting timeout in milliseconds.
+/// @param what        Bitmask of entity types to scout for (e.g., 3 = router+peer).
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_scout(z_owned_config_t* config, int64_t dart_port,
+                               uint64_t timeout_ms, int what);
+
+/// Converts a whatami integer to a human-readable view string.
+///
+/// @param whatami  The whatami value (1=router, 2=peer, 4=client).
+/// @param out      Pointer to an uninitialized z_view_string_t.
+/// @return 0 on success, negative on failure.
+FFI_PLUGIN_EXPORT int zd_whatami_to_view_string(int whatami,
+                                                z_view_string_t* out);
+
+// ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------
 #if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)

@@ -504,6 +504,122 @@ FFI_PLUGIN_EXPORT int zd_info_peers_zid(const z_loaned_session_t* session,
 }
 
 // ---------------------------------------------------------------------------
+// Scout
+// ---------------------------------------------------------------------------
+
+/// Context struct for scout hello callback.
+typedef struct {
+  Dart_Port_DL dart_port;
+} zd_scout_context_t;
+
+/// Hello callback: extracts fields and posts to Dart via native port.
+static void _zd_scout_hello_callback(z_loaned_hello_t* hello, void* context) {
+  zd_scout_context_t* ctx = (zd_scout_context_t*)context;
+
+  // 1. Extract ZID (16 bytes)
+  z_id_t zid = z_hello_zid(hello);
+
+  // 2. Extract whatami
+  z_whatami_t whatami = z_hello_whatami(hello);
+
+  // 3. Extract locators as semicolon-separated string
+  z_owned_string_array_t locators;
+  z_hello_locators(hello, &locators);
+  const z_loaned_string_array_t* locs_loaned = z_string_array_loan(&locators);
+  size_t loc_count = z_string_array_len(locs_loaned);
+
+  // Build locator string
+  char* loc_buf = NULL;
+  size_t loc_buf_len = 0;
+  if (loc_count > 0) {
+    // First pass: compute total length
+    for (size_t i = 0; i < loc_count; i++) {
+      const z_loaned_string_t* loc = z_string_array_get(locs_loaned, i);
+      loc_buf_len += z_string_len(loc);
+      if (i < loc_count - 1) loc_buf_len += 1; // semicolon
+    }
+    loc_buf = (char*)malloc(loc_buf_len + 1);
+    size_t offset = 0;
+    for (size_t i = 0; i < loc_count; i++) {
+      const z_loaned_string_t* loc = z_string_array_get(locs_loaned, i);
+      size_t len = z_string_len(loc);
+      memcpy(loc_buf + offset, z_string_data(loc), len);
+      offset += len;
+      if (i < loc_count - 1) {
+        loc_buf[offset] = ';';
+        offset++;
+      }
+    }
+    loc_buf[loc_buf_len] = '\0';
+  } else {
+    loc_buf = (char*)malloc(1);
+    loc_buf[0] = '\0';
+  }
+
+  z_string_array_drop(z_string_array_move(&locators));
+
+  // Build Dart_CObject array: [zid_bytes, whatami_int, locators_str]
+  Dart_CObject c_zid;
+  c_zid.type = Dart_CObject_kTypedData;
+  c_zid.value.as_typed_data.type = Dart_TypedData_kUint8;
+  c_zid.value.as_typed_data.length = 16;
+  c_zid.value.as_typed_data.values = zid.id;
+
+  Dart_CObject c_whatami;
+  c_whatami.type = Dart_CObject_kInt64;
+  c_whatami.value.as_int64 = (int64_t)whatami;
+
+  Dart_CObject c_locators;
+  c_locators.type = Dart_CObject_kString;
+  c_locators.value.as_string = loc_buf;
+
+  Dart_CObject* elements[3] = {&c_zid, &c_whatami, &c_locators};
+  Dart_CObject c_array;
+  c_array.type = Dart_CObject_kArray;
+  c_array.value.as_array.length = 3;
+  c_array.value.as_array.values = elements;
+
+  Dart_PostCObject_DL(ctx->dart_port, &c_array);
+
+  free(loc_buf);
+}
+
+FFI_PLUGIN_EXPORT int zd_scout(z_owned_config_t* config, int64_t dart_port,
+                               uint64_t timeout_ms, int what) {
+  zd_scout_context_t ctx = { .dart_port = (Dart_Port_DL)dart_port };
+
+  z_owned_closure_hello_t closure;
+  z_closure_hello(&closure, _zd_scout_hello_callback, NULL, &ctx);
+
+  z_scout_options_t opts;
+  z_scout_options_default(&opts);
+  opts.timeout_ms = timeout_ms;
+  opts.what = (z_what_t)what;
+
+  z_result_t res;
+  if (config != NULL) {
+    res = z_scout(z_config_move(config), z_closure_hello_move(&closure), &opts);
+  } else {
+    z_owned_config_t default_config;
+    z_config_default(&default_config);
+    res = z_scout(z_config_move(&default_config),
+                  z_closure_hello_move(&closure), &opts);
+  }
+
+  // Post null sentinel to signal completion
+  Dart_CObject null_obj;
+  null_obj.type = Dart_CObject_kNull;
+  Dart_PostCObject_DL(dart_port, &null_obj);
+
+  return res;
+}
+
+FFI_PLUGIN_EXPORT int zd_whatami_to_view_string(int whatami,
+                                                z_view_string_t* out) {
+  return z_whatami_to_view_string((z_whatami_t)whatami, out);
+}
+
+// ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------
 #if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)
