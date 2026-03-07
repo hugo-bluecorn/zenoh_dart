@@ -469,6 +469,40 @@ FFI_PLUGIN_EXPORT void zd_id_to_string(const uint8_t* id,
   z_id_to_string(&zid, out);
 }
 
+// Context for ZID collection closure
+typedef struct {
+  uint8_t* out_ids;
+  int max_count;
+  int count;
+} zd_zid_collect_context_t;
+
+// Callback that copies each z_id_t into the buffer
+static void _zd_zid_collect_callback(const z_id_t* id, void* context) {
+  zd_zid_collect_context_t* ctx = (zd_zid_collect_context_t*)context;
+  if (ctx->count < ctx->max_count) {
+    memcpy(ctx->out_ids + ctx->count * 16, id->id, 16);
+    ctx->count++;
+  }
+}
+
+FFI_PLUGIN_EXPORT int zd_info_routers_zid(const z_loaned_session_t* session,
+                                          uint8_t* out_ids, int max_count) {
+  zd_zid_collect_context_t ctx = {out_ids, max_count, 0};
+  z_owned_closure_zid_t closure;
+  z_closure_zid(&closure, _zd_zid_collect_callback, NULL, &ctx);
+  z_info_routers_zid(session, z_closure_zid_move(&closure));
+  return ctx.count;
+}
+
+FFI_PLUGIN_EXPORT int zd_info_peers_zid(const z_loaned_session_t* session,
+                                        uint8_t* out_ids, int max_count) {
+  zd_zid_collect_context_t ctx = {out_ids, max_count, 0};
+  z_owned_closure_zid_t closure;
+  z_closure_zid(&closure, _zd_zid_collect_callback, NULL, &ctx);
+  z_info_peers_zid(session, z_closure_zid_move(&closure));
+  return ctx.count;
+}
+
 // ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------

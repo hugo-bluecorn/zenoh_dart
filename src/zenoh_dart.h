@@ -412,6 +412,28 @@ FFI_PLUGIN_EXPORT void zd_info_zid(const z_loaned_session_t* session,
 FFI_PLUGIN_EXPORT void zd_id_to_string(const uint8_t* id,
                                        z_owned_string_t* out);
 
+/// Collects connected router ZIDs into a caller-provided buffer.
+///
+/// Each ZID is 16 bytes. The buffer must be at least max_count * 16 bytes.
+///
+/// @param session    Const pointer to a loaned session.
+/// @param out_ids    Pointer to a buffer for ZID bytes (16 bytes per ZID).
+/// @param max_count  Maximum number of ZIDs to collect.
+/// @return Number of ZIDs written to the buffer.
+FFI_PLUGIN_EXPORT int zd_info_routers_zid(const z_loaned_session_t* session,
+                                          uint8_t* out_ids, int max_count);
+
+/// Collects connected peer ZIDs into a caller-provided buffer.
+///
+/// Each ZID is 16 bytes. The buffer must be at least max_count * 16 bytes.
+///
+/// @param session    Const pointer to a loaned session.
+/// @param out_ids    Pointer to a buffer for ZID bytes (16 bytes per ZID).
+/// @param max_count  Maximum number of ZIDs to collect.
+/// @return Number of ZIDs written to the buffer.
+FFI_PLUGIN_EXPORT int zd_info_peers_zid(const z_loaned_session_t* session,
+                                        uint8_t* out_ids, int max_count);
+
 // ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------

@@ -929,6 +929,68 @@ class ZenohDartBindings {
         void Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Opaque>)
       >();
 
+  /// Collects connected router ZIDs into a caller-provided buffer.
+  ///
+  /// Each ZID is 16 bytes. The buffer must be at least max_count * 16 bytes.
+  ///
+  /// @param session    Const pointer to a loaned session.
+  /// @param out_ids    Pointer to a buffer for ZID bytes (16 bytes per ZID).
+  /// @param max_count  Maximum number of ZIDs to collect.
+  /// @return Number of ZIDs written to the buffer.
+  int zd_info_routers_zid(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Uint8> out_ids,
+    int max_count,
+  ) {
+    return _zd_info_routers_zid(session, out_ids, max_count);
+  }
+
+  late final _zd_info_routers_zidPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Int,
+          )
+        >
+      >('zd_info_routers_zid');
+  late final _zd_info_routers_zid = _zd_info_routers_zidPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
+  /// Collects connected peer ZIDs into a caller-provided buffer.
+  ///
+  /// Each ZID is 16 bytes. The buffer must be at least max_count * 16 bytes.
+  ///
+  /// @param session    Const pointer to a loaned session.
+  /// @param out_ids    Pointer to a buffer for ZID bytes (16 bytes per ZID).
+  /// @param max_count  Maximum number of ZIDs to collect.
+  /// @return Number of ZIDs written to the buffer.
+  int zd_info_peers_zid(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Uint8> out_ids,
+    int max_count,
+  ) {
+    return _zd_info_peers_zid(session, out_ids, max_count);
+  }
+
+  late final _zd_info_peers_zidPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Int,
+          )
+        >
+      >('zd_info_peers_zid');
+  late final _zd_info_peers_zid = _zd_info_peers_zidPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
   /// Returns the size of z_owned_shm_provider_t in bytes.
   int zd_shm_provider_sizeof() {
     return _zd_shm_provider_sizeof();
