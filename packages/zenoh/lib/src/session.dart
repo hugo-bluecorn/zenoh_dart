@@ -1,4 +1,5 @@
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
@@ -7,6 +8,7 @@ import 'config.dart';
 import 'congestion_control.dart';
 import 'encoding.dart';
 import 'exceptions.dart';
+import 'id.dart';
 import 'keyexpr.dart';
 import 'native_lib.dart';
 import 'priority.dart';
@@ -77,6 +79,21 @@ class Session {
 
   void _ensureOpen() {
     if (_closed) throw StateError('Session has been closed');
+  }
+
+  /// Returns the [ZenohId] of this session.
+  ///
+  /// Throws [StateError] if the session has been closed.
+  ZenohId get zid {
+    _ensureOpen();
+    final outId = calloc<Uint8>(16);
+    try {
+      final loanedSession = bindings.zd_session_loan(_ptr.cast());
+      bindings.zd_info_zid(loanedSession, outId);
+      return ZenohId(Uint8List.fromList(outId.asTypedList(16)));
+    } finally {
+      calloc.free(outId);
+    }
   }
 
   /// Executes [action] with a loaned session and a loaned key expression,

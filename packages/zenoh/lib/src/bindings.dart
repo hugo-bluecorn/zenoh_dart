@@ -888,6 +888,47 @@ class ZenohDartBindings {
             int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Int>)
           >();
 
+  /// Copies the session's own ZID (16 bytes) into the provided buffer.
+  ///
+  /// @param session  Const pointer to a loaned session.
+  /// @param out_id   Pointer to a 16-byte buffer to receive the ZID.
+  void zd_info_zid(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Uint8> out_id,
+  ) {
+    return _zd_info_zid(session, out_id);
+  }
+
+  late final _zd_info_zidPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Uint8>)
+        >
+      >('zd_info_zid');
+  late final _zd_info_zid = _zd_info_zidPtr
+      .asFunction<
+        void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Uint8>)
+      >();
+
+  /// Converts a 16-byte ZID to its string representation.
+  ///
+  /// @param id   Pointer to a 16-byte ZID buffer.
+  /// @param out  Pointer to an uninitialized z_owned_string_t to receive the result.
+  void zd_id_to_string(ffi.Pointer<ffi.Uint8> id, ffi.Pointer<ffi.Opaque> out) {
+    return _zd_id_to_string(id, out);
+  }
+
+  late final _zd_id_to_stringPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Void Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_id_to_string');
+  late final _zd_id_to_string = _zd_id_to_stringPtr
+      .asFunction<
+        void Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Opaque>)
+      >();
+
   /// Returns the size of z_owned_shm_provider_t in bytes.
   int zd_shm_provider_sizeof() {
     return _zd_shm_provider_sizeof();

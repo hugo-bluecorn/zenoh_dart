@@ -453,6 +453,23 @@ FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
 }
 
 // ---------------------------------------------------------------------------
+// Info (Session identity)
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT void zd_info_zid(const z_loaned_session_t* session,
+                                   uint8_t* out_id) {
+  z_id_t zid = z_info_zid(session);
+  memcpy(out_id, zid.id, 16);
+}
+
+FFI_PLUGIN_EXPORT void zd_id_to_string(const uint8_t* id,
+                                       z_owned_string_t* out) {
+  z_id_t zid;
+  memcpy(zid.id, id, 16);
+  z_id_to_string(&zid, out);
+}
+
+// ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------
 #if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)

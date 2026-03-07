@@ -395,6 +395,24 @@ FFI_PLUGIN_EXPORT int zd_publisher_get_matching_status(
     int* matching);
 
 // ---------------------------------------------------------------------------
+// Info (Session identity)
+// ---------------------------------------------------------------------------
+
+/// Copies the session's own ZID (16 bytes) into the provided buffer.
+///
+/// @param session  Const pointer to a loaned session.
+/// @param out_id   Pointer to a 16-byte buffer to receive the ZID.
+FFI_PLUGIN_EXPORT void zd_info_zid(const z_loaned_session_t* session,
+                                   uint8_t* out_id);
+
+/// Converts a 16-byte ZID to its string representation.
+///
+/// @param id   Pointer to a 16-byte ZID buffer.
+/// @param out  Pointer to an uninitialized z_owned_string_t to receive the result.
+FFI_PLUGIN_EXPORT void zd_id_to_string(const uint8_t* id,
+                                       z_owned_string_t* out);
+
+// ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------
 #if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)
