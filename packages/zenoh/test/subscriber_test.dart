@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
+import 'package:zenoh/src/bytes.dart';
 import 'package:zenoh/src/config.dart';
 import 'package:zenoh/src/exceptions.dart';
 import 'package:zenoh/src/sample.dart';
@@ -469,6 +471,107 @@ void main() {
       );
 
       expect(sample.payload, equals('after-close'));
+    });
+  });
+
+  group('Subscriber payloadBytes E2E', () {
+    late Session session1;
+    late Session session2;
+
+    setUpAll(() async {
+      final config1 = Config();
+      config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17451"]');
+      session1 = Session.open(config: config1);
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17451"]');
+      session2 = Session.open(config: config2);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+    });
+
+    tearDownAll(() {
+      session1.close();
+      session2.close();
+    });
+
+    test('delivers payloadBytes matching published string', () async {
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/payload-bytes');
+      addTearDown(subscriber.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      session1.put('zenoh/dart/test/payload-bytes', 'hello world');
+
+      final sample = await subscriber.stream.first.timeout(
+        const Duration(seconds: 5),
+      );
+
+      expect(sample.payload, equals('hello world'));
+      expect(sample.payloadBytes, equals(utf8.encode('hello world')));
+    });
+
+    test('delivers payloadBytes for binary data via putBytes', () async {
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/binary-rt');
+      addTearDown(subscriber.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      session1.putBytes(
+        'zenoh/dart/test/binary-rt',
+        ZBytes.fromString('binary test'),
+      );
+
+      final sample = await subscriber.stream.first.timeout(
+        const Duration(seconds: 5),
+      );
+
+      expect(sample.payload, equals('binary test'));
+      expect(sample.payloadBytes, equals(utf8.encode('binary test')));
+    });
+
+    test('delivers empty payloadBytes for delete samples', () async {
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/del-bytes');
+      addTearDown(subscriber.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      session1.deleteResource('zenoh/dart/test/del-bytes');
+
+      final sample = await subscriber.stream.first.timeout(
+        const Duration(seconds: 5),
+      );
+
+      expect(sample.kind, equals(SampleKind.delete));
+      expect(sample.payloadBytes, hasLength(0));
+      expect(sample.payload, equals(''));
+    });
+
+    test('payloadBytes and payload coexist across multiple samples', () async {
+      final subscriber =
+          session2.declareSubscriber('zenoh/dart/test/multi-bytes');
+      addTearDown(subscriber.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      session1.put('zenoh/dart/test/multi-bytes', 'first');
+      session1.put('zenoh/dart/test/multi-bytes', 'second');
+
+      final samples = await subscriber.stream
+          .take(2)
+          .toList()
+          .timeout(const Duration(seconds: 5));
+
+      expect(samples, hasLength(2));
+      expect(samples[0].payload, equals('first'));
+      expect(samples[0].payloadBytes, equals(utf8.encode('first')));
+      expect(samples[1].payload, equals('second'));
+      expect(samples[1].payloadBytes, equals(utf8.encode('second')));
     });
   });
 }
