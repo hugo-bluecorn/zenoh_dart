@@ -2,6 +2,7 @@ import 'package:test/test.dart';
 import 'package:zenoh/src/bytes.dart';
 import 'package:zenoh/src/config.dart';
 import 'package:zenoh/src/exceptions.dart';
+import 'package:zenoh/src/id.dart';
 import 'package:zenoh/src/session.dart';
 
 void main() {
@@ -211,5 +212,56 @@ void main() {
         );
       },
     );
+  });
+
+  group('Session info', () {
+    late Session session;
+
+    setUpAll(() {
+      session = Session.open();
+    });
+
+    tearDownAll(() {
+      session.close();
+    });
+
+    test('zid returns non-zero ZenohId with 16 bytes', () {
+      final zid = session.zid;
+      expect(zid, isA<ZenohId>());
+      expect(zid.bytes.length, equals(16));
+      // At least one byte should be non-zero
+      expect(zid.bytes.any((b) => b != 0), isTrue);
+    });
+
+    test('zid is consistent across multiple accesses', () {
+      final zid1 = session.zid;
+      final zid2 = session.zid;
+      expect(zid1, equals(zid2));
+    });
+
+    test('zid.toHexString returns non-empty hex string', () {
+      final zid = session.zid;
+      final hex = zid.toHexString();
+      expect(hex, isNotEmpty);
+      // Should be 32 hex chars (16 bytes * 2 chars each)
+      expect(hex.length, equals(32));
+      // Should only contain hex characters
+      expect(hex, matches(RegExp(r'^[0-9a-f]+$')));
+    });
+
+    test('zid on closed session throws StateError', () {
+      final closedSession = Session.open();
+      closedSession.close();
+      expect(
+        () => closedSession.zid,
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
+      );
+    });
   });
 }
