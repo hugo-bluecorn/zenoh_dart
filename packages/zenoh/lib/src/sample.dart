@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 /// The kind of a sample (put or delete).
 enum SampleKind {
   /// A put sample: data was published.
@@ -18,6 +20,9 @@ class Sample {
   /// The payload as a UTF-8 string.
   final String payload;
 
+  /// The raw payload bytes.
+  final Uint8List payloadBytes;
+
   /// The kind of sample (put or delete).
   final SampleKind kind;
 
@@ -28,9 +33,10 @@ class Sample {
   final String? encoding;
 
   /// Creates a [Sample] with the given fields.
-  const Sample({
+  Sample({
     required this.keyExpr,
     required this.payload,
+    required this.payloadBytes,
     required this.kind,
     this.attachment,
     this.encoding,

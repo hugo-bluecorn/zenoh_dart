@@ -35,7 +35,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 
 - 34 C shim functions (added `zd_declare_subscriber`, `zd_subscriber_drop`, `zd_subscriber_sizeof`)
 - `Session.declareSubscriber()` returns a `Subscriber` with `Stream<Sample>` delivery via NativePort callback bridge
-- `Sample` class with `keyExpr`, `payload`, `kind`, `attachment` fields; `SampleKind` enum (`put`, `delete`)
+- `Sample` class with `keyExpr`, `payload` (UTF-8 string), `payloadBytes` (`Uint8List` raw bytes), `kind`, `attachment` fields; `SampleKind` enum (`put`, `delete`)
 - CLI example: `z_sub.dart`
 - 80 integration tests passing
 
@@ -66,7 +66,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - `Session.zid`, `Session.routersZid()`, `Session.peersZid()` for session info queries
 - `Zenoh.scout()`: discovers zenoh entities on the network via NativePort callback bridge
 - CLI examples: `z_info.dart`, `z_scout.dart`
-- 178 integration tests passing
+- 185 integration tests passing
 
 Phases 6–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 

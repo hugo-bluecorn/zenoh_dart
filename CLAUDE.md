@@ -32,7 +32,7 @@ zenoh-dart/                     # git repo root
 **Phase 2 Subscriber: COMPLETE** — 34 C shim functions, 80 integration tests. `Session.declareSubscriber`, `Subscriber`, `Sample`, `SampleKind` implemented via NativePort callback bridge with CLI example `z_sub.dart`.
 **Phase 3 Publisher: COMPLETE** — 43 C shim functions, 120 integration tests. `Publisher` with `put`/`putBytes`/`deleteResource`/`keyExpr`/`hasMatchingSubscribers`/`matchingStatus`/`close`; `Encoding`, `CongestionControl`, `Priority` types; `Sample.encoding` field; CLI example `z_pub.dart`.
 **Phase 4 SHM Provider: COMPLETE** — 56 C shim functions, 148 integration tests. `ShmProvider`, `ShmMutBuffer` with zero-copy alloc/write/publish; SHM-published data received transparently by standard subscribers; CLI example `z_pub_shm.dart`.
-**Phase 5 Scout/Info: COMPLETE** — 62 C shim functions, 178 integration tests. `ZenohId`, `WhatAmI`, `Hello` classes; `Session.zid`/`routersZid()`/`peersZid()`; `Zenoh.scout()`; CLI examples `z_info.dart` and `z_scout.dart`.
+**Phase 5 Scout/Info: COMPLETE** — 62 C shim functions, 185 integration tests. `ZenohId`, `WhatAmI`, `Hello` classes; `Session.zid`/`routersZid()`/`peersZid()`; `Zenoh.scout()`; CLI examples `z_info.dart` and `z_scout.dart`. `Sample.payloadBytes` (`Uint8List`) added as patch 0.6.1.
 
 Available Dart API classes:
 - `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`); `scout(config)` discovers zenoh entities on the network
@@ -42,7 +42,7 @@ Available Dart API classes:
 - `ZBytes` — Binary payload container with string round-trip; `markConsumed()` for FFI ownership semantics
 - `Publisher` — Declared publisher with `put()`, `putBytes()`, `deleteResource()`, `keyExpr`, `hasMatchingSubscribers()`, `matchingStatus` stream, and `close()`
 - `Subscriber` — Callback-based subscriber delivering samples via `Stream<Sample>`; `close()` undeclares and frees the native subscriber
-- `Sample` — Received data with `keyExpr`, `payload`, `kind` (`SampleKind`), optional `attachment`, and optional `encoding` fields
+- `Sample` — Received data with `keyExpr`, `payload` (UTF-8 string), `payloadBytes` (`Uint8List` raw bytes), `kind` (`SampleKind`), optional `attachment`, and optional `encoding` fields
 - `SampleKind` — Enum with `put` and `delete` values
 - `Encoding` — MIME type wrapper with 10 predefined constants (`textPlain`, `applicationJson`, etc.) and custom constructor
 - `CongestionControl` — Enum with `block` and `drop` congestion control strategies

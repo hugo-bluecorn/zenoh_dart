@@ -1,4 +1,9 @@
 # Changelog
+## 0.6.1 (Unreleased)
+
+### Added
+- `Sample.payloadBytes` field (`Uint8List`): exposes raw payload bytes alongside the existing `payload` String field, enabling binary data consumers (Protobuf, CBOR, images) without breaking the string API
+- 7 new tests (185 total) covering payloadBytes construction, binary round-trip, delete samples, and multi-sample sequences
 ## 0.6.0 (Unreleased)
 
 ### Added

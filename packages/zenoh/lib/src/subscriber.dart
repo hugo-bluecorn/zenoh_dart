@@ -47,6 +47,7 @@ class Subscriber {
         final sample = Sample(
           keyExpr: keyExpr,
           payload: utf8.decode(payloadBytes),
+          payloadBytes: payloadBytes,
           kind: kind == 0 ? SampleKind.put : SampleKind.delete,
           attachment: attachmentBytes != null
               ? utf8.decode(attachmentBytes)
