@@ -498,8 +498,9 @@ void main() {
     });
 
     test('delivers payloadBytes matching published string', () async {
-      final subscriber =
-          session2.declareSubscriber('zenoh/dart/test/payload-bytes');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/payload-bytes',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));
@@ -515,8 +516,9 @@ void main() {
     });
 
     test('delivers payloadBytes for binary data via putBytes', () async {
-      final subscriber =
-          session2.declareSubscriber('zenoh/dart/test/binary-rt');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/binary-rt',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));
@@ -535,8 +537,9 @@ void main() {
     });
 
     test('delivers empty payloadBytes for delete samples', () async {
-      final subscriber =
-          session2.declareSubscriber('zenoh/dart/test/del-bytes');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/del-bytes',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));
@@ -553,8 +556,9 @@ void main() {
     });
 
     test('payloadBytes and payload coexist across multiple samples', () async {
-      final subscriber =
-          session2.declareSubscriber('zenoh/dart/test/multi-bytes');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/multi-bytes',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));
