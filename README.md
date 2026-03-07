@@ -6,7 +6,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 
 ```
 ┌─────────────────────────────┐
-│   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes, ShmProvider, ShmMutBuffer
+│   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes, ShmProvider, ShmMutBuffer, ZenohId, WhatAmI, Hello
 ├─────────────────────────────┤
 │   Generated FFI Bindings     │  bindings.dart (auto-generated via ffigen)
 ├─────────────────────────────┤
@@ -57,7 +57,18 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - CLI example: `z_pub_shm.dart`
 - 148 integration tests passing
 
-Phases 5–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
+**Phase 5 — Scout / Info: COMPLETE**
+
+- 62 C shim functions (added 6 `zd_info_*`/`zd_scout`/`zd_id_to_string`/`zd_whatami_to_view_string` functions)
+- `ZenohId` class: 16-byte identifier with `toHexString()`, equality, and hashCode
+- `WhatAmI` enum: `router`, `peer`, `client` values mapping zenoh-c bitmask
+- `Hello` class: scouting result with `zid`, `whatAmI`, and `locators` fields
+- `Session.zid`, `Session.routersZid()`, `Session.peersZid()` for session info queries
+- `Zenoh.scout()`: discovers zenoh entities on the network via NativePort callback bridge
+- CLI examples: `z_info.dart`, `z_scout.dart`
+- 178 integration tests passing
+
+Phases 6–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 
 ## Packages
 
@@ -130,6 +141,14 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 # Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
 LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
+
+# Print own session ZID and connected router/peer ZIDs
+LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_info.dart
+
+# Discover zenoh entities on the network (scouts for routers, peers, and clients)
+LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_scout.dart
 ```
 
 ## Phase Roadmap
@@ -141,7 +160,7 @@ LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
 | 2 | [Subscribe](docs/phases/phase-02-sub.md) | Subscriber for receiving publications — **COMPLETE** |
 | 3 | [Publish](docs/phases/phase-03-pub.md) | Publisher with matched listener support — **COMPLETE** |
 | 4 | [SHM Pub/Sub](docs/phases/phase-04-shm-pub-sub.md) | Shared-memory pub/sub for zero-copy — **COMPLETE** |
-| 5 | [Scout / Info](docs/phases/phase-05-scout-info.md) | Network discovery and session info |
+| 5 | [Scout / Info](docs/phases/phase-05-scout-info.md) | Network discovery and session info — **COMPLETE** |
 | 6 | [Get / Queryable](docs/phases/phase-06-get-queryable.md) | Request/reply query pattern |
 | 7 | [SHM Get/Queryable](docs/phases/phase-07-shm-get-queryable.md) | Shared-memory queries |
 | 8 | [Channels](docs/phases/phase-08-channels.md) | Channel-based message delivery |

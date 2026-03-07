@@ -32,11 +32,12 @@ zenoh-dart/                     # git repo root
 **Phase 2 Subscriber: COMPLETE** — 34 C shim functions, 80 integration tests. `Session.declareSubscriber`, `Subscriber`, `Sample`, `SampleKind` implemented via NativePort callback bridge with CLI example `z_sub.dart`.
 **Phase 3 Publisher: COMPLETE** — 43 C shim functions, 120 integration tests. `Publisher` with `put`/`putBytes`/`deleteResource`/`keyExpr`/`hasMatchingSubscribers`/`matchingStatus`/`close`; `Encoding`, `CongestionControl`, `Priority` types; `Sample.encoding` field; CLI example `z_pub.dart`.
 **Phase 4 SHM Provider: COMPLETE** — 56 C shim functions, 148 integration tests. `ShmProvider`, `ShmMutBuffer` with zero-copy alloc/write/publish; SHM-published data received transparently by standard subscribers; CLI example `z_pub_shm.dart`.
+**Phase 5 Scout/Info: COMPLETE** — 62 C shim functions, 178 integration tests. `ZenohId`, `WhatAmI`, `Hello` classes; `Session.zid`/`routersZid()`/`peersZid()`; `Zenoh.scout()`; CLI examples `z_info.dart` and `z_scout.dart`.
 
 Available Dart API classes:
-- `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`)
+- `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`); `scout(config)` discovers zenoh entities on the network
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close zenoh sessions (peer mode); `put(keyExpr, value)`, `putBytes(keyExpr, payload)`, `deleteResource(keyExpr)` one-shot operations; `declareSubscriber(keyExpr)` returns a `Subscriber`; `declarePublisher(keyExpr)` returns a `Publisher`
+- `Session` — Open/close zenoh sessions (peer mode); `put(keyExpr, value)`, `putBytes(keyExpr, payload)`, `deleteResource(keyExpr)` one-shot operations; `declareSubscriber(keyExpr)` returns a `Subscriber`; `declarePublisher(keyExpr)` returns a `Publisher`; `zid` returns own `ZenohId`; `routersZid()` and `peersZid()` return connected router/peer IDs
 - `KeyExpr` — Key expression creation and validation
 - `ZBytes` — Binary payload container with string round-trip; `markConsumed()` for FFI ownership semantics
 - `Publisher` — Declared publisher with `put()`, `putBytes()`, `deleteResource()`, `keyExpr`, `hasMatchingSubscribers()`, `matchingStatus` stream, and `close()`
@@ -48,9 +49,12 @@ Available Dart API classes:
 - `Priority` — Enum with 7 priority levels from `realTime` to `background`
 - `ShmProvider` — POSIX shared memory provider with `alloc()`, `allocGcDefragBlocking()`, `available`, and `close()`
 - `ShmMutBuffer` — Mutable SHM buffer with `data` pointer (zero-copy write), `length`, `toBytes()` (zero-copy conversion to `ZBytes`), and `dispose()`
+- `ZenohId` — 16-byte session/entity identifier with `toHexString()`, equality, and hashCode
+- `WhatAmI` — Enum with `router`, `peer`, and `client` values mapping zenoh-c bitmask (1, 2, 4)
+- `Hello` — Scouting result with `zid` (`ZenohId`), `whatAmI` (`WhatAmI`), and `locators` (list of strings) fields
 - `ZenohException` — Error type for zenoh operations
 
-Phases 5–18 (scout/query/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
+Phases 6–18 (query/liveliness/throughput/storage/advanced) are specified in `docs/phases/` but not yet implemented.
 
 ## FVM Requirement
 
@@ -158,6 +162,14 @@ cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../b
 # Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
 cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
   fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
+
+# Print own session ZID and connected router/peer ZIDs
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_info.dart
+
+# Discover zenoh entities on the network (scouts for routers, peers, and clients)
+cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
+  fvm dart run example/z_scout.dart
 ```
 
 CLI flags must mirror zenoh-c's examples (`extern/zenoh-c/examples/z_*.c`). When adding a new CLI example in any phase:
