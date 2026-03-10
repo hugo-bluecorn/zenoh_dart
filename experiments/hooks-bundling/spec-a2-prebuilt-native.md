@@ -3,8 +3,8 @@
 > **Date**: 2026-03-10
 > **Author**: CA (Architect)
 > **Status**: Spec complete, ready for CP
-> **Package**: `packages/hooks_prebuilt_native/`
-> **Parent**: `docs/experiments/hooks-bundling/design.md`
+> **Package**: `packages/exp_hooks_prebuilt_native/`
+> **Parent**: `experiments/hooks-bundling/design.md`
 
 ## Objective
 
@@ -27,13 +27,13 @@ work with hook-bundled assets.
 
 A2 uses `@Native` annotations — the Dart runtime resolves symbols via the
 asset ID declared in `hook/build.dart`'s `CodeAsset(name: ...)`. The asset
-ID `package:hooks_prebuilt_native/src/bindings.dart` maps directly to the
+ID `package:exp_hooks_prebuilt_native/src/bindings.dart` maps directly to the
 bundled library. No OS search path needed.
 
 ## Package Structure
 
 ```
-packages/hooks_prebuilt_native/
+packages/exp_hooks_prebuilt_native/
   pubspec.yaml
   hook/
     build.dart                    # declares two CodeAsset entries
@@ -43,7 +43,7 @@ packages/hooks_prebuilt_native/
         libzenoh_dart.so          # copied from build/
         libzenohc.so              # copied from extern/zenoh-c/target/release/
   lib/
-    hooks_prebuilt_native.dart    # public barrel export
+    exp_hooks_prebuilt_native.dart    # public barrel export
     src/
       bindings.dart               # @Native annotated FFI declarations
   test/
@@ -56,7 +56,7 @@ packages/hooks_prebuilt_native/
 ### pubspec.yaml
 
 ```yaml
-name: hooks_prebuilt_native
+name: exp_hooks_prebuilt_native
 description: "Experiment A2: both-prebuilt + @Native annotations"
 version: 0.0.1
 publish_to: none
@@ -91,7 +91,7 @@ void main(List<String> args) async {
     // name MUST match the @DefaultAsset library URI in bindings.dart
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_prebuilt_native/src/bindings.dart',
+      name: 'package:exp_hooks_prebuilt_native/src/bindings.dart',
       linkMode: DynamicLoadingBundled(),
       file: packageRoot.resolve('native/linux/x86_64/libzenoh_dart.so'),
     ));
@@ -101,7 +101,7 @@ void main(List<String> args) async {
     // by the OS dynamic linker, not by @Native asset resolution
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_prebuilt_native/src/zenohc.dart',
+      name: 'package:exp_hooks_prebuilt_native/src/zenohc.dart',
       linkMode: DynamicLoadingBundled(),
       file: packageRoot.resolve('native/linux/x86_64/libzenohc.so'),
     ));
@@ -114,7 +114,7 @@ void main(List<String> args) async {
 arbitrary — it only needs to be bundled so the OS linker can resolve it
 via DT_NEEDED when libzenoh_dart.so is loaded.
 
-### lib/hooks_prebuilt_native.dart
+### lib/exp_hooks_prebuilt_native.dart
 
 ```dart
 export 'src/bindings.dart' show initZenohDart;
@@ -123,7 +123,7 @@ export 'src/bindings.dart' show initZenohDart;
 ### lib/src/bindings.dart
 
 ```dart
-@DefaultAsset('package:hooks_prebuilt_native/src/bindings.dart')
+@DefaultAsset('package:exp_hooks_prebuilt_native/src/bindings.dart')
 library;
 
 import 'dart:ffi';
@@ -160,7 +160,7 @@ bool initZenohDart() {
 ### test/smoke_test.dart
 
 ```dart
-import 'package:hooks_prebuilt_native/hooks_prebuilt_native.dart';
+import 'package:exp_hooks_prebuilt_native/exp_hooks_prebuilt_native.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -181,9 +181,9 @@ void main() {
 Same as A1 — populated by copying from existing build artifacts:
 
 ```bash
-mkdir -p packages/hooks_prebuilt_native/native/linux/x86_64/
-cp build/libzenoh_dart.so packages/hooks_prebuilt_native/native/linux/x86_64/
-cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_prebuilt_native/native/linux/x86_64/
+mkdir -p packages/exp_hooks_prebuilt_native/native/linux/x86_64/
+cp build/libzenoh_dart.so packages/exp_hooks_prebuilt_native/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/exp_hooks_prebuilt_native/native/linux/x86_64/
 ```
 
 ### lessons-learned.md
@@ -268,17 +268,17 @@ need to migrate away from `DynamicLibrary.open()`.
 
 ```bash
 # Run the smoke test (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_prebuilt_native && fvm dart test
+cd packages/exp_hooks_prebuilt_native && fvm dart test
 
 # Run a minimal dart program (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_prebuilt_native && fvm dart run example/smoke.dart
+cd packages/exp_hooks_prebuilt_native && fvm dart run example/smoke.dart
 ```
 
 ## References
 
-- `docs/experiments/hooks-bundling/context.md` — full project context
-- `docs/experiments/hooks-bundling/design.md` — experiment design + research
-- `docs/experiments/hooks-bundling/spec-a1-prebuilt-dlopen.md` — companion A1 spec
+- `experiments/hooks-bundling/context.md` — full project context
+- `experiments/hooks-bundling/design.md` — experiment design + research
+- `experiments/hooks-bundling/spec-a1-prebuilt-dlopen.md` — companion A1 spec
 - [Flutter FFI guide: @Native resolution](https://docs.flutter.dev/platform-integration/bind-native-code)
 - [@Native API docs](https://api.dart.dev/dart-ffi/Native-class.html)
 - [sqlite_prebuilt example](https://github.com/dart-lang/native/tree/main/pkgs/code_assets/example/sqlite_prebuilt)

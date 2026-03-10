@@ -3,8 +3,8 @@
 > **Date**: 2026-03-10
 > **Author**: CA (Architect)
 > **Status**: Spec complete, ready for CP
-> **Package**: `packages/hooks_prebuilt_dlopen/`
-> **Parent**: `docs/experiments/hooks-bundling/design.md`
+> **Package**: `packages/exp_hooks_prebuilt_dlopen/`
+> **Parent**: `experiments/hooks-bundling/design.md`
 
 ## Objective
 
@@ -22,7 +22,7 @@ possible hooks approach — no compilation at build time, no
 ## Package Structure
 
 ```
-packages/hooks_prebuilt_dlopen/
+packages/exp_hooks_prebuilt_dlopen/
   pubspec.yaml
   hook/
     build.dart                    # declares two CodeAsset entries
@@ -32,7 +32,7 @@ packages/hooks_prebuilt_dlopen/
         libzenoh_dart.so          # copied from build/
         libzenohc.so              # copied from extern/zenoh-c/target/release/
   lib/
-    hooks_prebuilt_dlopen.dart    # public barrel export
+    exp_hooks_prebuilt_dlopen.dart    # public barrel export
     src/
       native_lib.dart             # DynamicLibrary.open() loader
   test/
@@ -45,7 +45,7 @@ packages/hooks_prebuilt_dlopen/
 ### pubspec.yaml
 
 ```yaml
-name: hooks_prebuilt_dlopen
+name: exp_hooks_prebuilt_dlopen
 description: "Experiment A1: both-prebuilt + DynamicLibrary.open()"
 version: 0.0.1
 publish_to: none
@@ -79,7 +79,7 @@ void main(List<String> args) async {
     // Library 1: prebuilt C shim
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_prebuilt_dlopen/src/native_lib.dart',
+      name: 'package:exp_hooks_prebuilt_dlopen/src/native_lib.dart',
       linkMode: DynamicLoadingBundled(),
       file: packageRoot.resolve('native/linux/x86_64/libzenoh_dart.so'),
     ));
@@ -87,7 +87,7 @@ void main(List<String> args) async {
     // Library 2: prebuilt zenoh-c runtime (DT_NEEDED dependency)
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_prebuilt_dlopen/src/zenohc.dart',
+      name: 'package:exp_hooks_prebuilt_dlopen/src/zenohc.dart',
       linkMode: DynamicLoadingBundled(),
       file: packageRoot.resolve('native/linux/x86_64/libzenohc.so'),
     ));
@@ -99,7 +99,7 @@ void main(List<String> args) async {
 intentionally omitted — this experiment tests the mechanism, not
 multi-platform support.
 
-### lib/hooks_prebuilt_dlopen.dart
+### lib/exp_hooks_prebuilt_dlopen.dart
 
 ```dart
 export 'src/native_lib.dart' show initZenohDart;
@@ -157,7 +157,7 @@ not the bindings generator.
 ### test/smoke_test.dart
 
 ```dart
-import 'package:hooks_prebuilt_dlopen/hooks_prebuilt_dlopen.dart';
+import 'package:exp_hooks_prebuilt_dlopen/exp_hooks_prebuilt_dlopen.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -178,9 +178,9 @@ void main() {
 Populated by copying from existing build artifacts:
 
 ```bash
-mkdir -p packages/hooks_prebuilt_dlopen/native/linux/x86_64/
-cp build/libzenoh_dart.so packages/hooks_prebuilt_dlopen/native/linux/x86_64/
-cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_prebuilt_dlopen/native/linux/x86_64/
+mkdir -p packages/exp_hooks_prebuilt_dlopen/native/linux/x86_64/
+cp build/libzenoh_dart.so packages/exp_hooks_prebuilt_dlopen/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/exp_hooks_prebuilt_dlopen/native/linux/x86_64/
 ```
 
 ### lessons-learned.md
@@ -260,15 +260,15 @@ build on this knowledge.
 
 ```bash
 # Run the smoke test (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_prebuilt_dlopen && fvm dart test
+cd packages/exp_hooks_prebuilt_dlopen && fvm dart test
 
 # Run a minimal dart program (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_prebuilt_dlopen && fvm dart run example/smoke.dart
+cd packages/exp_hooks_prebuilt_dlopen && fvm dart run example/smoke.dart
 ```
 
 ## References
 
-- `docs/experiments/hooks-bundling/context.md` — full project context
-- `docs/experiments/hooks-bundling/design.md` — experiment design + research
+- `experiments/hooks-bundling/context.md` — full project context
+- `experiments/hooks-bundling/design.md` — experiment design + research
 - `packages/zenoh/lib/src/native_lib.dart` — current DynamicLibrary.open() pattern
 - [sqlite_prebuilt example](https://github.com/dart-lang/native/tree/main/pkgs/code_assets/example/sqlite_prebuilt)

@@ -110,10 +110,10 @@ Results (created during implementation):
 
 | Document | Purpose |
 |----------|---------|
-| `packages/hooks_prebuilt_dlopen/lessons-learned.md` | A1 results |
-| `packages/hooks_prebuilt_native/lessons-learned.md` | A2 results |
-| `packages/hooks_cbuilder_dlopen/lessons-learned.md` | B1 results |
-| `packages/hooks_cbuilder_native/lessons-learned.md` | B2 results |
+| `packages/exp_hooks_prebuilt_dlopen/lessons-learned.md` | A1 results |
+| `packages/exp_hooks_prebuilt_native/lessons-learned.md` | A2 results |
+| `packages/exp_hooks_cbuilder_dlopen/lessons-learned.md` | B1 results |
+| `packages/exp_hooks_cbuilder_native/lessons-learned.md` | B2 results |
 
 ## SDK Versions
 

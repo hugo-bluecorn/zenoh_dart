@@ -3,8 +3,8 @@
 > **Date**: 2026-03-10
 > **Author**: CA (Architect)
 > **Status**: Spec complete, ready for CP
-> **Package**: `packages/hooks_cbuilder_dlopen/`
-> **Parent**: `docs/experiments/hooks-bundling/design.md`
+> **Package**: `packages/exp_hooks_cbuilder_dlopen/`
+> **Parent**: `experiments/hooks-bundling/design.md`
 
 ## Objective
 
@@ -38,7 +38,7 @@ identical: compile a shim that links against the prebuilt library.
 ## Package Structure
 
 ```
-packages/hooks_cbuilder_dlopen/
+packages/exp_hooks_cbuilder_dlopen/
   pubspec.yaml
   hook/
     build.dart                    # CBuilder + CodeAsset for prebuilt
@@ -60,7 +60,7 @@ packages/hooks_cbuilder_dlopen/
         dart_api_dl.h
         dart_native_api.h
   lib/
-    hooks_cbuilder_dlopen.dart    # public barrel export
+    exp_hooks_cbuilder_dlopen.dart    # public barrel export
     src/
       native_lib.dart             # DynamicLibrary.open() loader
   test/
@@ -73,7 +73,7 @@ packages/hooks_cbuilder_dlopen/
 ### pubspec.yaml
 
 ```yaml
-name: hooks_cbuilder_dlopen
+name: exp_hooks_cbuilder_dlopen
 description: "Experiment B1: CBuilder + prebuilt + DynamicLibrary.open()"
 version: 0.0.1
 publish_to: none
@@ -110,7 +110,7 @@ void main(List<String> args) async {
     // Step 1: Bundle prebuilt libzenohc.so
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_cbuilder_dlopen/src/zenohc.dart',
+      name: 'package:exp_hooks_cbuilder_dlopen/src/zenohc.dart',
       linkMode: DynamicLoadingBundled(),
       file: zenohcDir.resolve('libzenohc.so'),
     ));
@@ -118,7 +118,7 @@ void main(List<String> args) async {
     // Step 2: Compile C shim from source, linking against prebuilt zenohc
     final cBuilder = CBuilder.library(
       name: 'zenoh_dart',
-      assetName: 'package:hooks_cbuilder_dlopen/src/native_lib.dart',
+      assetName: 'package:exp_hooks_cbuilder_dlopen/src/native_lib.dart',
       sources: [
         'src/zenoh_dart_minimal.c',
         'src/dart/dart_api_dl.c',
@@ -190,7 +190,7 @@ FFI_PLUGIN_EXPORT void zd_init_log(const char* fallback_filter) {
 **Note**: `zd_init_log` calls into `libzenohc.so` via
 `zc_try_init_log_from_env()`. This validates the DT_NEEDED linkage.
 
-### lib/hooks_cbuilder_dlopen.dart
+### lib/exp_hooks_cbuilder_dlopen.dart
 
 ```dart
 export 'src/native_lib.dart' show initZenohDart;
@@ -247,7 +247,7 @@ bool initZenohDart() {
 ### test/smoke_test.dart
 
 ```dart
-import 'package:hooks_cbuilder_dlopen/hooks_cbuilder_dlopen.dart';
+import 'package:exp_hooks_cbuilder_dlopen/exp_hooks_cbuilder_dlopen.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -269,8 +269,8 @@ void main() {
 Only libzenohc.so (C shim is compiled by CBuilder):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_dlopen/native/linux/x86_64/
-cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_cbuilder_dlopen/native/linux/x86_64/
+mkdir -p packages/exp_hooks_cbuilder_dlopen/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/exp_hooks_cbuilder_dlopen/native/linux/x86_64/
 ```
 
 ### include/ directory
@@ -278,10 +278,10 @@ cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_cbuilder_dlopen/nat
 Vendored zenoh-c headers (subset needed for compilation):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_dlopen/include/
-cp extern/zenoh-c/include/zenoh.h packages/hooks_cbuilder_dlopen/include/
-cp extern/zenoh-c/include/zenoh_commons.h packages/hooks_cbuilder_dlopen/include/
-cp extern/zenoh-c/include/zenoh_macros.h packages/hooks_cbuilder_dlopen/include/
+mkdir -p packages/exp_hooks_cbuilder_dlopen/include/
+cp extern/zenoh-c/include/zenoh.h packages/exp_hooks_cbuilder_dlopen/include/
+cp extern/zenoh-c/include/zenoh_commons.h packages/exp_hooks_cbuilder_dlopen/include/
+cp extern/zenoh-c/include/zenoh_macros.h packages/exp_hooks_cbuilder_dlopen/include/
 ```
 
 ### src/dart/ directory
@@ -289,11 +289,11 @@ cp extern/zenoh-c/include/zenoh_macros.h packages/hooks_cbuilder_dlopen/include/
 Vendored Dart API DL files (needed for `Dart_InitializeApiDL`):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_dlopen/src/dart/include/
-cp src/dart/dart_api_dl.c packages/hooks_cbuilder_dlopen/src/dart/
-cp src/dart/include/dart_api.h packages/hooks_cbuilder_dlopen/src/dart/include/
-cp src/dart/include/dart_api_dl.h packages/hooks_cbuilder_dlopen/src/dart/include/
-cp src/dart/include/dart_native_api.h packages/hooks_cbuilder_dlopen/src/dart/include/
+mkdir -p packages/exp_hooks_cbuilder_dlopen/src/dart/include/
+cp src/dart/dart_api_dl.c packages/exp_hooks_cbuilder_dlopen/src/dart/
+cp src/dart/include/dart_api.h packages/exp_hooks_cbuilder_dlopen/src/dart/include/
+cp src/dart/include/dart_api_dl.h packages/exp_hooks_cbuilder_dlopen/src/dart/include/
+cp src/dart/include/dart_native_api.h packages/exp_hooks_cbuilder_dlopen/src/dart/include/
 ```
 
 ### lessons-learned.md
@@ -393,17 +393,17 @@ loading mechanism is the issue, not the build strategy.
 
 ```bash
 # Run the smoke test (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_cbuilder_dlopen && fvm dart test
+cd packages/exp_hooks_cbuilder_dlopen && fvm dart test
 
 # Run a minimal dart program (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_cbuilder_dlopen && fvm dart run example/smoke.dart
+cd packages/exp_hooks_cbuilder_dlopen && fvm dart run example/smoke.dart
 ```
 
 ## References
 
-- `docs/experiments/hooks-bundling/context.md` — full project context
-- `docs/experiments/hooks-bundling/design.md` — experiment design + research
-- `docs/experiments/hooks-bundling/spec-a1-prebuilt-dlopen.md` — A1 (same loading mechanism)
+- `experiments/hooks-bundling/context.md` — full project context
+- `experiments/hooks-bundling/design.md` — experiment design + research
+- `experiments/hooks-bundling/spec-a1-prebuilt-dlopen.md` — A1 (same loading mechanism)
 - [cbl-dart hook/build.dart](https://github.com/cbl-dart/cbl-dart/tree/main/packages/cbl) — production two-library reference
 - [native_dynamic_linking example](https://github.com/dart-lang/native/tree/main/pkgs/hooks/example/build/native_dynamic_linking) — CBuilder with dependencies
 - [CBuilder API](https://pub.dev/documentation/native_toolchain_c/latest/native_toolchain_c/CBuilder-class.html)

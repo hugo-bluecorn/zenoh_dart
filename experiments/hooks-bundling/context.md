@@ -208,18 +208,18 @@ v1.7.2, same Dart 3.11.0 / Flutter 3.41.4.
 
 | | DynamicLibrary.open() | @Native annotations |
 |---|---|---|
-| **Both-prebuilt** | A1 (`hooks_prebuilt_dlopen`) | A2 (`hooks_prebuilt_native`) |
-| **CBuilder + prebuilt** | B1 (`hooks_cbuilder_dlopen`) | B2 (`hooks_cbuilder_native`) |
+| **Both-prebuilt** | A1 (`exp_hooks_prebuilt_dlopen`) | A2 (`exp_hooks_prebuilt_native`) |
+| **CBuilder + prebuilt** | B1 (`exp_hooks_cbuilder_dlopen`) | B2 (`exp_hooks_cbuilder_native`) |
 
 ### Package Structure
 
 ```
 packages/
   zenoh/                         # control — UNTOUCHED
-  hooks_prebuilt_dlopen/         # A1
-  hooks_prebuilt_native/         # A2
-  hooks_cbuilder_dlopen/         # B1
-  hooks_cbuilder_native/         # B2
+  exp_hooks_prebuilt_dlopen/         # A1
+  exp_hooks_prebuilt_native/         # A2
+  exp_hooks_cbuilder_dlopen/         # B1
+  exp_hooks_cbuilder_native/         # B2
 ```
 
 Each experiment package contains:
@@ -371,7 +371,7 @@ in the CodeAsset declaration in `hook/build.dart`.
 ## File Index
 
 ```
-docs/experiments/hooks-bundling/
+experiments/hooks-bundling/
   context.md          # this file — self-contained project context
   design.md           # primary design doc + experiment plan + research
   prior-analysis.md   # original A/B/C analysis (superseded, provenance)
@@ -379,8 +379,8 @@ docs/experiments/hooks-bundling/
 
 Per-experiment living documents (created during implementation):
 ```
-packages/hooks_prebuilt_dlopen/lessons-learned.md   # A1
-packages/hooks_prebuilt_native/lessons-learned.md   # A2
-packages/hooks_cbuilder_dlopen/lessons-learned.md   # B1
-packages/hooks_cbuilder_native/lessons-learned.md   # B2
+packages/exp_hooks_prebuilt_dlopen/lessons-learned.md   # A1
+packages/exp_hooks_prebuilt_native/lessons-learned.md   # A2
+packages/exp_hooks_cbuilder_dlopen/lessons-learned.md   # B1
+packages/exp_hooks_cbuilder_native/lessons-learned.md   # B2
 ```

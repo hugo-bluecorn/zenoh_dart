@@ -3,8 +3,8 @@
 > **Date**: 2026-03-10
 > **Author**: CA (Architect)
 > **Status**: Spec complete, ready for CP
-> **Package**: `packages/hooks_cbuilder_native/`
-> **Parent**: `docs/experiments/hooks-bundling/design.md`
+> **Package**: `packages/exp_hooks_cbuilder_native/`
+> **Parent**: `experiments/hooks-bundling/design.md`
 
 ## Objective
 
@@ -31,7 +31,7 @@ officially recommended loading mechanism.
 ## Package Structure
 
 ```
-packages/hooks_cbuilder_native/
+packages/exp_hooks_cbuilder_native/
   pubspec.yaml
   hook/
     build.dart                    # CBuilder + CodeAsset for prebuilt
@@ -53,7 +53,7 @@ packages/hooks_cbuilder_native/
         dart_api_dl.h
         dart_native_api.h
   lib/
-    hooks_cbuilder_native.dart    # public barrel export
+    exp_hooks_cbuilder_native.dart    # public barrel export
     src/
       bindings.dart               # @Native annotated FFI declarations
   test/
@@ -66,7 +66,7 @@ packages/hooks_cbuilder_native/
 ### pubspec.yaml
 
 ```yaml
-name: hooks_cbuilder_native
+name: exp_hooks_cbuilder_native
 description: "Experiment B2: CBuilder + prebuilt + @Native annotations"
 version: 0.0.1
 publish_to: none
@@ -103,7 +103,7 @@ void main(List<String> args) async {
     // Step 1: Bundle prebuilt libzenohc.so
     output.assets.code.add(CodeAsset(
       package: input.packageName,
-      name: 'package:hooks_cbuilder_native/src/zenohc.dart',
+      name: 'package:exp_hooks_cbuilder_native/src/zenohc.dart',
       linkMode: DynamicLoadingBundled(),
       file: zenohcDir.resolve('libzenohc.so'),
     ));
@@ -112,7 +112,7 @@ void main(List<String> args) async {
     // CBuilder auto-adds the CodeAsset with the assetName
     final cBuilder = CBuilder.library(
       name: 'zenoh_dart',
-      assetName: 'package:hooks_cbuilder_native/src/bindings.dart',
+      assetName: 'package:exp_hooks_cbuilder_native/src/bindings.dart',
       sources: [
         'src/zenoh_dart_minimal.c',
         'src/dart/dart_api_dl.c',
@@ -178,7 +178,7 @@ FFI_PLUGIN_EXPORT void zd_init_log(const char* fallback_filter) {
 }
 ```
 
-### lib/hooks_cbuilder_native.dart
+### lib/exp_hooks_cbuilder_native.dart
 
 ```dart
 export 'src/bindings.dart' show initZenohDart;
@@ -189,7 +189,7 @@ export 'src/bindings.dart' show initZenohDart;
 Identical pattern to A2 — `@Native` with `@DefaultAsset`:
 
 ```dart
-@DefaultAsset('package:hooks_cbuilder_native/src/bindings.dart')
+@DefaultAsset('package:exp_hooks_cbuilder_native/src/bindings.dart')
 library;
 
 import 'dart:ffi';
@@ -220,7 +220,7 @@ bool initZenohDart() {
 ### test/smoke_test.dart
 
 ```dart
-import 'package:hooks_cbuilder_native/hooks_cbuilder_native.dart';
+import 'package:exp_hooks_cbuilder_native/exp_hooks_cbuilder_native.dart';
 import 'package:test/test.dart';
 
 void main() {
@@ -242,8 +242,8 @@ void main() {
 Only libzenohc.so (C shim compiled by CBuilder):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_native/native/linux/x86_64/
-cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_cbuilder_native/native/linux/x86_64/
+mkdir -p packages/exp_hooks_cbuilder_native/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/exp_hooks_cbuilder_native/native/linux/x86_64/
 ```
 
 ### include/ directory
@@ -251,10 +251,10 @@ cp extern/zenoh-c/target/release/libzenohc.so packages/hooks_cbuilder_native/nat
 Vendored zenoh-c headers (same as B1):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_native/include/
-cp extern/zenoh-c/include/zenoh.h packages/hooks_cbuilder_native/include/
-cp extern/zenoh-c/include/zenoh_commons.h packages/hooks_cbuilder_native/include/
-cp extern/zenoh-c/include/zenoh_macros.h packages/hooks_cbuilder_native/include/
+mkdir -p packages/exp_hooks_cbuilder_native/include/
+cp extern/zenoh-c/include/zenoh.h packages/exp_hooks_cbuilder_native/include/
+cp extern/zenoh-c/include/zenoh_commons.h packages/exp_hooks_cbuilder_native/include/
+cp extern/zenoh-c/include/zenoh_macros.h packages/exp_hooks_cbuilder_native/include/
 ```
 
 ### src/dart/ directory
@@ -262,11 +262,11 @@ cp extern/zenoh-c/include/zenoh_macros.h packages/hooks_cbuilder_native/include/
 Vendored Dart API DL files (same as B1):
 
 ```bash
-mkdir -p packages/hooks_cbuilder_native/src/dart/include/
-cp src/dart/dart_api_dl.c packages/hooks_cbuilder_native/src/dart/
-cp src/dart/include/dart_api.h packages/hooks_cbuilder_native/src/dart/include/
-cp src/dart/include/dart_api_dl.h packages/hooks_cbuilder_native/src/dart/include/
-cp src/dart/include/dart_native_api.h packages/hooks_cbuilder_native/src/dart/include/
+mkdir -p packages/exp_hooks_cbuilder_native/src/dart/include/
+cp src/dart/dart_api_dl.c packages/exp_hooks_cbuilder_native/src/dart/
+cp src/dart/include/dart_api.h packages/exp_hooks_cbuilder_native/src/dart/include/
+cp src/dart/include/dart_api_dl.h packages/exp_hooks_cbuilder_native/src/dart/include/
+cp src/dart/include/dart_native_api.h packages/exp_hooks_cbuilder_native/src/dart/include/
 ```
 
 ### lessons-learned.md
@@ -351,7 +351,7 @@ asset ID. This must exactly match the `@DefaultAsset` URI. If CBuilder
 adds a package prefix or transforms the name, the resolution will fail.
 The `native_dynamic_linking` example uses `assetName: 'add.dart'` which
 works, but our fully-qualified URI format
-(`package:hooks_cbuilder_native/src/bindings.dart`) may behave differently.
+(`package:exp_hooks_cbuilder_native/src/bindings.dart`) may behave differently.
 
 ### Same risks as B1
 
@@ -363,18 +363,18 @@ works, but our fully-qualified URI format
 
 ```bash
 # Run the smoke test (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_cbuilder_native && fvm dart test
+cd packages/exp_hooks_cbuilder_native && fvm dart test
 
 # Run a minimal dart program (should work WITHOUT LD_LIBRARY_PATH)
-cd packages/hooks_cbuilder_native && fvm dart run example/smoke.dart
+cd packages/exp_hooks_cbuilder_native && fvm dart run example/smoke.dart
 ```
 
 ## References
 
-- `docs/experiments/hooks-bundling/context.md` — full project context
-- `docs/experiments/hooks-bundling/design.md` — experiment design + research
-- `docs/experiments/hooks-bundling/spec-a2-prebuilt-native.md` — A2 (same loading mechanism)
-- `docs/experiments/hooks-bundling/spec-b1-cbuilder-dlopen.md` — B1 (same build strategy)
+- `experiments/hooks-bundling/context.md` — full project context
+- `experiments/hooks-bundling/design.md` — experiment design + research
+- `experiments/hooks-bundling/spec-a2-prebuilt-native.md` — A2 (same loading mechanism)
+- `experiments/hooks-bundling/spec-b1-cbuilder-dlopen.md` — B1 (same build strategy)
 - [cbl-dart hook/build.dart](https://github.com/cbl-dart/cbl-dart/tree/main/packages/cbl) — production reference
 - [native_dynamic_linking example](https://github.com/dart-lang/native/tree/main/pkgs/hooks/example/build/native_dynamic_linking) — CBuilder with dependencies
 - [CBuilder API](https://pub.dev/documentation/native_toolchain_c/latest/native_toolchain_c/CBuilder-class.html)

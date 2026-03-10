@@ -477,18 +477,18 @@ bundling?
 
 | | DynamicLibrary.open() | @Native annotations |
 |---|---|---|
-| **Both-prebuilt** | A1 (`hooks_prebuilt_dlopen`) | A2 (`hooks_prebuilt_native`) |
-| **CBuilder + prebuilt** | B1 (`hooks_cbuilder_dlopen`) | B2 (`hooks_cbuilder_native`) |
+| **Both-prebuilt** | A1 (`exp_hooks_prebuilt_dlopen`) | A2 (`exp_hooks_prebuilt_native`) |
+| **CBuilder + prebuilt** | B1 (`exp_hooks_cbuilder_dlopen`) | B2 (`exp_hooks_cbuilder_native`) |
 
 ### Package Structure
 
 ```
 packages/
   zenoh/                         # control — UNTOUCHED
-  hooks_prebuilt_dlopen/         # A1: both-prebuilt + DynamicLibrary.open()
-  hooks_prebuilt_native/         # A2: both-prebuilt + @Native annotations
-  hooks_cbuilder_dlopen/         # B1: CBuilder + prebuilt + DynamicLibrary.open()
-  hooks_cbuilder_native/         # B2: CBuilder + prebuilt + @Native annotations
+  exp_hooks_prebuilt_dlopen/         # A1: both-prebuilt + DynamicLibrary.open()
+  exp_hooks_prebuilt_native/         # A2: both-prebuilt + @Native annotations
+  exp_hooks_cbuilder_dlopen/         # B1: CBuilder + prebuilt + DynamicLibrary.open()
+  exp_hooks_cbuilder_native/         # B2: CBuilder + prebuilt + @Native annotations
 ```
 
 Each experiment package contains:
