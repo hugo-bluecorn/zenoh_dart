@@ -1,0 +1,1701 @@
+% C Shim Architecture: Existence Proof and Functional Audit
+% Compile with: pdflatex C_shim_audit.tex (run twice for cross-references)
+\documentclass[11pt,a4paper]{article}
+
+% ─── Page geometry ───────────────────────────────────────────────────────────
+\usepackage[
+  top=25mm, bottom=25mm, left=28mm, right=28mm,
+  headheight=14pt
+]{geometry}
+
+% ─── Typography ──────────────────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[scaled=0.85]{sourcecodepro}  % monospace font for code
+\usepackage{microtype}                    % microtypographic refinements
+
+% ─── Colors ──────────────────────────────────────────────────────────────────
+\usepackage[dvipsnames,svgnames,x11names]{xcolor}
+
+\definecolor{codeBackground}{HTML}{F5F5F5}
+\definecolor{codeBorder}{HTML}{CCCCCC}
+\definecolor{codeKeyword}{HTML}{0000CC}
+\definecolor{codeComment}{HTML}{008000}
+\definecolor{codeString}{HTML}{A31515}
+\definecolor{codeType}{HTML}{267F99}
+\definecolor{shellBackground}{HTML}{1E1E1E}
+\definecolor{shellForeground}{HTML}{D4D4D4}
+\definecolor{shellPrompt}{HTML}{6A9955}
+\definecolor{linkColor}{HTML}{0366D6}
+\definecolor{findingLow}{HTML}{FFF3CD}
+\definecolor{findingMedium}{HTML}{FFE0B2}
+\definecolor{findingPositive}{HTML}{D4EDDA}
+\definecolor{patternColor}{HTML}{E3F2FD}
+\definecolor{quoteBackground}{HTML}{F0F4F8}
+\definecolor{quoteBorder}{HTML}{4A90D9}
+\definecolor{passColor}{HTML}{28A745}
+\definecolor{partialColor}{HTML}{FFC107}
+
+% ─── Code listings ───────────────────────────────────────────────────────────
+\usepackage{listings}
+
+\lstdefinestyle{cstyle}{
+  language=C,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codeKeyword}\bfseries,
+  commentstyle=\color{codeComment}\itshape,
+  stringstyle=\color{codeString},
+  backgroundcolor=\color{codeBackground},
+  frame=single,
+  rulecolor=\color{codeBorder},
+  framesep=4pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  showstringspaces=false,
+  tabsize=4,
+  columns=flexible,
+  morekeywords={z_result_t,z_owned_session_t,z_moved_config_t,z_open_options_t,
+    z_loaned_session_t,z_loaned_keyexpr_t,z_moved_bytes_t,z_put_options_t,
+    z_moved_config_t,z_moved_session_t,z_moved_publisher_t,z_moved_subscriber_t,
+    z_moved_encoding_t,z_owned_config_t,z_owned_bytes_t,z_owned_publisher_t,
+    z_owned_subscriber_t,z_owned_encoding_t,z_owned_string_t,z_owned_shm_mut_t,
+    z_owned_shm_provider_t,z_moved_shm_mut_t,z_moved_shm_provider_t,
+    z_moved_string_t,z_moved_closure_sample_t,z_subscriber_options_t,
+    z_publisher_put_options_t,z_publisher_options_t,z_delete_options_t,
+    z_owned_closure_sample_t,z_loaned_sample_t,z_loaned_publisher_t,
+    z_view_keyexpr_t,z_view_string_t,z_id_t,z_buf_layout_alloc_result_t,
+    z_congestion_control_t,z_priority_t,z_reliability_t,z_loaned_timestamp_t,
+    z_moved_source_info_t,z_scout_options_t,z_owned_closure_hello_t,
+    z_owned_closure_matching_status_t,z_owned_closure_zid_t,
+    ZENOHC_API,FFI_PLUGIN_EXPORT,
+    Dart_CObject,Dart_Port_DL,
+    size_t,int64_t,intptr_t,uint8_t,bool},
+  literate={->}{$\rightarrow$}1
+           {<-}{$\leftarrow$}1,
+  aboveskip=\medskipamount,
+  belowskip=\medskipamount,
+}
+
+\lstdefinestyle{dartstyle}{
+  language=Java,  % close enough for syntax highlighting
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codeKeyword}\bfseries,
+  commentstyle=\color{codeComment}\itshape,
+  stringstyle=\color{codeString},
+  backgroundcolor=\color{codeBackground},
+  frame=single,
+  rulecolor=\color{codeBorder},
+  framesep=4pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  breaklines=true,
+  breakatwhitespace=false,
+  showstringspaces=false,
+  tabsize=2,
+  columns=flexible,
+  morekeywords={final,var,void,dynamic,String,int,bool,Pointer,Void,Uint8,
+    StreamController,ReceivePort,Sample,SampleKind,Uint8List,ZBytes,Config,
+    Session,Subscriber,Publisher,ZenohException,StateError,Completer},
+  aboveskip=\medskipamount,
+  belowskip=\medskipamount,
+}
+
+\lstdefinestyle{shellstyle}{
+  basicstyle=\ttfamily\small\color{shellForeground},
+  backgroundcolor=\color{shellBackground},
+  frame=single,
+  rulecolor=\color{shellBackground},
+  framesep=4pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  breaklines=true,
+  columns=flexible,
+  aboveskip=\medskipamount,
+  belowskip=\medskipamount,
+}
+
+\lstdefinestyle{yamlstyle}{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{codeKeyword},
+  commentstyle=\color{codeComment}\itshape,
+  backgroundcolor=\color{codeBackground},
+  frame=single,
+  rulecolor=\color{codeBorder},
+  framesep=4pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+  breaklines=true,
+  columns=flexible,
+  aboveskip=\medskipamount,
+  belowskip=\medskipamount,
+}
+
+% ─── Tables ──────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{Y}[1]{>{\centering\arraybackslash}p{#1}}
+
+% ─── Boxes and callouts ─────────────────────────────────────────────────────
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{quotebox}{
+  colback=quoteBackground,
+  colframe=quoteBorder,
+  boxrule=0pt,
+  leftrule=3pt,
+  arc=0pt,
+  outer arc=0pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fontupper=\itshape\small,
+}
+
+\newtcolorbox{findingbox}[2][]{
+  colback=#2,
+  colframe=#2!60!black,
+  boxrule=0.5pt,
+  arc=2pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  fonttitle=\bfseries\small,
+  title={#1},
+}
+
+\newtcolorbox{patternbox}{
+  colback=patternColor,
+  colframe=patternColor!50!black,
+  boxrule=0.5pt,
+  arc=2pt,
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+}
+
+% ─── Lists ───────────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist{noitemsep, topsep=4pt}
+
+% ─── Section formatting ─────────────────────────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}{\Large\bfseries\sffamily}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries\sffamily}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\sffamily}{\thesubsubsection}{1em}{}
+\titlespacing*{\section}{0pt}{18pt plus 4pt minus 2pt}{8pt plus 2pt}
+\titlespacing*{\subsection}{0pt}{14pt plus 3pt minus 2pt}{6pt plus 2pt}
+\titlespacing*{\subsubsection}{0pt}{10pt plus 2pt minus 1pt}{4pt plus 1pt}
+
+% ─── Headers and footers ────────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily C Shim Architecture Audit}
+\fancyhead[R]{\small\sffamily zenoh-dart / zenoh-c v1.7.2}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% ─── Hyperlinks ──────────────────────────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=linkColor,
+  urlcolor=linkColor,
+  citecolor=linkColor,
+  bookmarks=true,
+  bookmarksnumbered=true,
+  pdfauthor={zenoh-dart Project},
+  pdftitle={C Shim Architecture: Existence Proof and Functional Audit},
+  pdfsubject={Dart FFI / zenoh-c v1.7.2 C Shim Layer Analysis},
+]{hyperref}
+
+% ─── Convenience commands ────────────────────────────────────────────────────
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\file}[1]{\texttt{#1}}
+\newcommand{\fn}[1]{\texttt{#1}}
+\newcommand{\type}[1]{\texttt{#1}}
+\newcommand{\var}[1]{\texttt{#1}}
+\newcommand{\PASS}{\textcolor{passColor}{\textbf{PASS}}}
+\newcommand{\PARTIAL}{\textcolor{partialColor}{\textbf{PARTIAL}}}
+\newcommand{\pattern}[1]{\textbf{Pattern~#1}}
+
+% Checkmark and cross for the matrix
+\newcommand{\yes}{\textbullet}
+\newcommand{\no}{}
+
+% ─── Document ────────────────────────────────────────────────────────────────
+\begin{document}
+\pagenumbering{Alph}  % avoid duplicate page.1 between titlepage and body
+
+% ─── Title page ──────────────────────────────────────────────────────────────
+\begin{titlepage}
+\centering
+\vspace*{3cm}
+
+{\Huge\bfseries\sffamily C Shim Architecture}\\[0.5cm]
+{\LARGE\sffamily Existence Proof and Functional Audit}\\[2cm]
+
+\begin{tabular}{@{}r@{\quad}l@{}}
+  \textbf{Date}       & 2026-03-09 \\[4pt]
+  \textbf{Scope}      & \file{src/zenoh\_dart.\{h,c\}} --- 62 exported symbols, \raisebox{0.5ex}{\texttildelow}700 lines \\[4pt]
+  \textbf{Reviewed against} & zenoh-c v1.7.2, Dart SDK 3.11.0 (FVM), ffigen v20.1.1 \\[4pt]
+  \textbf{Audience}   & Expert C and Dart code reviewers \\[4pt]
+  \textbf{Supersedes} & \file{CA-C\_shim\_audit.md}, \file{CA-C\_shim\_proof.md}, \file{CC-C\_shim\_audit.md} \\
+\end{tabular}
+
+\vfill
+
+{\large\sffamily zenoh-dart Project}\\[0.5cm]
+{\small All Dart API documentation references verified against Dart 3.11.1 (latest stable).}
+
+\end{titlepage}
+
+% ─── Table of contents ───────────────────────────────────────────────────────
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}  % restart at page 1 for body
+
+% ══════════════════════════════════════════════════════════════════════════════
+\part{Why the C Shim Must Exist}
+\label{part:why}
+% ══════════════════════════════════════════════════════════════════════════════
+
+The zenoh-c v1.7.2 public API relies on six patterns that Dart FFI cannot
+call directly. This part proves each pattern exists in the zenoh-c headers
+with exact file references, explains why Dart FFI cannot handle it with
+references to official Dart documentation, and shows how the C shim
+resolves each one.
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{How Dart FFI Resolves Symbols}
+\label{sec:ffi-symbols}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{Dart FFI Is C-Only}
+
+The \code{dart:ffi} library documentation (Dart 3.11.1) states:
+
+\begin{quotebox}
+``Foreign Function Interface for interoperability with the C programming
+language.''\\
+--- \href{https://api.dart.dev/stable/latest/dart-ffi/dart-ffi-library.html}{dart:ffi library overview}
+\end{quotebox}
+
+\begin{quotebox}
+``Dart mobile, command-line, and server apps running on the Dart Native
+platform can use the dart:ffi library to call native C APIs, and to read,
+write, allocate, and deallocate native memory.''\\
+--- \href{https://dart.dev/interop/c-interop}{C interop guide}
+\end{quotebox}
+
+The binding generator (\code{ffigen} v20.1.1) reinforces this constraint:
+
+\begin{quotebox}
+``Note: FFIgen only supports parsing \texttt{C} headers, not \texttt{C++} headers.''\\
+--- \href{https://pub.dev/packages/ffigen}{ffigen package}
+\end{quotebox}
+
+\textbf{No Dart 3.x release has added support for calling C macros,
+\code{static inline} functions, or C++ from \code{dart:ffi}.} The
+\href{https://dart.dev/resources/whats-new}{Dart what's new} page for
+releases 3.0 through 3.11 contains no FFI changes related to these
+constructs. Dart ``build hooks'' (formerly ``native assets'') change how
+native libraries are \emph{built and bundled} but do not alter how
+\code{dart:ffi} resolves symbols at runtime.
+
+
+\subsection{Symbol Resolution via \code{dlsym}}
+
+\code{DynamicLibrary.open} loads a shared library and provides access to its
+symbols:
+
+\begin{quotebox}
+``A dynamically loaded library is a mapping from symbols to memory addresses.''\\
+--- \href{https://api.dart.dev/stable/latest/dart-ffi/DynamicLibrary-class.html}{DynamicLibrary class}
+\end{quotebox}
+
+\code{DynamicLibrary.lookup} resolves a symbol name to a memory address ---
+functionally equivalent to POSIX \code{dlsym(3)}:
+
+\begin{quotebox}
+``Looks up a symbol in the DynamicLibrary and returns its address in memory.''\\
+``Similar to the functionality of the dlsym(3) system call.''\\
+``The symbol must be provided by the dynamic library.''\\
+--- \href{https://api.dart.dev/stable/latest/dart-ffi/DynamicLibrary/lookup.html}{DynamicLibrary.lookup}
+\end{quotebox}
+
+\textbf{Consequence:} Only symbols present in the \code{.so}'s dynamic symbol
+table (\code{nm -D}) are accessible. The following C constructs produce
+\textbf{no symbols}:
+
+\begin{table}[ht]
+\centering
+\begin{tabularx}{\textwidth}{lL}
+  \toprule
+  \textbf{Construct} & \textbf{Why No Symbol} \\
+  \midrule
+  \code{\#define} macros        & Text substitution by the preprocessor. No compiled code. \\
+  \code{static inline} functions & Internal linkage + inlined. Not exported. \\
+  \code{\_Generic} macros       & Compile-time type dispatch. Preprocessor construct. \\
+  C++ overloaded functions       & Name-mangled. No stable C ABI symbol. \\
+  \bottomrule
+\end{tabularx}
+\caption{C constructs that produce no dynamic symbols}
+\label{tab:no-symbols}
+\end{table}
+
+
+\subsection{Confirmed by ffigen Bug Tracker}
+\label{sec:ffigen-bugs}
+
+The \code{ffigen} maintainers have explicitly addressed \code{static inline}
+functions in two GitHub issues:
+
+\textbf{Issue \#146} (``Unavailable inline C function''): When \code{ffigen}
+previously generated bindings for inline functions like
+\code{static inline uint16\_t libusb\_cpu\_to\_le16(...)}, the generated Dart
+code referenced a dynamic library symbol that did not exist. The team's
+resolution (merged in ffigen 2.0.1) was to \textbf{filter out inline functions}
+entirely:
+
+\begin{quotebox}
+``We should skip them. (Generating an implementation for an arbitrary
+function would be very involved.)''\\
+--- \href{https://github.com/dart-lang/ffigen/issues/146}{dart-lang/ffigen\#146}, closed as COMPLETED
+\end{quotebox}
+
+\textbf{Issue \#459} (``Inline function available in compiled dylib, but no
+bindings generated''): Even when functions are marked \code{extern inline}
+(making them available in the \code{.so}), \code{ffigen} initially refused to
+generate bindings. A partial fix (PR \#594) was merged to allow
+\code{extern inline} functions, but \code{static inline} functions remain
+\textbf{permanently excluded} --- they are not symbols, so there is nothing
+to bind to.
+
+\begin{quotebox}
+``Static inline functions don't appear in compiled dylibs and cannot be
+bound --- this behavior is expected.''\\
+--- \href{https://github.com/dart-lang/native/issues/459}{dart-lang/native\#459}
+\end{quotebox}
+
+This confirms that \code{static inline} is a known, permanent limitation of
+Dart FFI, not an oversight that might be fixed in a future Dart release.
+
+
+\subsection{How the Shim Bridges This}
+
+The C shim (\file{src/zenoh\_dart.c}) is compiled as a C translation unit
+that \code{\#include}s the zenoh-c headers. During compilation, the C
+compiler:
+
+\begin{enumerate}
+  \item Expands all \code{\#define} macros
+  \item Inlines all \code{static inline} functions
+  \item Resolves all \code{\_Generic} dispatches
+\end{enumerate}
+
+The shim's functions are marked \code{FFI\_PLUGIN\_EXPORT}
+(resolving to \code{\_\_attribute\_\_((visi\-bi\-li\-ty("default")))}),
+which ensures they appear in \code{libzenoh\_dart.so}'s dynamic symbol
+table. Dart FFI can then call them via \code{DynamicLibrary.lookup}.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 1: \code{static inline} Move Functions}
+\label{sec:pattern1}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c uses an ownership model where consuming a resource requires
+converting a \type{z\_owned\_\allowbreak{}*\_t*} pointer to a
+\type{z\_moved\_\allowbreak{}*\_t*} pointer. This conversion is done via
+\code{static inline} functions defined in
+\file{extern/\allowbreak{}zenoh-c/\allowbreak{}include/\allowbreak{}zenoh\_macros.h}.
+
+\textbf{There are 56 such functions.} Here are the ones used by the C shim:
+
+\begin{lstlisting}[style=cstyle,caption={Move functions from \file{zenoh\_macros.h} (lines 7--51)}]
+static inline z_moved_bytes_t* z_bytes_move(z_owned_bytes_t* x) {
+    return (z_moved_bytes_t*)(x);
+}
+static inline z_moved_config_t* z_config_move(z_owned_config_t* x) {
+    return (z_moved_config_t*)(x);
+}
+static inline z_moved_session_t* z_session_move(z_owned_session_t* x) {
+    return (z_moved_session_t*)(x);
+}
+static inline z_moved_publisher_t* z_publisher_move(z_owned_publisher_t* x) {
+    return (z_moved_publisher_t*)(x);
+}
+static inline z_moved_subscriber_t* z_subscriber_move(z_owned_subscriber_t* x) {
+    return (z_moved_subscriber_t*)(x);
+}
+static inline z_moved_encoding_t* z_encoding_move(z_owned_encoding_t* x) {
+    return (z_moved_encoding_t*)(x);
+}
+// ... 50 more variants for other types
+\end{lstlisting}
+
+These are pointer casts at the C level --- they reinterpret the same memory
+address as a different pointer type. But they are \code{static inline}:
+
+\begin{itemize}
+  \item \code{static} --- internal linkage (not visible outside the
+        translation unit)
+  \item \code{inline} --- the compiler may substitute the function body at
+        the call site
+\end{itemize}
+
+\textbf{Neither property produces an exported symbol.}
+
+
+\subsection{Symbol Table Proof}
+
+Running \code{nm -D} on the compiled \code{libzenohc.so} confirms these
+symbols do not exist:
+
+\begin{lstlisting}[style=shellstyle]
+$ nm -D libzenohc.so | grep z_bytes_move
+(no output)
+
+$ nm -D libzenohc.so | grep z_config_move
+(no output)
+
+$ nm -D libzenohc.so | grep z_session_move
+(no output)
+\end{lstlisting}
+
+Zero results. These functions exist only in the header file. Dart FFI's
+\fn{DynamicLibrary.lookup('z\_bytes\_move')} would throw an
+\code{ArgumentError}.
+
+
+\subsection{Why These Are Required}
+
+The move functions are not optional convenience wrappers. zenoh-c's core API
+functions \textbf{require} \type{z\_moved\_*\_t*} parameters. Without the
+move functions, these core functions cannot be called:
+
+\begin{lstlisting}[style=cstyle,caption={Exported functions requiring moved parameters}]
+// z_open REQUIRES z_moved_config_t* (line 3796)
+ZENOHC_API z_result_t z_open(
+    struct z_owned_session_t *this_,
+    struct z_moved_config_t *config,        // <- requires move
+    const struct z_open_options_t *_options);
+
+// z_put REQUIRES z_moved_bytes_t* (line 4062)
+ZENOHC_API z_result_t z_put(
+    const struct z_loaned_session_t *session,
+    const struct z_loaned_keyexpr_t *key_expr,
+    struct z_moved_bytes_t *payload,         // <- requires move
+    struct z_put_options_t *options);
+
+// z_config_drop REQUIRES z_moved_config_t* (line 2214)
+ZENOHC_API void z_config_drop(struct z_moved_config_t *this_);
+
+// z_declare_subscriber REQUIRES z_moved_closure_sample_t* (line 2331)
+ZENOHC_API z_result_t z_declare_subscriber(
+    const struct z_loaned_session_t *session,
+    struct z_owned_subscriber_t *subscriber,
+    const struct z_loaned_keyexpr_t *key_expr,
+    struct z_moved_closure_sample_t *callback,  // <- requires move
+    struct z_subscriber_options_t *options);
+\end{lstlisting}
+
+These functions \textbf{are} exported (confirmed via \code{nm -D}):
+
+\begin{lstlisting}[style=shellstyle]
+$ nm -D libzenohc.so | grep " T z_open$"
+000000000039acb0 T z_open
+
+$ nm -D libzenohc.so | grep " T z_put$"
+000000000039e3f0 T z_put
+
+$ nm -D libzenohc.so | grep " T z_config_drop$"
+000000000038f790 T z_config_drop
+\end{lstlisting}
+
+\begin{patternbox}
+\textbf{The functions exist. Their required parameter types can only be
+constructed via functions that do not exist.} This is the fundamental barrier.
+\end{patternbox}
+
+
+\subsection{What the Moved Types Actually Are}
+
+The \type{z\_moved\_*\_t} types are wrapper structs defined in
+\file{zenoh\_commons.h}:
+
+\begin{lstlisting}[style=cstyle]
+typedef struct z_moved_bytes_t {
+    struct z_owned_bytes_t _this;
+} z_moved_bytes_t;
+
+typedef struct z_moved_config_t {
+    struct z_owned_config_t _this;
+} z_moved_config_t;
+\end{lstlisting}
+
+At the machine level, \type{z\_moved\_bytes\_t*} and
+\type{z\_owned\_bytes\_t*} point to the same memory --- the wrapper struct
+has the same layout as its single member. The \code{static inline} move
+function is an identity cast resolved at compile time with zero runtime cost.
+
+\textbf{Could Dart perform this cast directly?} In theory yes, but:
+
+\begin{enumerate}
+  \item Dart FFI has no mechanism to express the type distinction between
+        \type{z\_owned\_bytes\_t*} and \type{z\_moved\_bytes\_t*} --- both
+        would be \type{Pointer<Void>}.
+  \item \code{ffigen} v20.1.1 \textbf{permanently excludes}
+        \code{static inline} functions from binding generation
+        (see \S\ref{sec:ffigen-bugs}).
+  \item The type safety that the move functions provide (preventing
+        accidental reuse of consumed resources) would be lost entirely.
+\end{enumerate}
+
+
+\subsection{How the C Shim Solves This}
+
+The shim calls the \code{static inline} move functions at compile time and
+exports the result as real functions:
+
+\begin{lstlisting}[style=cstyle,caption={Shim resolves \fn{z\_config\_move} at compile time}]
+FFI_PLUGIN_EXPORT void zd_config_drop(z_owned_config_t* config) {
+    z_config_drop(z_config_move(config));
+    //            ^^^^^^^^^^^^^^^^^^^^^^
+    //            static inline, resolved at compile time
+}
+
+FFI_PLUGIN_EXPORT int zd_open_session(z_owned_session_t* session,
+                                      z_owned_config_t* config) {
+    return z_open(session, z_config_move(config), NULL);
+}
+
+FFI_PLUGIN_EXPORT int zd_put(
+    const z_loaned_session_t* session,
+    const z_loaned_keyexpr_t* keyexpr,
+    z_owned_bytes_t* payload) {
+    z_put_options_t opts;
+    z_put_options_default(&opts);
+    return z_put(session, keyexpr, z_bytes_move(payload), &opts);
+}
+\end{lstlisting}
+
+The shim applies this pattern consistently across all 8 drop functions:
+
+\begin{itemize}[nosep]
+  \item \fn{zd\_config\_drop}, \fn{zd\_bytes\_drop}, \fn{zd\_string\_drop}
+  \item \fn{zd\_subscriber\_drop}, \fn{zd\_publisher\_drop}, \fn{zd\_session\_drop}
+  \item \fn{zd\_shm\_mut\_drop}, \fn{zd\_shm\_provider\_drop}
+\end{itemize}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 2: C11 \code{\_Generic} Polymorphic Macros}
+\label{sec:pattern2}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c provides convenience macros that dispatch to the correct type-specific
+function based on the argument type. These use C11's \code{\_Generic} keyword,
+a compile-time type-selection mechanism (ISO~C11, \S6.5.1.1).
+
+From \file{extern/zenoh-c/include/zenoh\_macros.h}:
+
+\begin{lstlisting}[style=cstyle,caption={\code{z\_loan} macro (lines 65--119, 51 branches)}]
+#define z_loan(this_) \
+    _Generic((this_), \
+        z_owned_bytes_t : z_bytes_loan, \
+        z_owned_config_t : z_config_loan, \
+        z_owned_session_t : z_session_loan, \
+        z_owned_publisher_t : z_publisher_loan, \
+        z_owned_subscriber_t : z_subscriber_loan, \
+        /* ... 40+ more branches ... */ \
+    )(&this_)
+\end{lstlisting}
+
+Four such macros exist: \code{z\_loan} (51~branches), \code{z\_drop}
+(48~branches), \code{z\_move} (56~branches), and \code{z\_loan\_mut}
+(25~branches). None produce symbols:
+
+\begin{lstlisting}[style=shellstyle]
+$ nm -D libzenohc.so | grep "z_loan$"
+(no output)
+
+$ nm -D libzenohc.so | grep "z_drop$"
+(no output)
+
+$ nm -D libzenohc.so | grep "z_move$"
+(no output)
+\end{lstlisting}
+
+
+\subsection{Compounding With Pattern 1}
+
+The underlying monomorphic functions (\fn{z\_bytes\_loan},
+\fn{z\_config\_loan}, etc.) \textbf{are} exported. But the \code{z\_move}
+macro dispatches to the \code{static inline} move functions (\pattern{1}).
+So \code{z\_move(myConfig)} expands to \code{z\_config\_move(\&myConfig)},
+which is \code{static inline} and not exported.
+
+The C shim bypasses both layers:
+
+\begin{lstlisting}[style=cstyle]
+// Instead of: z_drop(z_move(config))
+// The shim does:
+z_config_drop(z_config_move(config));
+// z_config_drop  -> exported real function (nm -D confirms)
+// z_config_move  -> static inline, resolved at shim compile time
+\end{lstlisting}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 3: Options Struct Initialization}
+\label{sec:pattern3}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c functions take options structs that must be initialized before use.
+While the initialization functions (\fn{z\_put\_options\_default}, etc.) are
+real exported functions, the barrier is the \textbf{combination} of:
+
+\begin{enumerate}
+  \item Allocating the options struct with the correct size
+  \item Initializing it via the default function
+  \item Setting fields that require move semantics
+        (\code{opts.encoding = z\_encoding\_move(...)})
+  \item Passing it to the target function
+        (\code{z\_put(session, keyexpr, z\_bytes\_move(payload), \&opts)})
+\end{enumerate}
+
+Steps~3 and~4 require \code{static inline} functions (\pattern{1}).
+
+
+\subsection{The Struct Layout Problem}
+
+The \type{z\_put\_options\_t} struct has 8 fields with platform-dependent
+alignment:
+
+\begin{lstlisting}[style=cstyle,caption={\type{z\_put\_options\_t} layout from \file{zenoh\_commons.h}}]
+typedef struct z_put_options_t {
+    struct z_moved_encoding_t *encoding;
+    z_congestion_control_t congestion_control;
+    z_priority_t priority;
+    bool is_express;
+    struct z_moved_bytes_t *attachment;
+    z_reliability_t reliability;
+    const struct z_loaned_timestamp_t *timestamp;
+    struct z_moved_source_info_t *source_info;
+} z_put_options_t;
+\end{lstlisting}
+
+Dart FFI's
+\href{https://api.dart.dev/stable/latest/dart-ffi/Struct-class.html}{Struct class}
+requires explicit field annotations (\code{@Int32()}, \code{@Pointer()})
+to access struct fields. The \file{ffigen.yaml} maps all zenoh-c types to
+\href{https://api.dart.dev/stable/latest/dart-ffi/Opaque-class.html}{Opaque},
+not \code{Struct}, because the layout changes between versions.
+
+
+\subsection{How the C Shim Solves This}
+
+The shim internalizes the entire options workflow. For functions needing
+selective overrides, it uses sentinel parameters (\code{NULL} for strings,
+\code{-1} for enums):
+
+\begin{lstlisting}[style=cstyle,caption={Sentinel-based optional parameters in \fn{zd\_declare\_publisher}}]
+FFI_PLUGIN_EXPORT int zd_declare_publisher(
+    const z_loaned_session_t* session,
+    z_owned_publisher_t* publisher,
+    const z_loaned_keyexpr_t* keyexpr,
+    const char* encoding,         // NULL = default
+    int congestion_control,       // -1 = default
+    int priority) {               // -1 = default
+    z_publisher_options_t opts;
+    z_publisher_options_default(&opts);
+
+    z_owned_encoding_t owned_encoding;
+    if (encoding != NULL) {
+        z_encoding_from_str(&owned_encoding, encoding);
+        opts.encoding = z_encoding_move(&owned_encoding);
+    }
+    if (congestion_control >= 0) {
+        opts.congestion_control = (z_congestion_control_t)congestion_control;
+    }
+    if (priority >= 0) {
+        opts.priority = (z_priority_t)priority;
+    }
+
+    return z_declare_publisher(session, publisher, keyexpr, &opts);
+}
+\end{lstlisting}
+
+\textbf{Dart sees simple scalar parameters:}
+
+\begin{lstlisting}[style=dartstyle,caption={Dart invocation --- no options struct, no move functions}]
+final rc = bindings.zd_declare_publisher(
+    loanedSession.cast(),
+    ptr.cast(),
+    loanedKe.cast(),
+    encodingStr.cast(),           // Pointer<Utf8> or nullptr
+    congestionControl.index,      // int (0 or 1)
+    priority.index + 1,           // int (1-7)
+);
+\end{lstlisting}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 4: Opaque Type Sizes}
+\label{sec:pattern4}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c types are opaque structs whose sizes are determined at zenoh-c
+compile time, injected via cbindgen:
+
+\begin{lstlisting}[style=cstyle,caption={Opaque type definitions from \file{zenoh\_opaque.h}}]
+typedef struct ALIGN(8) z_owned_config_t {
+  uint8_t _0[2008];       // 2008 bytes
+} z_owned_config_t;
+
+typedef struct ALIGN(8) z_owned_session_t {
+  uint8_t _0[8];          // 8 bytes
+} z_owned_session_t;
+
+typedef struct ALIGN(8) z_owned_bytes_t {
+  uint8_t _0[40];         // 40 bytes
+} z_owned_bytes_t;
+\end{lstlisting}
+
+Dart FFI's \href{https://api.dart.dev/stable/latest/dart-ffi/sizeOf.html}{\code{sizeOf<T>()}}
+only works for types whose layout is known at Dart compile time. For
+\code{Opaque} types, \code{sizeOf} is not defined.
+
+
+\subsection{How the C Shim Solves This}
+
+The shim exports \code{sizeof} queries as real functions (10 total):
+
+\begin{lstlisting}[style=cstyle]
+FFI_PLUGIN_EXPORT size_t zd_config_sizeof(void) {
+    return sizeof(z_owned_config_t);   // resolves to 2008
+}
+FFI_PLUGIN_EXPORT size_t zd_session_sizeof(void) {
+    return sizeof(z_owned_session_t);  // resolves to 8
+}
+FFI_PLUGIN_EXPORT size_t zd_bytes_sizeof(void) {
+    return sizeof(z_owned_bytes_t);    // resolves to 40
+}
+\end{lstlisting}
+
+Every Dart wrapper class queries the size at construction time:
+
+\begin{lstlisting}[style=dartstyle]
+final size = bindings.zd_session_sizeof();    // query at runtime
+final Pointer<Void> ptr = calloc.allocate(size);  // allocate exactly
+\end{lstlisting}
+
+This pattern is version-safe: if zenoh-c changes struct sizes in a future
+release, the Dart code automatically allocates the correct amount.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 5: Closure Callbacks Across Thread Boundaries}
+\label{sec:pattern5}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c delivers asynchronous events via closure structs containing function
+pointers and a \code{void*} context:
+
+\begin{lstlisting}[style=cstyle]
+typedef struct z_owned_closure_sample_t {
+  void *_context;
+  void (*_call)(struct z_loaned_sample_t *sample, void *context);
+  void (*_drop)(void *context);
+} z_owned_closure_sample_t;
+\end{lstlisting}
+
+The \fn{\_call} function pointer is invoked by zenoh-c's internal Tokio
+runtime threads, not by the Dart isolate's thread.
+
+
+\subsection{Why Dart FFI Cannot Construct These Closures}
+
+There are three independent blocking constraints:
+
+\subsubsection{Constraint A: No closures in \code{Pointer.fromFunction}}
+
+\begin{quotebox}
+``Creates a Dart function pointer from a top-level or static Dart function.
+{[...]} The function must not be a closure (i.e.\ it must not capture any
+local variables).''\\
+--- \href{https://api.dart.dev/stable/latest/dart-ffi/Pointer/fromFunction.html}{Pointer.fromFunction docs}
+\end{quotebox}
+
+Dart cannot create a C function pointer that carries state (like which
+\code{StreamController} to forward samples to).
+
+\subsubsection{Constraint B: Non-Dart thread invocation is undefined behavior}
+
+\href{https://github.com/dart-lang/sdk/issues/48865}{dart-lang/sdk\#48865}
+confirms that calling a \fn{Pointer.fromFunction} callback from a non-Dart
+thread causes undefined behavior.
+
+\subsubsection{Constraint C: \code{NativeCallable.listener} limitations}
+
+Dart 3.1+ added \code{NativeCallable.listener} which can be called from any
+thread, but it still cannot capture closures, and context must be passed via
+integer baton rather than \code{void*} pointer.
+See \href{https://github.com/dart-lang/sdk/issues/52689}{dart-lang/sdk\#52689}.
+
+
+\subsection{How the C Shim Solves This}
+
+The shim implements a \textbf{NativePort callback bridge}:
+
+\begin{enumerate}
+  \item \textbf{C side:} A static C callback extracts fields from the
+        zenoh-c sample, constructs a \code{Dart\_CObject} array, and posts
+        it to a Dart \code{ReceivePort} via the thread-safe function
+        \fn{Dart\_\allowbreak{}Post\-CObject\_DL}.
+  \item \textbf{Dart side:} A \code{ReceivePort} listener on the Dart event
+        loop receives the deserialized data and forwards it to a
+        \code{StreamController<Sample>}.
+\end{enumerate}
+
+\begin{lstlisting}[style=cstyle,caption={NativePort callback bridge (C side)}]
+typedef struct {
+  Dart_Port_DL dart_port;
+} zd_subscriber_context_t;
+
+static void _zd_sample_callback(z_loaned_sample_t* sample, void* context) {
+  zd_subscriber_context_t* ctx = (zd_subscriber_context_t*)context;
+  // Extract fields, build Dart_CObject array...
+  Dart_PostCObject_DL(ctx->dart_port, &c_array);  // thread-safe
+}
+
+FFI_PLUGIN_EXPORT int zd_declare_subscriber(
+    const z_loaned_session_t* session,
+    z_owned_subscriber_t* subscriber,
+    const z_loaned_keyexpr_t* keyexpr,
+    int64_t dart_port) {  // receives port number, not function pointer
+  zd_subscriber_context_t* ctx = malloc(sizeof(zd_subscriber_context_t));
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+  z_owned_closure_sample_t callback;
+  z_closure_sample(&callback, _zd_sample_callback, _zd_sample_drop, ctx);
+  return z_declare_subscriber(session, subscriber, keyexpr,
+                              z_closure_sample_move(&callback), NULL);
+}
+\end{lstlisting}
+
+\fn{Dart\_Post\-CObject\_DL} is
+\href{https://api.dart.dev/stable/latest/dart-ffi/NativeApi/initializeApiDLData.html}{documented as safe}
+to call from any thread, performs deep copy semantics, and requires
+one-time initialization via \fn{Dart\_\allowbreak{}InitializeApiDL}.
+
+The same pattern is used for all three callback types:
+
+\begin{table}[ht]
+\centering\footnotesize
+\begin{tabularx}{\textwidth}{lLlL}
+  \toprule
+  \textbf{Callback} & \textbf{C function} & \textbf{Data posted} & \textbf{Dart receiver} \\
+  \midrule
+  Subscriber   & \fn{\_zd\_sample\_callback}           & 5-element array & \code{Subscriber.stream} \\
+  Matching     & \fn{\_zd\_matching\_status\_callback}  & Int64 (0/1)  & \code{Publisher.matchingStatus} \\
+  Scout        & \fn{\_zd\_scout\_hello\_callback}      & 3-element array & \code{Zenoh.scout()} future \\
+  \bottomrule
+\end{tabularx}
+\caption{NativePort callback bridge usage across the shim}
+\label{tab:callbacks}
+\end{table}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Pattern 6: Loaning and Const/Mut Enforcement}
+\label{sec:pattern6}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\subsection{The Problem}
+
+zenoh-c implements a \textbf{borrowing protocol} where owned types
+(\code{z\_owned\_*\_t}) must be ``loaned'' to produce temporary
+references (\code{z\_loaned\_*\_t}) before they can be passed to
+most API functions. The protocol distinguishes immutable borrows
+(\code{const z\_loaned\_*\_t*}) from mutable borrows
+(\code{z\_loaned\_*\_t*}).
+
+\begin{lstlisting}[style=cstyle,caption={Loan function pair from zenoh\_commons.h}]
+// zenoh_commons.h:2218-2222
+ZENOHC_API const struct z_loaned_config_t *z_config_loan(
+    const struct z_owned_config_t *this_);              // immutable borrow
+ZENOHC_API struct z_loaned_config_t *z_config_loan_mut(
+    struct z_owned_config_t *this_);                    // mutable borrow
+\end{lstlisting}
+
+\subsection{Why the Per-Type Functions ARE Exported}
+
+Unlike Pattern~1 (\code{static inline} move functions), the per-type loan
+functions \textbf{are real, exported symbols} in \file{libzenohc.so}:
+
+\begin{lstlisting}[style=shellstyle,basicstyle=\ttfamily\footnotesize\color{shellForeground}]
+$ nm -D libzenohc.so | grep -E 'z_(config|session|bytes|publisher)_loan'
+000000000038ad40 T z_bytes_loan
+000000000038ad50 T z_bytes_loan_mut
+0000000000390370 T z_config_loan
+0000000000390380 T z_config_loan_mut
+000000000039e810 T z_publisher_loan
+00000000003a59b0 T z_session_loan
+\end{lstlisting}
+
+This is critical: these functions could theoretically be called from Dart
+FFI via \fn{DynamicLibrary.lookup}. However, two independent barriers
+prevent direct use.
+
+\subsection{Barrier A: Macro Dispatch}
+
+The zenoh-c API presents loaning through \code{\_Generic} macros
+(\pattern{2}). No symbol named \code{z\_loan} or \code{z\_loan\_mut}
+exists in \file{libzenohc.so}. Dart must know which monomorphic function
+to call for each type---a responsibility the shim absorbs.
+
+\subsection{Barrier B: Const Qualification Erasure}
+
+Even if Dart called the per-type functions directly, Dart FFI's type
+system \textbf{erases the const/mut distinction}. All zenoh-c types are
+mapped to \code{ffi.Opaque} in \file{ffigen.yaml}. A
+\code{Pointer<z\_loaned\_config\_t>} in Dart carries no information
+about whether the pointer is \code{const} or mutable.
+
+\begin{quotebox}
+``A Pointer represents a pointer into native C memory.''\\
+--- \href{https://api.dart.dev/stable/latest/dart-ffi/Pointer-class.html}{Pointer class} (Dart 3.11.1)
+\end{quotebox}
+
+There is no \code{ConstPointer<T>} in \code{dart:ffi}. This means:
+
+\begin{itemize}
+  \item Dart cannot distinguish \code{const z\_loaned\_config\_t*} from
+        \code{z\_loaned\_config\_t*}
+  \item There is no compile-time or runtime check preventing mutable
+        operations on an immutably-borrowed reference
+  \item Incorrect usage would cause undefined behavior in zenoh-c
+\end{itemize}
+
+\subsection{How the Shim Resolves This}
+
+\begin{enumerate}
+  \item \textbf{Macro bypass:} Calls monomorphic functions directly
+        (\fn{z\_config\_loan} not \code{z\_loan(\allowbreak{}config)})
+  \item \textbf{Const enforcement in C:} Function signatures enforce
+        const correctness at the C compiler level
+  \item \textbf{Naming convention:} \code{zd\_*\_loan} for immutable
+        borrows, \code{zd\_*\_loan\_mut} for mutable borrows
+\end{enumerate}
+
+\begin{lstlisting}[style=cstyle,caption={Loan wrappers enforce const at the C level}]
+// Returns const pointer -- C compiler prevents mutation
+FFI_PLUGIN_EXPORT const z_loaned_config_t*
+    zd_config_loan(const z_owned_config_t* config);
+
+// Returns mutable pointer -- allows mutation (SHM buffer writes)
+FFI_PLUGIN_EXPORT z_loaned_shm_mut_t*
+    zd_shm_mut_loan_mut(z_owned_shm_mut_t* buf);
+\end{lstlisting}
+
+\subsection{Why This Is Distinct From Patterns 1 and 2}
+
+\begin{table}[ht]
+\centering\footnotesize
+\begin{tabularx}{\textwidth}{lLLL}
+  \toprule
+  \textbf{Aspect} & \textbf{Pattern 1} & \textbf{Pattern 2} & \textbf{Pattern 6} \\
+  \midrule
+  Barrier & No exported symbol (\code{static inline}) & No exported symbol (\code{\_Generic} macro) & Exported symbol exists, but const/mut qualifier is lost across FFI \\[4pt]
+  \code{nm -D} & Function absent & Macro absent & \textbf{Function present} (\code{T} in symbol table) \\[4pt]
+  Could Dart call it? & No & No & Technically yes, but \textbf{unsafely} \\[4pt]
+  What the shim adds & Inlines the call into exported body & Calls monomorphic function directly & Enforces const/mut at C level + provides stable naming \\
+  \bottomrule
+\end{tabularx}
+\caption{Pattern~6 is a semantic barrier, not a syntactic one}
+\label{tab:p6-vs-p1-p2}
+\end{table}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{End-to-End Worked Example: \code{z\_put}}
+\label{sec:worked-example}
+% ──────────────────────────────────────────────────────────────────────────────
+
+This section traces a single operation --- publishing data on a key expression
+--- through the six patterns to show how they compound.
+
+\subsection{What a C Consumer Does}
+
+\begin{lstlisting}[style=cstyle]
+z_put_options_t opts;
+z_put_options_default(&opts);                     // Pattern 3
+
+z_owned_bytes_t payload;
+z_bytes_copy_from_str(&payload, "Hello");
+
+z_put(z_session_loan(&session),                   // Pattern 6 + Pattern 2
+      z_view_keyexpr_loan(&keyexpr),              // Pattern 6 + Pattern 2
+      z_bytes_move(&payload),                     // Pattern 1 (static inline)
+      &opts);                                     // Pattern 3
+\end{lstlisting}
+
+\subsection{What Dart FFI Cannot Do}
+
+Dart FFI \textbf{can} call \fn{z\_put} (exported),
+\fn{z\_put\_\allowbreak{}options\_default} (exported),
+and \fn{z\_bytes\_\allowbreak{}copy\_from\_str} (exported).
+
+Dart FFI \textbf{cannot} call:
+\fn{z\_bytes\_move} (\code{static inline}, \pattern{1}),
+\code{sizeof(z\_put\_\allowbreak{}options\_t)} (\pattern{4}),
+or set \code{opts.\allowbreak{}encoding}
+(requires \fn{z\_encoding\_move}, \pattern{3}).
+
+\subsection{The Full Call Chain}
+
+\begin{lstlisting}[style=shellstyle,basicstyle=\ttfamily\footnotesize\color{shellForeground}]
+Dart: session.put('demo/test', 'Hello')
+  -> ZBytes.fromString('Hello')
+    -> calloc.allocate(bindings.zd_bytes_sizeof())      [Pattern 4]
+    -> bindings.zd_bytes_copy_from_str(ptr, nativeStr)   [exported]
+  -> bindings.zd_session_loan(sessionPtr)                  [Pattern 6]
+  -> bindings.zd_view_keyexpr_loan(kePtr)                  [Pattern 6]
+  -> bindings.zd_put(loanedSession, loanedKe, payloadPtr)  [shim]
+    -> C: z_put_options_default(&opts)                   [Pattern 3]
+    -> C: z_put(session, keyexpr,
+                z_bytes_move(payload),                   [Pattern 1]
+                &opts)                                   [Pattern 3]
+      -> libzenohc.so: z_put()                           [exported]
+  -> payload.markConsumed()                              [Dart ownership]
+\end{lstlisting}
+
+\begin{patternbox}
+Four patterns, one operation. The C shim collapses all of them into a single
+FFI-callable function with simple scalar parameters.
+\end{patternbox}
+
+
+\subsection{What the Shim Does NOT Do}
+
+The shim is deliberately thin. It does not add error recovery, buffer data,
+manage threads, add abstraction layers, or change zenoh-c's ownership
+semantics. Every \code{zd\_*} function maps to one or a small sequence of
+\code{z\_*} calls. The shim is a \textbf{mechanical flattening layer}, not
+an abstraction.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\part{Function-by-Function Analysis}
+\label{part:functions}
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Initialization (2 functions)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{llL}
+  \toprule
+  \textbf{Function} & \textbf{Wraps} & \textbf{Purpose} \\
+  \midrule
+  \fn{zd\_init\_dart\_api\_dl} & \fn{Dart\_InitializeApiDL} & Initializes Dart native API for \fn{Dart\_PostCObject\_DL} \\
+  \fn{zd\_init\_log} & \fn{zc\_init\_log\_from\_env\_or} & Initializes zenoh logger \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\textbf{Assessment:} Correct and minimal. Called once during
+\fn{\_initBindings()}.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Config (5 functions)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{llL}
+  \toprule
+  \textbf{Function} & \textbf{Wraps} & \textbf{Patterns} \\
+  \midrule
+  \fn{zd\_config\_sizeof} & \code{sizeof(z\_owned\_config\_t)} & P4 \\
+  \fn{zd\_config\_default} & \fn{z\_config\_default} & P3 \\
+  \fn{zd\_config\_insert\_json5} & \fn{z\_config\_loan\_mut} + \fn{zc\_config\_insert\_json5} & P1, P2 \\
+  \fn{zd\_config\_loan} & \fn{z\_config\_loan} & P1, P2 \\
+  \fn{zd\_config\_drop} & \fn{z\_config\_drop(z\_config\_move(...))} & P1 \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Session (4 functions)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{llL}
+  \toprule
+  \textbf{Function} & \textbf{Wraps} & \textbf{Patterns} \\
+  \midrule
+  \fn{zd\_session\_sizeof} & \code{sizeof(z\_owned\_session\_t)} & P4 \\
+  \fn{zd\_open\_session} & \fn{z\_open(session, z\_config\_move(config), NULL)} & P1, P3 \\
+  \fn{zd\_session\_loan} & \fn{z\_session\_loan} & P1, P2 \\
+  \fn{zd\_close\_session} & \fn{z\_close} + \fn{z\_session\_drop} & P1 \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{findingbox}[Finding F1: \code{z\_close} return value ignored]{findingLow}
+The return value of \fn{z\_close} is discarded in \fn{zd\_close\_session}.
+zenoh-cpp similarly ignores it. Close-time errors are non-actionable.
+\textbf{Severity: Low.}
+\end{findingbox}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{KeyExpr (4), Bytes (6), String/View String (7)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+All are straightforward \pattern{1} + \pattern{4} wrappers. Key points:
+
+\begin{itemize}
+  \item View key expressions borrow the backing string; lifetime is
+        guaranteed by \fn{\_withKeyExpr}'s \code{try/finally}.
+  \item \fn{zd\_string\_data} returns non-null-terminated data; Dart
+        correctly uses \code{toDart\-String(\allowbreak{}length:\ len)} everywhere.
+  \item View string convenience functions (\fn{zd\_view\_string\_data/len})
+        combine loan + access in one FFI round-trip.
+\end{itemize}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Put / Delete (2 functions)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+Both initialize options to defaults and pass through. \fn{zd\_put} moves the
+payload; Dart calls \code{payload.markConsumed()} after. Session-level
+\fn{zd\_put} intentionally omits encoding/QoS/attachment --- those are
+available via \fn{zd\_publisher\_put}.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Subscriber (3 functions + 2 static callbacks)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+Resolves Patterns 1, 4, and 5. The subscriber callback is the primary
+motivation for \pattern{5}. Context is heap-allocated via \code{malloc},
+freed by \fn{\_zd\_sample\_drop} when the subscriber is undeclared.
+Error-path closure drop is defensively correct.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Publisher (8 functions + 2 static callbacks)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+Resolves all five patterns. Both payload and attachment are moved
+(consumed) in \fn{zd\_pub\-lisher\_put}. The matching listener uses
+the NativePort bridge (\pattern{5}).
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Info / ZID (4 functions)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+The two ZID collection functions
+(\fn{zd\_info\_routers\_zid}, \fn{zd\_info\_peers\_zid})
+use synchronous buffer-based collection (stack-allocated context,
+\code{NULL} drop callback) instead of NativePort---appropriate because
+these are synchronous. Buffer holds up to 64~ZIDs (1024~bytes).
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Scout (2 functions + 1 static callback)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+Uses NativePort with \textbf{stack-allocated} context (safe because
+\fn{z\_scout} blocks until timeout). Posts null sentinel on completion;
+Dart \code{Completer} resolves on null.
+
+\begin{findingbox}[Finding F6: Scout return value ignored]{findingMedium}
+\fn{Zenoh.scout()} does not check the return value from \fn{zd\_scout}.
+Scout failures are indistinguishable from ``no entities found.''
+\textbf{Severity: Medium.}
+\end{findingbox}
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Shared Memory (13 functions, conditionally compiled)}
+% ──────────────────────────────────────────────────────────────────────────────
+
+All guarded by:
+
+\smallskip
+\code{\#if defined(Z\_FEATURE\_SHARED\_MEMORY)}\\
+\code{\ \ \ \ \&\& defined(Z\_FEATURE\_UNSTABLE\_API)}
+\smallskip
+
+\noindent
+Alloc results are flattened from a compound result struct to return code +
+out-parameter. Dart returns \code{null} on allocation failure (not throwing).
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\part{Cross-Cutting Analysis}
+\label{part:cross-cutting}
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Memory Ownership Protocol}
+% ──────────────────────────────────────────────────────────────────────────────
+
+The Dart side implements a three-state model mirroring zenoh-c's gravestone
+semantics:
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{lll}
+  \toprule
+  \textbf{State} & \textbf{Flags} & \textbf{Operations} \\
+  \midrule
+  Live      & \code{\_disposed=false, \_consumed=false} & All operations \\
+  Consumed  & \code{\_consumed=true}                     & None (\code{StateError}) \\
+  Disposed  & \code{\_disposed=true}                     & \code{dispose()} (no-op) \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+Two-step cleanup is applied consistently: (1)~\fn{zd\_*\_drop()} releases
+zenoh-c internals (Rust allocator), then (2)~\code{calloc.free()} releases
+the Dart-allocated wrapper memory.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Thread Safety}
+% ──────────────────────────────────────────────────────────────────────────────
+
+All C callbacks use only stack-local variables + read-only context access
++ \fn{Dart\_Post\-CObject\_DL} (thread-safe). No shared mutable state.
+Context structs contain only a \type{Dart\_Port\_DL} integer, written
+once during declaration and read from callbacks---no races possible.
+
+
+% ──────────────────────────────────────────────────────────────────────────────
+\section{Findings}
+% ──────────────────────────────────────────────────────────────────────────────
+
+\begin{findingbox}[F1: \code{z\_close} return value ignored]{findingLow}
+\textbf{Severity: Low.} zenoh-cpp similarly ignores it. Close-time errors
+are non-actionable.
+\end{findingbox}
+
+\begin{findingbox}[F2: Payload passes through \code{z\_bytes\_to\_string}]{findingLow}
+\textbf{Severity: Low.} An unnecessary copy in the subscriber callback.
+Sending raw bytes directly from \fn{z\_sample\_payload} would be more
+efficient but requires the more complex bytes reader API.
+\end{findingbox}
+
+\begin{findingbox}[F3: \code{ZBytes.fromUint8List} element-by-element copy]{findingLow}
+\textbf{Severity: Low.} Could use
+\code{nativeBuf.asTypedList(len).setAll(0, data)} for bulk copy via
+\code{memcpy}. The SHM path already uses this pattern correctly.
+\end{findingbox}
+
+\begin{findingbox}[F4: \code{z\_encoding\_from\_str} return code unchecked]{findingLow}
+\textbf{Severity: Low.} In practice, zenoh-c's \fn{z\_encoding\_from\_str}
+always succeeds (treats the string as an opaque MIME type). Defensive fix
+would be to check the return code.
+\end{findingbox}
+
+\begin{findingbox}[F5: Allocator mismatch in \code{Zenoh.initLog}]{findingLow}
+\textbf{Severity: Low.} \code{toNativeUtf8()} allocates via \code{malloc}
+but cleanup uses \code{calloc.free()}. Both resolve to the same system
+\code{free()} in practice, but violates the matching-allocator convention.
+\end{findingbox}
+
+\begin{findingbox}[F6: Scout return value ignored]{findingMedium}
+\textbf{Severity: Medium.} \fn{Zenoh.scout()} does not check the return
+value from \fn{zd\_scout}. Scout failures are indistinguishable from ``no
+entities found.''
+\end{findingbox}
+
+\begin{findingbox}[F7: \code{ZBytes.dispose()} leaks calloc wrapper when consumed]{findingLow}
+\textbf{Severity: Low.} When consumed, \code{dispose()} returns early
+without calling \code{calloc.free(\_ptr)}. The native content was consumed
+by zenoh-c, but the calloc wrapper still needs freeing.
+\code{ShmMutBuffer.dispose()} handles this correctly.
+\end{findingbox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\part{Pattern Resolution Matrix}
+\label{part:matrix}
+% ══════════════════════════════════════════════════════════════════════════════
+
+This matrix maps every C shim function to which patterns it resolves.
+
+{\small
+\begin{longtable}{l Y{7mm} Y{7mm} Y{7mm} Y{7mm} Y{7mm} Y{7mm}}
+  \toprule
+  \textbf{C shim function} & \textbf{P1} & \textbf{P2} & \textbf{P3} & \textbf{P4} & \textbf{P5} & \textbf{P6} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+  \fn{zd\_init\_dart\_api\_dl}       & \no  & \no  & \no  & \no  & \yes & \no  \\
+  \fn{zd\_init\_log}                 & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_config\_sizeof}            & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_config\_default}           & \no  & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_config\_insert\_json5}     & \yes & \yes & \no  & \no  & \no  & \no  \\
+  \fn{zd\_config\_loan}              & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_config\_drop}              & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_session\_sizeof}           & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_open\_session}             & \yes & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_session\_loan}             & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_close\_session}            & \yes & \yes & \no  & \no  & \no  & \no  \\
+  \fn{zd\_view\_keyexpr\_sizeof}     & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_view\_keyexpr\_from\_str}  & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_view\_keyexpr\_loan}       & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_keyexpr\_as\_view\_string} & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_bytes\_sizeof}             & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_bytes\_copy\_from\_str}    & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_bytes\_copy\_from\_buf}    & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_bytes\_to\_string}         & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_bytes\_loan}               & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_bytes\_drop}               & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_string\_sizeof}            & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_string\_loan}              & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_string\_data}              & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_string\_len}               & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_string\_drop}              & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_view\_string\_sizeof}      & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_view\_string\_data}        & \yes & \yes & \no  & \no  & \no  & \no  \\
+  \fn{zd\_view\_string\_len}         & \yes & \yes & \no  & \no  & \no  & \no  \\
+  \fn{zd\_put}                       & \yes & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_delete}                    & \no  & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_subscriber\_sizeof}        & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_declare\_subscriber}       & \yes & \no  & \no  & \no  & \yes & \no  \\
+  \fn{zd\_subscriber\_drop}          & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_publisher\_sizeof}         & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_declare\_publisher}        & \yes & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_publisher\_loan}           & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_publisher\_drop}           & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_publisher\_put}            & \yes & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_publisher\_delete}         & \no  & \no  & \yes & \no  & \no  & \no  \\
+  \fn{zd\_publisher\_keyexpr}        & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_pub..\_matching\_listener} & \yes & \no  & \no  & \no  & \yes & \no  \\
+  \fn{zd\_pub..\_matching\_status}   & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_info\_zid}                 & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_id\_to\_string}            & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_info\_routers\_zid}        & \no  & \no  & \no  & \no  & \yes & \no  \\
+  \fn{zd\_info\_peers\_zid}          & \no  & \no  & \no  & \no  & \yes & \no  \\
+  \fn{zd\_scout}                     & \yes & \no  & \yes & \no  & \yes & \no  \\
+  \fn{zd\_whatami\_to\_view\_string} & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_provider\_sizeof}     & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_shm\_provider\_new}        & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_provider\_loan}       & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_shm\_provider\_drop}       & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_provider\_available}  & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_mut\_sizeof}          & \no  & \no  & \no  & \yes & \no  & \no  \\
+  \fn{zd\_shm\_provider\_alloc}      & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm..alloc\_gc\_defrag..}  & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_mut\_loan\_mut}       & \no  & \yes & \no  & \no  & \no  & \yes \\
+  \fn{zd\_shm\_mut\_data\_mut}       & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_mut\_len}             & \no  & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_bytes\_from\_shm\_mut}     & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \fn{zd\_shm\_mut\_drop}            & \yes & \no  & \no  & \no  & \no  & \no  \\
+  \midrule
+  \textbf{Totals}                    & \textbf{34} & \textbf{14} & \textbf{8} & \textbf{12} & \textbf{6} & \textbf{8} \\
+\end{longtable}
+}
+
+\noindent
+\textbf{Key:} P1 = \code{static inline} functions, P2 = \code{\_Generic}
+macro dispatch, P3 = options structs, P4 = opaque \code{sizeof},
+P5 = closure callbacks, P6 = loaning (const/mut enforcement).
+
+\smallskip\noindent
+\textbf{Note:} Loan functions are no longer marked P1. The per-type loan
+functions (\fn{z\_config\_loan}, \fn{z\_bytes\_loan}, etc.) are exported
+symbols in \file{libzenohc.so}---they are not \code{static inline}. P6
+marks the 8 explicit loan wrappers whose primary purpose is const/mut
+enforcement and macro bypass for the borrowing protocol.
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\part{Conformance Summary}
+\label{part:conformance}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\section{C Best Practices}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{lcL}
+  \toprule
+  \textbf{Practice} & \textbf{Status} & \textbf{Notes} \\
+  \midrule
+  All exports use \code{FFI\_PLUGIN\_EXPORT}      & \PASS    & \code{visibility("default")} \\
+  \code{C\_VISIBILITY\_PRESET hidden}             & \PASS    & Only marked symbols visible \\
+  Consistent \code{zd\_} namespace prefix         & \PASS    & No collisions with \code{z\_}/\code{zc\_} \\
+  Return code checking                             & \PARTIAL & F4: \fn{z\_encoding\_from\_str} \\
+  Memory cleanup on all paths                      & \PASS    & Closures dropped on failure \\
+  No undefined behavior                            & \PASS    & All pointer arithmetic bounded \\
+  Const correctness                                & \PASS    & \code{const} on loan params \\
+  Feature guards for optional functionality        & \PASS    & SHM behind \code{\#ifdef} \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Dart FFI Best Practices}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{lcL}
+  \toprule
+  \textbf{Practice} & \textbf{Status} & \textbf{Notes} \\
+  \midrule
+  Lazy singleton for bindings             & \PASS & Initialized on first access \\
+  \fn{Dart\_InitializeApiDL} before NativePort & \PASS & Called in \fn{\_initBindings} \\
+  \code{ReceivePort} for async callbacks  & \PASS & Subscriber, matching, scout \\
+  \code{calloc.allocate(sizeof)} pattern  & \PASS & Consistent across all types \\
+  Ownership tracking              & \PASS & All wrapper classes \\
+  \code{try/finally} for temp allocations & \PASS & \fn{\_withKeyExpr}, encoding \\
+  Idempotent \code{close()}/\code{dispose()} & \PASS & All classes \\
+  Explicit length for strings & \PASS & \code{toDartString(length:)} \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Architecture Conformance}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{lcL}
+  \toprule
+  \textbf{Principle} & \textbf{Status} & \textbf{Notes} \\
+  \midrule
+  Shim is mechanical (no business logic) & \PASS & 1--5 zenoh-c calls per function \\
+  Single-load library pattern            & \PASS & OS resolves \code{libzenohc.so} \\
+  Options structs internalized           & \PASS & Dart never touches \code{z\_*\_options\_t} \\
+  Move semantics handled in C            & \PASS & Dart never calls \code{z\_*\_move} \\
+  Callback bridge via NativePort         & \PASS & Thread-safe, copies data \\
+  Sentinel values for optional params    & \PASS & NULL for strings, $-1$ for enums \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\part{Pattern Summary}
+\label{part:summary}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\begin{table}[ht]
+\centering\footnotesize
+\begin{tabularx}{\textwidth}{c >{\raggedright\arraybackslash}p{2.2cm} LL}
+  \toprule
+  \textbf{Pat.} & \textbf{What It Is} & \textbf{Why Dart Cannot Call It} & \textbf{How the Shim Resolves It} \\
+  \midrule
+  \textbf{1} & 56 \code{static inline} move functions &
+    \code{static} = internal linkage; \code{inline} = no symbol.
+    \code{nm~-D} confirms absence. ffigen permanently excludes them. &
+    Shim calls them at compile time. C compiler inlines the cast into the
+    exported function. \\[6pt]
+  \textbf{2} & 4 \code{\_Generic} macros (25--56 branches) &
+    Preprocessor construct. No symbol. Dispatches to type-specific
+    functions at compile time. &
+    Shim calls monomorphic functions directly. \\[6pt]
+  \textbf{3} & Options structs with fields requiring~P1 &
+    \code{sizeof} unknown. Fields require \fn{z\_*\_move}. Layout is
+    version-specific. &
+    Shim allocates, initializes, sets fields, and passes---all in one
+    exported function. \\[6pt]
+  \textbf{4} & Opaque type sizes (8--2008~bytes) &
+    Dart FFI has no \code{sizeof()} for foreign types. Types mapped to
+    \code{Opaque}. &
+    Shim exports \fn{zd\_*\_sizeof()} functions. Dart queries at runtime. \\[6pt]
+  \textbf{5} & Closure callbacks on Tokio threads &
+    \fn{Pointer.from\-Function} cannot capture state. Non-Dart thread~= UB. &
+    NativePort bridge: C callback posts \code{Dart\_CObject} via
+    \fn{Dart\_Post\-CObject\_DL}. \\[6pt]
+  \textbf{6} & Loaning protocol (const/mut borrowing) &
+    Per-type functions \textbf{are} exported (\code{nm~-D} confirms), but
+    \code{z\_loan}/\code{z\_loan\_mut} macros are not~(P2).
+    Dart's \code{Pointer<Opaque>} erases const qualifier. &
+    Shim wraps each loan with explicit naming
+    (\fn{zd\_*\_loan} vs \fn{zd\_*\_loan\_mut}).
+    Const enforced at C compiler level. \\
+  \bottomrule
+\end{tabularx}
+\caption{Six FFI barrier patterns and their C shim resolutions}
+\label{tab:pattern-summary}
+\end{table}
+
+\begin{patternbox}
+The six patterns are not independent barriers --- they \textbf{compound}.
+A single \fn{z\_put} call requires Pattern~4 (to allocate the payload),
+Pattern~6 (to loan the session and key expression), Pattern~1 (to move the
+payload), and Pattern~3 (to create and pass options). A subscriber
+declaration adds Pattern~5 (callback bridge). The C shim collapses all of
+these into single FFI-callable functions with simple scalar parameters.
+\end{patternbox}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+\clearpage
+\appendix
+\part*{Appendices}
+\addcontentsline{toc}{part}{Appendices}
+% ══════════════════════════════════════════════════════════════════════════════
+
+\section{Findings Summary}
+\label{app:findings}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{clL}
+  \toprule
+  \textbf{ID} & \textbf{Severity} & \textbf{Description} \\
+  \midrule
+  F1 & Low    & \fn{z\_close} return value ignored in \fn{zd\_close\_session} \\
+  F2 & Low    & Payload passes through \fn{z\_bytes\_to\_string} in subscriber callback \\
+  F3 & Low    & \code{ZBytes.fromUint8List} element-by-element copy \\
+  F4 & Low    & \fn{z\_encoding\_from\_str} return code unchecked \\
+  F5 & Low    & \fn{Zenoh.initLog} frees \code{malloc}'d string with \code{calloc.free} \\
+  F6 & Medium & \fn{Zenoh.scout} ignores \fn{zd\_scout} return value \\
+  F7 & Low    & \code{ZBytes.dispose()} leaks calloc wrapper when consumed \\
+  \bottomrule
+\end{tabularx}
+\caption{All findings}
+\label{tab:findings}
+\end{table}
+
+
+\section{References}
+\label{app:references}
+
+\subsection{Dart FFI Official Documentation}
+
+All \code{api.dart.dev/stable/latest/} URLs resolve to the current stable SDK
+(Dart 3.11.1 at time of writing). Using \code{/latest/} ensures links remain
+valid as new Dart versions are released.
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{lL}
+  \toprule
+  \textbf{Document} & \textbf{URL} \\
+  \midrule
+  dart:ffi overview         & \url{https://api.dart.dev/stable/latest/dart-ffi/dart-ffi-library.html} \\
+  C interop guide           & \url{https://dart.dev/interop/c-interop} \\
+  DynamicLibrary class      & \url{https://api.dart.dev/stable/latest/dart-ffi/DynamicLibrary-class.html} \\
+  DynamicLibrary.lookup     & \url{https://api.dart.dev/stable/latest/dart-ffi/DynamicLibrary/lookup.html} \\
+  Pointer.fromFunction      & \url{https://api.dart.dev/stable/latest/dart-ffi/Pointer/fromFunction.html} \\
+  Opaque class              & \url{https://api.dart.dev/stable/latest/dart-ffi/Opaque-class.html} \\
+  Struct class              & \url{https://api.dart.dev/stable/latest/dart-ffi/Struct-class.html} \\
+  sizeOf function           & \url{https://api.dart.dev/stable/latest/dart-ffi/sizeOf.html} \\
+  NativeApi.initializeApiDLData & \url{https://api.dart.dev/stable/latest/dart-ffi/NativeApi/initializeApiDLData.html} \\
+  ffigen package            & \url{https://pub.dev/packages/ffigen} \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Bug Tracker Citations}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{llL}
+  \toprule
+  \textbf{Issue} & \textbf{Status} & \textbf{Key Finding} \\
+  \midrule
+  \href{https://github.com/dart-lang/ffigen/issues/146}{ffigen\#146}
+    & Closed & ffigen now \textbf{skips} inline functions \\
+  \href{https://github.com/dart-lang/native/issues/459}{native\#459}
+    & Partial & \code{static inline} permanently excluded \\
+  \href{https://github.com/dart-lang/sdk/issues/48865}{sdk\#48865}
+    & Open & Non-Dart thread callback = undefined behavior \\
+  \href{https://github.com/dart-lang/sdk/issues/52689}{sdk\#52689}
+    & Open & \code{NativeCallable.listener} limitations \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{zenoh-c Source Files}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabularx}{\textwidth}{lLr}
+  \toprule
+  \textbf{File} & \textbf{Content} & \textbf{Lines} \\
+  \midrule
+  \file{zenoh\_macros.h}   & \code{static inline} moves, \code{\_Generic}, C++ overloads & 1467 \\
+  \file{zenoh\_commons.h}  & Exported function signatures, struct typedefs & \raisebox{0.5ex}{\texttildelow}5000 \\
+  \file{zenoh\_opaque.h}   & Opaque type definitions with compile-time sizes & \raisebox{0.5ex}{\texttildelow}800 \\
+  \file{zenoh\_dart.h}     & C shim header --- 62 exported functions & 543 \\
+  \file{zenoh\_dart.c}     & C shim implementation & \raisebox{0.5ex}{\texttildelow}700 \\
+  \bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{ISO C Standards}
+
+\begin{table}[ht]
+\centering\small
+\begin{tabular}{lll}
+  \toprule
+  \textbf{Standard} & \textbf{Section} & \textbf{Content} \\
+  \midrule
+  ISO C11 & \S6.5.1.1 & \code{\_Generic} selection --- compile-time type dispatch \\
+  ISO C11 & \S6.7.4   & \code{inline} function specifiers \\
+  ISO C11 & \S6.2.2   & \code{static} linkage --- internal to translation unit \\
+  \bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Symbol Table Verification}
+
+Commands run against \file{extern/zenoh-c/target/release/libzenohc.so}
+(zenoh-c v1.7.2):
+
+\begin{lstlisting}[style=shellstyle]
+# Verify static inline functions are NOT exported
+nm -D libzenohc.so | grep z_bytes_move     # (no output)
+nm -D libzenohc.so | grep z_config_move    # (no output)
+
+# Verify _Generic macros are NOT exported
+nm -D libzenohc.so | grep "z_loan$"        # (no output)
+nm -D libzenohc.so | grep "z_drop$"        # (no output)
+
+# Verify real functions ARE exported
+nm -D libzenohc.so | grep " T z_put$"
+  000000000039e3f0 T z_put
+nm -D libzenohc.so | grep " T z_open$"
+  000000000039acb0 T z_open
+nm -D libzenohc.so | grep " T z_config_drop$"
+  000000000038f790 T z_config_drop
+\end{lstlisting}
+
+
+\end{document}

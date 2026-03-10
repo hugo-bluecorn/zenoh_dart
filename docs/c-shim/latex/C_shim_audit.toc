@@ -1,0 +1,70 @@
+\contentsline {part}{I\hspace {1em}Why the C Shim Must Exist}{1}{part.1}%
+\contentsline {section}{\numberline {1}How Dart FFI Resolves Symbols}{1}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Dart FFI Is C-Only}{1}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Symbol Resolution via \texttt {dlsym}}{1}{subsection.1.2}%
+\contentsline {subsection}{\numberline {1.3}Confirmed by ffigen Bug Tracker}{2}{subsection.1.3}%
+\contentsline {subsection}{\numberline {1.4}How the Shim Bridges This}{2}{subsection.1.4}%
+\contentsline {section}{\numberline {2}Pattern 1: \texttt {static inline} Move Functions}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}The Problem}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Symbol Table Proof}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Why These Are Required}{3}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}What the Moved Types Actually Are}{4}{subsection.2.4}%
+\contentsline {subsection}{\numberline {2.5}How the C Shim Solves This}{5}{subsection.2.5}%
+\contentsline {section}{\numberline {3}Pattern 2: C11 \texttt {\_Generic} Polymorphic Macros}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}The Problem}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Compounding With Pattern 1}{6}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Pattern 3: Options Struct Initialization}{6}{section.4}%
+\contentsline {subsection}{\numberline {4.1}The Problem}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}The Struct Layout Problem}{6}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}How the C Shim Solves This}{7}{subsection.4.3}%
+\contentsline {section}{\numberline {5}Pattern 4: Opaque Type Sizes}{7}{section.5}%
+\contentsline {subsection}{\numberline {5.1}The Problem}{7}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}How the C Shim Solves This}{8}{subsection.5.2}%
+\contentsline {section}{\numberline {6}Pattern 5: Closure Callbacks Across Thread Boundaries}{8}{section.6}%
+\contentsline {subsection}{\numberline {6.1}The Problem}{8}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Why Dart FFI Cannot Construct These Closures}{8}{subsection.6.2}%
+\contentsline {subsubsection}{\numberline {6.2.1}Constraint A: No closures in \texttt {Pointer.fromFunction}}{8}{subsubsection.6.2.1}%
+\contentsline {subsubsection}{\numberline {6.2.2}Constraint B: Non-Dart thread invocation is undefined behavior}{9}{subsubsection.6.2.2}%
+\contentsline {subsubsection}{\numberline {6.2.3}Constraint C: \texttt {NativeCallable.listener} limitations}{9}{subsubsection.6.2.3}%
+\contentsline {subsection}{\numberline {6.3}How the C Shim Solves This}{9}{subsection.6.3}%
+\contentsline {section}{\numberline {7}Pattern 6: Loaning and Const/Mut Enforcement}{10}{section.7}%
+\contentsline {subsection}{\numberline {7.1}The Problem}{10}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Why the Per-Type Functions ARE Exported}{10}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Barrier A: Macro Dispatch}{10}{subsection.7.3}%
+\contentsline {subsection}{\numberline {7.4}Barrier B: Const Qualification Erasure}{10}{subsection.7.4}%
+\contentsline {subsection}{\numberline {7.5}How the Shim Resolves This}{11}{subsection.7.5}%
+\contentsline {subsection}{\numberline {7.6}Why This Is Distinct From Patterns 1 and 2}{11}{subsection.7.6}%
+\contentsline {section}{\numberline {8}End-to-End Worked Example: \texttt {z\_put}}{11}{section.8}%
+\contentsline {subsection}{\numberline {8.1}What a C Consumer Does}{11}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}What Dart FFI Cannot Do}{12}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}The Full Call Chain}{12}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}What the Shim Does NOT Do}{12}{subsection.8.4}%
+\contentsline {part}{II\hspace {1em}Function-by-Function Analysis}{13}{part.2}%
+\contentsline {section}{\numberline {9}Initialization (2 functions)}{13}{section.9}%
+\contentsline {section}{\numberline {10}Config (5 functions)}{13}{section.10}%
+\contentsline {section}{\numberline {11}Session (4 functions)}{13}{section.11}%
+\contentsline {section}{\numberline {12}KeyExpr (4), Bytes (6), String/View String (7)}{13}{section.12}%
+\contentsline {section}{\numberline {13}Put / Delete (2 functions)}{14}{section.13}%
+\contentsline {section}{\numberline {14}Subscriber (3 functions + 2 static callbacks)}{14}{section.14}%
+\contentsline {section}{\numberline {15}Publisher (8 functions + 2 static callbacks)}{14}{section.15}%
+\contentsline {section}{\numberline {16}Info / ZID (4 functions)}{14}{section.16}%
+\contentsline {section}{\numberline {17}Scout (2 functions + 1 static callback)}{14}{section.17}%
+\contentsline {section}{\numberline {18}Shared Memory (13 functions, conditionally compiled)}{14}{section.18}%
+\contentsline {part}{III\hspace {1em}Cross-Cutting Analysis}{15}{part.3}%
+\contentsline {section}{\numberline {19}Memory Ownership Protocol}{15}{section.19}%
+\contentsline {section}{\numberline {20}Thread Safety}{15}{section.20}%
+\contentsline {section}{\numberline {21}Findings}{15}{section.21}%
+\contentsline {part}{IV\hspace {1em}Pattern Resolution Matrix}{17}{part.4}%
+\contentsline {part}{V\hspace {1em}Conformance Summary}{19}{part.5}%
+\contentsline {section}{\numberline {22}C Best Practices}{19}{section.22}%
+\contentsline {section}{\numberline {23}Dart FFI Best Practices}{19}{section.23}%
+\contentsline {section}{\numberline {24}Architecture Conformance}{19}{section.24}%
+\contentsline {part}{VI\hspace {1em}Pattern Summary}{20}{part.6}%
+\contentsline {part}{Appendices}{21}{part*.1}%
+\contentsline {section}{\numberline {A}Findings Summary}{21}{appendix.A}%
+\contentsline {section}{\numberline {B}References}{21}{appendix.B}%
+\contentsline {subsection}{\numberline {B.1}Dart FFI Official Documentation}{21}{subsection.B.1}%
+\contentsline {subsection}{\numberline {B.2}Bug Tracker Citations}{21}{subsection.B.2}%
+\contentsline {subsection}{\numberline {B.3}zenoh-c Source Files}{22}{subsection.B.3}%
+\contentsline {subsection}{\numberline {B.4}ISO C Standards}{22}{subsection.B.4}%
+\contentsline {subsection}{\numberline {B.5}Symbol Table Verification}{22}{subsection.B.5}%
