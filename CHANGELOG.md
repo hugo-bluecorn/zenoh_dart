@@ -1,4 +1,20 @@
 # Changelog
+## Experiment B1: CBuilder + DynamicLibrary.open() (2026-03-10)
+
+### Added
+- Experiment package `exp_hooks_cbuilder_dlopen` testing CBuilder.library() compilation from source + DynamicLibrary.open() loading
+- Build hook compiles minimal 2-function C shim via `native_toolchain_c` CBuilder, linking against prebuilt `libzenohc.so`
+- Vendored C source (zenoh_dart_minimal), Dart API DL files, and zenoh-c headers (15 files total)
+- 11 automated tests (6 pass, 5 skip with documented negative result)
+- Control test proving CBuilder output works with explicit `LD_LIBRARY_PATH`
+- `lessons-learned.md` with CBuilder-specific observations and A1/A2/B1 comparison
+
+### Results
+- **NEGATIVE** (expected): `DynamicLibrary.open()` cannot find CBuilder output, same as A1
+- CBuilder compiles successfully (~1s cold, ~0.3s warm), auto-sets RUNPATH=$ORIGIN
+- Confirms loading mechanism (not build strategy) is the independent variable
+- `native_toolchain_c` 0.17.5 works reliably despite EXPERIMENTAL status
+
 ## Experiment A2: Prebuilt + @Native Annotations (2026-03-10)
 
 ### Added
