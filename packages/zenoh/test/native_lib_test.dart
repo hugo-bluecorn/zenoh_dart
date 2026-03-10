@@ -1,39 +1,36 @@
-import 'dart:ffi';
-
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
+import 'package:zenoh/src/bindings.dart' as ffi_bindings;
 import 'package:zenoh/src/exceptions.dart';
 import 'package:zenoh/src/native_lib.dart';
 
 void main() {
   group('Native library loading', () {
-    test('loads successfully', () {
-      // When the Dart native library loader is invoked
-      // Then a DynamicLibrary instance is returned without throwing
-      final lib = openZenohDartLibrary();
-      expect(lib, isA<DynamicLibrary>());
+    test('loads successfully via @Native resolution', () {
+      // When a @Native function is called
+      // Then the library resolves without throwing
+      final size = ffi_bindings.zd_config_sizeof();
+      expect(size, greaterThan(0));
     });
   });
 
   group('Dart API DL initialization', () {
-    test('succeeds with return code 0', () {
-      // Given the native library is loaded
-      // When zd_init_dart_api_dl is called via the bindings singleton
-      // Then the return code is 0 (success); return type is int
-      final b = bindings;
-      final result = b.zd_init_dart_api_dl(NativeApi.initializeApiDLData);
-      expect(result, equals(0));
+    test('succeeds via ensureInitialized', () {
+      // Given the native library is resolved via @Native
+      // When ensureInitialized is called
+      // Then it completes without throwing
+      expect(() => ensureInitialized(), returnsNormally);
     });
   });
 
   group('zd_init_log', () {
     test('does not crash', () {
       // Given the native library is loaded and Dart API DL is initialized
-      // (bindings singleton initializes Dart API DL on first access)
+      ensureInitialized();
       // When zd_init_log is called with fallback filter "error"
       // Then the call completes without throwing (void return)
       expect(
-        () => bindings.zd_init_log('error'.toNativeUtf8().cast()),
+        () => ffi_bindings.zd_init_log('error'.toNativeUtf8().cast()),
         returnsNormally,
       );
     });

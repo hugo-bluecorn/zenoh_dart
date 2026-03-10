@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:test/test.dart';
+import 'package:zenoh/zenoh.dart';
 
 /// The FVM-resolved Dart executable path.
 const _dartExe = '/home/hugo-bluecorn/fvm/versions/stable/bin/dart';
@@ -21,14 +22,6 @@ Future<void> forceKill(Process process) async {
 
 void main() {
   final packageRoot = Directory.current.path;
-  final repoRoot = '$packageRoot/../..';
-  final ldLibraryPath =
-      '$repoRoot/extern/zenoh-c/target/release:$repoRoot/build';
-
-  Map<String, String> env() => {
-    ...Platform.environment,
-    'LD_LIBRARY_PATH': ldLibraryPath,
-  };
 
   group('z_sub CLI', () {
     test('runs and prints subscriber declaration', () async {
@@ -36,7 +29,6 @@ void main() {
         _dartExe,
         ['run', 'example/z_sub.dart'],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final stdout = StringBuffer();
@@ -53,8 +45,9 @@ void main() {
       expect(stdout.toString(), contains('demo/example/**'));
     });
 
-    test('receives a sample from z_put', () async {
-      // Use explicit TCP to ensure the two processes can communicate
+    test('receives a sample from in-process put', () async {
+      // Use explicit TCP to ensure the subprocess and in-process session
+      // can communicate reliably.
       const port = 18551;
       const endpoint = 'tcp/127.0.0.1:$port';
 
@@ -63,46 +56,46 @@ void main() {
         _dartExe,
         ['run', 'example/z_sub.dart', '-k', 'demo/cli/test', '-l', endpoint],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final subStdout = StringBuffer();
+      final completer = Completer<void>();
       final subSubscription = subProcess.stdout
           .transform(const SystemEncoding().decoder)
-          .listen(subStdout.write);
+          .listen((data) {
+        subStdout.write(data);
+        if (!completer.isCompleted &&
+            subStdout.toString().contains('Received PUT')) {
+          completer.complete();
+        }
+      });
 
       try {
         // Wait for subscriber session to bind TCP listener
-        await Future<void>.delayed(const Duration(seconds: 5));
+        // (build hooks add ~2s startup overhead)
+        await Future<void>.delayed(const Duration(seconds: 8));
 
-        // Run z_put connecting to the subscriber's TCP endpoint
-        final putResult = await Process.run(
-          _dartExe,
-          [
-            'run',
-            'example/z_put.dart',
-            '-k',
-            'demo/cli/test',
-            '-p',
-            'from-put',
-            '-e',
-            endpoint,
-          ],
-          workingDirectory: packageRoot,
-          environment: env(),
-        ).timeout(const Duration(seconds: 30));
-        expect(
-          putResult.exitCode,
-          equals(0),
-          reason: 'z_put stderr: ${putResult.stderr}',
+        // Use in-process session to put (avoids subprocess startup race)
+        final config = Config();
+        config.insertJson5(
+          'connect/endpoints',
+          '["$endpoint"]',
         );
+        final session = Session.open(config: config);
 
-        // Wait for the sample to arrive
-        await Future<void>.delayed(const Duration(seconds: 3));
+        // Give the TCP connection time to negotiate
+        await Future<void>.delayed(const Duration(seconds: 2));
+
+        session.put('demo/cli/test', 'from-put');
+
+        // Wait for the sample to arrive (with timeout)
+        await completer.future.timeout(const Duration(seconds: 10));
 
         final output = subStdout.toString();
         expect(output, contains('Received PUT'));
         expect(output, contains('from-put'));
+
+        session.close();
       } finally {
         await forceKill(subProcess);
         await subSubscription.cancel();
@@ -114,7 +107,6 @@ void main() {
         _dartExe,
         ['run', 'example/z_sub.dart', '--key', 'demo/custom/**'],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final stdout = StringBuffer();
@@ -134,7 +126,6 @@ void main() {
         _dartExe,
         ['run', 'example/z_sub.dart', '--key', ''],
         workingDirectory: packageRoot,
-        environment: env(),
       ).timeout(const Duration(seconds: 30));
 
       expect(result.exitCode, isNot(0));

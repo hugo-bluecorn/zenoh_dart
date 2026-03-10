@@ -6,7 +6,6 @@ void main() {
   // Get the package root (where pubspec.yaml lives)
   // Tests run from packages/zenoh/
   final packageRoot = Directory.current.path;
-  final repoRoot = '$packageRoot/../..';
 
   group('z_info CLI', () {
     Future<ProcessResult> runZInfo([List<String> args = const []]) async {
@@ -14,11 +13,6 @@ void main() {
         'fvm',
         ['dart', 'run', 'example/z_info.dart', ...args],
         workingDirectory: packageRoot,
-        environment: {
-          ...Platform.environment,
-          'LD_LIBRARY_PATH':
-              '$repoRoot/extern/zenoh-c/target/release:$repoRoot/build',
-        },
       ).timeout(const Duration(seconds: 30));
     }
 

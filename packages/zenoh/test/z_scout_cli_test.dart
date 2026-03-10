@@ -7,8 +7,6 @@ void main() {
   // Tests run from packages/zenoh/
   final packageRoot = Directory.current.path;
   final repoRoot = '$packageRoot/../..';
-  final ldLibraryPath =
-      '$repoRoot/extern/zenoh-c/target/release:$repoRoot/build';
   final dartBin = '/home/hugo-bluecorn/fvm/versions/stable/bin/dart';
 
   group('z_scout CLI', () {
@@ -17,10 +15,6 @@ void main() {
         'fvm',
         ['dart', 'run', 'example/z_scout.dart', ...args],
         workingDirectory: packageRoot,
-        environment: {
-          ...Platform.environment,
-          'LD_LIBRARY_PATH': ldLibraryPath,
-        },
       ).timeout(const Duration(seconds: 15));
     }
 
@@ -101,10 +95,6 @@ Future<void> main() async {
           tempScript.path,
         ],
         workingDirectory: packageRoot,
-        environment: {
-          ...Platform.environment,
-          'LD_LIBRARY_PATH': ldLibraryPath,
-        },
       ).timeout(const Duration(seconds: 15));
 
       expect(result.exitCode, equals(0), reason: 'stderr: ${result.stderr}');

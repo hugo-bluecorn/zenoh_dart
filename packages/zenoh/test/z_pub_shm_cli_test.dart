@@ -20,14 +20,6 @@ Future<void> forceKill(Process process) async {
 
 void main() {
   final packageRoot = Directory.current.path;
-  final repoRoot = '$packageRoot/../..';
-  final ldLibraryPath =
-      '$repoRoot/extern/zenoh-c/target/release:$repoRoot/build';
-
-  Map<String, String> env() => {
-    ...Platform.environment,
-    'LD_LIBRARY_PATH': ldLibraryPath,
-  };
 
   group('z_pub_shm CLI', () {
     test(
@@ -37,8 +29,7 @@ void main() {
           _dartExe,
           ['run', 'example/z_pub_shm.dart'],
           workingDirectory: packageRoot,
-          environment: env(),
-        );
+          );
 
         final stdout = StringBuffer();
         final subscription = process.stdout
@@ -70,7 +61,6 @@ void main() {
           'SHM data',
         ],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final stdout = StringBuffer();
@@ -92,7 +82,6 @@ void main() {
         _dartExe,
         ['run', 'example/z_pub_shm.dart', '--add-matching-listener'],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final stdout = StringBuffer();
@@ -119,7 +108,6 @@ void main() {
         _dartExe,
         ['run', 'example/z_pub_shm.dart', '-e', 'tcp/127.0.0.1:7447'],
         workingDirectory: packageRoot,
-        environment: env(),
       );
 
       final stdout = StringBuffer();
