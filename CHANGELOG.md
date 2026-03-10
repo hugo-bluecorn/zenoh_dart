@@ -1,4 +1,19 @@
 # Changelog
+## Experiment B2: CBuilder + @Native Annotations (2026-03-10)
+
+### Added
+- Experiment package `exp_hooks_cbuilder_native` testing CBuilder.library() compilation + @Native annotation loading
+- CBuilder compiles vendored C shim from source, linking against prebuilt `libzenohc.so`
+- `@DefaultAsset` + `@Native` bindings with CBuilder `assetName` alignment
+- 10 automated tests (all pass)
+- `lessons-learned.md` with full 2x2 matrix comparison and migration recommendation
+
+### Results
+- **POSITIVE**: CBuilder + @Native successfully compiles and loads without `LD_LIBRARY_PATH`
+- Completes the 2x2 experiment matrix: @Native is the sole determinant of success
+- CBuilder auto-sets RUNPATH=$ORIGIN (no patchelf), `native_toolchain_c` 0.17.5 stable
+- Migration recommendation: start with prebuilt+@Native (A2), consider CBuilder for CI/CD
+
 ## Experiment B1: CBuilder + DynamicLibrary.open() (2026-03-10)
 
 ### Added
