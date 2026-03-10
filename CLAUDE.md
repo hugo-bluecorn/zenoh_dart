@@ -103,9 +103,12 @@ See `docs/build/01-build-zenoh-c.md` for the full build plan and rationale.
 
 RPATH is set to `$ORIGIN` on Linux for self-contained deployment.
 
-**C shim build:** Running `cmake --build build` from the repo root produces `build/libzenoh_dart.so`. Tests need both this and `libzenohc.so` on `LD_LIBRARY_PATH`:
+**C shim build:** Running `cmake --build build` from the repo root produces `build/libzenoh_dart.so`. After building, copy both shared libraries to the prebuilt location for build hooks:
 ```bash
-LD_LIBRARY_PATH=extern/zenoh-c/target/release:build
+mkdir -p packages/zenoh/native/linux/x86_64/
+cp build/libzenoh_dart.so packages/zenoh/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/zenoh/native/linux/x86_64/
+patchelf --set-rpath '$ORIGIN' packages/zenoh/native/linux/x86_64/libzenoh_dart.so
 ```
 
 ### Android cross-compilation
@@ -125,14 +128,14 @@ cd packages/zenoh && fvm dart run ffigen --config ffigen.yaml
 # Analyze Dart code
 fvm dart analyze packages/zenoh
 
-# Run all tests (requires native libs on LD_LIBRARY_PATH)
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test
+# Run all tests (build hooks resolve native libs automatically)
+cd packages/zenoh && fvm dart test
 
 # Run a single test file
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test test/session_test.dart
+cd packages/zenoh && fvm dart test test/session_test.dart
 
 # Run a single test by name
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test --name "opens session"
+cd packages/zenoh && fvm dart test --name "opens session"
 
 # Melos bootstrap (from monorepo root)
 fvm dart run melos bootstrap
@@ -140,41 +143,34 @@ fvm dart run melos bootstrap
 
 ### CLI examples
 
-CLI examples live in `packages/zenoh/example/` and require `LD_LIBRARY_PATH` during development (native libraries are not on the system linker path).
+CLI examples live in `packages/zenoh/example/`. Build hooks resolve native libraries automatically — no `LD_LIBRARY_PATH` needed.
 
 ```bash
 # Put data on a key expression
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+cd packages/zenoh && fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
 
 # Delete a key expression
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_delete.dart -k demo/example/test
+cd packages/zenoh && fvm dart run example/z_delete.dart -k demo/example/test
 
 # Subscribe to a key expression (runs until Ctrl-C)
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_sub.dart -k 'demo/example/**'
+cd packages/zenoh && fvm dart run example/z_sub.dart -k 'demo/example/**'
 
 # Publish in a loop on a key expression (runs until Ctrl-C)
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
+cd packages/zenoh && fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
 
 # Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
+cd packages/zenoh && fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
 
 # Print own session ZID and connected router/peer ZIDs
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_info.dart
+cd packages/zenoh && fvm dart run example/z_info.dart
 
 # Discover zenoh entities on the network (scouts for routers, peers, and clients)
-cd packages/zenoh && LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_scout.dart
+cd packages/zenoh && fvm dart run example/z_scout.dart
 ```
 
 CLI flags must mirror zenoh-c's examples (`extern/zenoh-c/examples/z_*.c`). When adding a new CLI example in any phase:
 1. Match the zenoh-c flag names and short forms exactly (e.g., `-k`/`--key`, `-p`/`--payload`)
-2. Document the full usage (with `LD_LIBRARY_PATH`) in the README.md CLI Examples section
+2. Document the full usage in the README.md CLI Examples section
 3. The `/tdd-finalize-docs` agent must include CLI usage in the README update
 
 ## Architecture
@@ -190,8 +186,9 @@ Native C code in `src/` is compiled into a shared library and loaded at runtime 
 - **Short-lived native functions**: Call directly from any isolate (e.g., `zd_put()`)
 - **Long-lived native functions**: Must run on a helper isolate to avoid blocking. Uses `SendPort`/`ReceivePort` request-response pattern with `Completer`-based futures.
 - **`zd_` prefix**: All C shim symbols (functions, structs, enums, typedefs) must use the `zd_` prefix to avoid collisions with zenoh-c's `z_`/`zc_` namespace. The ffigen.yaml filters on `zd_.*` — symbols without this prefix won't appear in bindings.dart.
-- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
-- **Single-load library**: Only `libzenoh_dart.so` is loaded explicitly in Dart. The OS linker resolves `libzenohc.so` automatically via the `DT_NEEDED` entry.
+- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated with `@Native` annotations — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
+- **`@Native` resolution**: FFI functions use `@Native` annotations with `@DefaultAsset('package:zenoh/src/bindings.dart')`. The Dart runtime resolves `libzenoh_dart.so` via build hook metadata — no `DynamicLibrary.open()`. The OS linker resolves `libzenohc.so` automatically via the `DT_NEEDED` entry.
+- **Build hook**: `packages/zenoh/hook/build.dart` registers two `CodeAsset` entries (libzenoh_dart.so and libzenohc.so) from `packages/zenoh/native/linux/x86_64/`.
 
 ### Dynamic Library Names by Platform
 
@@ -401,7 +398,8 @@ don't create new files.
 ### Testing Constraints
 
 - Tests require `libzenohc.so` and `libzenoh_dart.so` to be built and
-  loadable. The test runner must find them (via `LD_LIBRARY_PATH` or rpath).
+  placed in `packages/zenoh/native/linux/x86_64/`. Build hooks register
+  these as code assets for `@Native` resolution.
 - Session-based tests need a zenoh router or peer — use `Session.open()` with
   default config (peer mode) for unit tests. Tests that need two endpoints
   (pub/sub, get/queryable) open two sessions in the same process.
@@ -422,14 +420,14 @@ When `/tdd-finalize-docs` runs after a release, update these specific sections:
 ### CLAUDE.md updates
 1. **"Current Status" section** — Add a status line for the completed phase: `**Phase N Name: COMPLETE** — X C shim functions, Y integration tests. <brief description>.`
 2. **"Available Dart API classes" list** — Add new classes with one-line descriptions. Keep alphabetical by category (static utils, config, session, data types, exceptions).
-3. **"CLI examples" code block** — Add new CLI examples with full `LD_LIBRARY_PATH` command. Include a comment describing what the command does. Verify ALL existing CLI examples are present (check `packages/zenoh/example/z_*.dart` against the code block).
+3. **"CLI examples" code block** — Add new CLI examples (no `LD_LIBRARY_PATH` needed — build hooks resolve automatically). Include a comment describing what the command does. Verify ALL existing CLI examples are present (check `packages/zenoh/example/z_*.dart` against the code block).
 4. **"Phases N–18" line** — Update the starting phase number.
 
 ### README.md updates
 1. **Architecture diagram** — Update the top-line class list in the ASCII diagram.
 2. **Phase status blocks** — Add a new status block for the completed phase with: C shim function count, new API surface, CLI example, test count.
 3. **"Phases N–18" line** — Update the starting phase number.
-4. **"CLI Examples" section** — Add new CLI commands with `LD_LIBRARY_PATH`. Verify ALL existing CLI examples are present (check `packages/zenoh/example/z_*.dart`).
+4. **"CLI Examples" section** — Add new CLI commands (no `LD_LIBRARY_PATH` needed). Verify ALL existing CLI examples are present (check `packages/zenoh/example/z_*.dart`).
 5. **"Phase Roadmap" table** — Mark the completed phase row with `— **COMPLETE**`.
 
 ### Verification checklist

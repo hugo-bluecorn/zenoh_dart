@@ -107,48 +107,48 @@ cmake -S src -B build -G Ninja \
 cmake --build build
 ```
 
-### 3. Run tests
+### 3. Place prebuilt libraries
 
 ```bash
-cd packages/zenoh
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build fvm dart test
+mkdir -p packages/zenoh/native/linux/x86_64/
+cp build/libzenoh_dart.so packages/zenoh/native/linux/x86_64/
+cp extern/zenoh-c/target/release/libzenohc.so packages/zenoh/native/linux/x86_64/
+patchelf --set-rpath '$ORIGIN' packages/zenoh/native/linux/x86_64/libzenoh_dart.so
 ```
 
-### 4. Try the CLI examples
-
-> **Note:** `LD_LIBRARY_PATH` is required during development because the native
-> libraries (`libzenoh_dart.so`, `libzenohc.so`) are not on the system linker
-> path. This applies to both tests and CLI examples.
+### 4. Run tests
 
 ```bash
-# Put data on a key expression
+cd packages/zenoh && fvm dart test
+```
+
+> Build hooks resolve native libraries automatically — no `LD_LIBRARY_PATH` needed.
+
+### 5. Try the CLI examples
+
+```bash
 cd packages/zenoh
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Put data on a key expression
+fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
 
 # Delete a key expression
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_delete.dart -k demo/example/test
+fvm dart run example/z_delete.dart -k demo/example/test
 
 # Subscribe to a key expression (runs until Ctrl-C; combine with z_put or z_pub in another terminal)
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_sub.dart -k 'demo/example/**'
+fvm dart run example/z_sub.dart -k 'demo/example/**'
 
 # Publish in a loop on a key expression (runs until Ctrl-C)
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
+fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
 
 # Publish via shared memory in a loop on a key expression (runs until Ctrl-C)
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
+fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
 
 # Print own session ZID and connected router/peer ZIDs
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_info.dart
+fvm dart run example/z_info.dart
 
 # Discover zenoh entities on the network (scouts for routers, peers, and clients)
-LD_LIBRARY_PATH=../../extern/zenoh-c/target/release:../../build \
-  fvm dart run example/z_scout.dart
+fvm dart run example/z_scout.dart
 ```
 
 ## Phase Roadmap
