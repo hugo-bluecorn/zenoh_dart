@@ -3,7 +3,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'exceptions.dart';
-import 'native_lib.dart';
+import 'bindings.dart' as ffi_bindings;
 
 /// A Zenoh key expression.
 ///
@@ -21,9 +21,9 @@ class KeyExpr {
   /// Throws [ZenohException] if [expr] is not a valid key expression
   /// (e.g., empty string).
   KeyExpr(String expr)
-    : _kePtr = calloc.allocate(bindings.zd_view_keyexpr_sizeof()),
+    : _kePtr = calloc.allocate(ffi_bindings.zd_view_keyexpr_sizeof()),
       _nativeStr = expr.toNativeUtf8() {
-    final rc = bindings.zd_view_keyexpr_from_str(
+    final rc = ffi_bindings.zd_view_keyexpr_from_str(
       _kePtr.cast(),
       _nativeStr.cast(),
     );
@@ -46,14 +46,14 @@ class KeyExpr {
   String get value {
     _ensureNotDisposed();
     final Pointer<Void> viewStr = calloc.allocate(
-      bindings.zd_view_string_sizeof(),
+      ffi_bindings.zd_view_string_sizeof(),
     );
-    bindings.zd_keyexpr_as_view_string(
-      bindings.zd_view_keyexpr_loan(_kePtr.cast()),
+    ffi_bindings.zd_keyexpr_as_view_string(
+      ffi_bindings.zd_view_keyexpr_loan(_kePtr.cast()),
       viewStr.cast(),
     );
-    final data = bindings.zd_view_string_data(viewStr.cast());
-    final len = bindings.zd_view_string_len(viewStr.cast());
+    final data = ffi_bindings.zd_view_string_data(viewStr.cast());
+    final len = ffi_bindings.zd_view_string_len(viewStr.cast());
     final result = data.cast<Utf8>().toDartString(length: len);
     calloc.free(viewStr);
     return result;

@@ -8,6 +8,7 @@ import 'package:ffi/ffi.dart';
 import 'config.dart';
 import 'hello.dart';
 import 'id.dart';
+import 'bindings.dart' as ffi_bindings;
 import 'native_lib.dart';
 import 'whatami.dart';
 
@@ -34,9 +35,10 @@ class Zenoh {
   ///
   /// See: https://docs.rs/env_logger/latest/env_logger/
   static void initLog(String fallback) {
+    ensureInitialized();
     final cStr = fallback.toNativeUtf8();
     try {
-      bindings.zd_init_log(cStr.cast<Char>());
+      ffi_bindings.zd_init_log(cStr.cast<Char>());
     } finally {
       calloc.free(cStr);
     }
@@ -105,7 +107,7 @@ class Zenoh {
     final cfgPtr = configAddr != 0
         ? Pointer<Void>.fromAddress(configAddr)
         : nullptr;
-    bindings.zd_scout(cfgPtr.cast(), nativePort, timeoutMs, what);
+    ffi_bindings.zd_scout(cfgPtr.cast(), nativePort, timeoutMs, what);
 
     return completer.future;
   }

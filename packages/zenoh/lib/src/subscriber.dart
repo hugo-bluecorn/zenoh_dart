@@ -7,7 +7,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
 import 'exceptions.dart';
-import 'native_lib.dart';
+import 'bindings.dart' as ffi_bindings;
 import 'sample.dart';
 
 /// A zenoh subscriber that receives samples on a key expression.
@@ -30,7 +30,7 @@ class Subscriber {
     Pointer<Void> loanedSession,
     Pointer<Void> loanedKe,
   ) {
-    final size = bindings.zd_subscriber_sizeof();
+    final size = ffi_bindings.zd_subscriber_sizeof();
     final Pointer<Void> ptr = calloc.allocate(size);
 
     final receivePort = ReceivePort();
@@ -58,7 +58,7 @@ class Subscriber {
       }
     });
 
-    final rc = bindings.zd_declare_subscriber(
+    final rc = ffi_bindings.zd_declare_subscriber(
       loanedSession.cast(),
       ptr.cast(),
       loanedKe.cast(),
@@ -84,7 +84,7 @@ class Subscriber {
   void close() {
     if (_closed) return;
     _closed = true;
-    bindings.zd_subscriber_drop(_ptr.cast());
+    ffi_bindings.zd_subscriber_drop(_ptr.cast());
     _receivePort.close();
     _controller.close();
     calloc.free(_ptr);

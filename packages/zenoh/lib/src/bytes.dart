@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 
 import 'exceptions.dart';
-import 'native_lib.dart';
+import 'bindings.dart' as ffi_bindings;
 
 /// A Zenoh byte payload.
 ///
@@ -28,10 +28,10 @@ class ZBytes {
   ///
   /// Throws [ZenohException] if the native copy fails.
   factory ZBytes.fromString(String value) {
-    final Pointer<Void> ptr = calloc.allocate(bindings.zd_bytes_sizeof());
+    final Pointer<Void> ptr = calloc.allocate(ffi_bindings.zd_bytes_sizeof());
     final nativeStr = value.toNativeUtf8();
     try {
-      final rc = bindings.zd_bytes_copy_from_str(ptr.cast(), nativeStr.cast());
+      final rc = ffi_bindings.zd_bytes_copy_from_str(ptr.cast(), nativeStr.cast());
       if (rc != 0) {
         calloc.free(ptr);
         throw ZenohException('Failed to create ZBytes from string', rc);
@@ -46,13 +46,13 @@ class ZBytes {
   ///
   /// Throws [ZenohException] if the native copy fails.
   factory ZBytes.fromUint8List(Uint8List data) {
-    final Pointer<Void> ptr = calloc.allocate(bindings.zd_bytes_sizeof());
+    final Pointer<Void> ptr = calloc.allocate(ffi_bindings.zd_bytes_sizeof());
     final Pointer<Uint8> nativeBuf = calloc<Uint8>(data.length);
     for (var i = 0; i < data.length; i++) {
       nativeBuf[i] = data[i];
     }
     try {
-      final rc = bindings.zd_bytes_copy_from_buf(
+      final rc = ffi_bindings.zd_bytes_copy_from_buf(
         ptr.cast(),
         nativeBuf,
         data.length,
@@ -86,18 +86,18 @@ class ZBytes {
   String toStr() {
     _ensureNotDisposed();
     _ensureNotConsumed();
-    final loaned = bindings.zd_bytes_loan(_ptr.cast());
-    final Pointer<Void> ownedStr = calloc.allocate(bindings.zd_string_sizeof());
-    final rc = bindings.zd_bytes_to_string(loaned, ownedStr.cast());
+    final loaned = ffi_bindings.zd_bytes_loan(_ptr.cast());
+    final Pointer<Void> ownedStr = calloc.allocate(ffi_bindings.zd_string_sizeof());
+    final rc = ffi_bindings.zd_bytes_to_string(loaned, ownedStr.cast());
     if (rc != 0) {
       calloc.free(ownedStr);
       throw ZenohException('Failed to convert ZBytes to string', rc);
     }
-    final loanedStr = bindings.zd_string_loan(ownedStr.cast());
-    final data = bindings.zd_string_data(loanedStr);
-    final len = bindings.zd_string_len(loanedStr);
+    final loanedStr = ffi_bindings.zd_string_loan(ownedStr.cast());
+    final data = ffi_bindings.zd_string_data(loanedStr);
+    final len = ffi_bindings.zd_string_len(loanedStr);
     final result = data.cast<Utf8>().toDartString(length: len);
-    bindings.zd_string_drop(ownedStr.cast());
+    ffi_bindings.zd_string_drop(ownedStr.cast());
     calloc.free(ownedStr);
     return result;
   }
@@ -109,7 +109,7 @@ class ZBytes {
     if (_disposed) return;
     if (_consumed) return;
     _disposed = true;
-    bindings.zd_bytes_drop(_ptr.cast());
+    ffi_bindings.zd_bytes_drop(_ptr.cast());
     calloc.free(_ptr);
   }
 

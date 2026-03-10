@@ -3,7 +3,7 @@ import 'dart:ffi';
 import 'package:ffi/ffi.dart';
 
 import 'exceptions.dart';
-import 'native_lib.dart';
+import 'bindings.dart' as ffi_bindings;
 
 /// A Zenoh configuration.
 ///
@@ -23,8 +23,8 @@ class Config {
   /// Creates a default Zenoh configuration.
   ///
   /// Throws [ZenohException] if the native config creation fails.
-  Config() : _ptr = calloc.allocate(bindings.zd_config_sizeof()) {
-    final rc = bindings.zd_config_default(_ptr.cast());
+  Config() : _ptr = calloc.allocate(ffi_bindings.zd_config_sizeof()) {
+    final rc = ffi_bindings.zd_config_default(_ptr.cast());
     if (rc != 0) {
       calloc.free(_ptr);
       throw ZenohException('Failed to create default config', rc);
@@ -46,7 +46,7 @@ class Config {
     final nativeKey = key.toNativeUtf8();
     final nativeValue = value.toNativeUtf8();
     try {
-      final rc = bindings.zd_config_insert_json5(
+      final rc = ffi_bindings.zd_config_insert_json5(
         _ptr.cast(),
         nativeKey.cast(),
         nativeValue.cast(),
@@ -71,7 +71,7 @@ class Config {
     if (_disposed) return;
     _ensureNotConsumed();
     _disposed = true;
-    bindings.zd_config_drop(_ptr.cast());
+    ffi_bindings.zd_config_drop(_ptr.cast());
     calloc.free(_ptr);
   }
 

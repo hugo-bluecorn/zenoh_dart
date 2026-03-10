@@ -8,7 +8,7 @@ import 'bytes.dart';
 import 'congestion_control.dart';
 import 'encoding.dart';
 import 'exceptions.dart';
-import 'native_lib.dart';
+import 'bindings.dart' as ffi_bindings;
 import 'priority.dart';
 
 /// A zenoh publisher for efficiently publishing multiple messages on a
@@ -35,7 +35,7 @@ class Publisher {
     Priority priority = Priority.data,
     bool enableMatchingListener = false,
   }) {
-    final size = bindings.zd_publisher_sizeof();
+    final size = ffi_bindings.zd_publisher_sizeof();
     final Pointer<Void> ptr = calloc.allocate(size);
 
     final encodingStr = encoding != null
@@ -43,7 +43,7 @@ class Publisher {
         : nullptr;
 
     try {
-      final rc = bindings.zd_declare_publisher(
+      final rc = ffi_bindings.zd_declare_publisher(
         loanedSession.cast(),
         ptr.cast(),
         loanedKe.cast(),
@@ -73,8 +73,8 @@ class Publisher {
         }
       });
 
-      final loaned = bindings.zd_publisher_loan(ptr.cast());
-      final mlRc = bindings.zd_publisher_declare_background_matching_listener(
+      final loaned = ffi_bindings.zd_publisher_loan(ptr.cast());
+      final mlRc = ffi_bindings.zd_publisher_declare_background_matching_listener(
         loaned,
         matchingPort.sendPort.nativePort,
       );
@@ -82,7 +82,7 @@ class Publisher {
       if (mlRc != 0) {
         matchingPort.close();
         matchingController.close();
-        bindings.zd_publisher_drop(ptr.cast());
+        ffi_bindings.zd_publisher_drop(ptr.cast());
         calloc.free(ptr);
         throw ZenohException('Failed to declare matching listener', mlRc);
       }
@@ -98,13 +98,13 @@ class Publisher {
   /// The key expression this publisher is declared on.
   String get keyExpr {
     _ensureOpen();
-    final loaned = bindings.zd_publisher_loan(_ptr.cast());
-    final loanedKe = bindings.zd_publisher_keyexpr(loaned);
-    final viewStrSize = bindings.zd_view_string_sizeof();
+    final loaned = ffi_bindings.zd_publisher_loan(_ptr.cast());
+    final loanedKe = ffi_bindings.zd_publisher_keyexpr(loaned);
+    final viewStrSize = ffi_bindings.zd_view_string_sizeof();
     final Pointer<Void> viewStr = calloc.allocate(viewStrSize);
-    bindings.zd_keyexpr_as_view_string(loanedKe, viewStr.cast());
-    final data = bindings.zd_view_string_data(viewStr.cast());
-    final len = bindings.zd_view_string_len(viewStr.cast());
+    ffi_bindings.zd_keyexpr_as_view_string(loanedKe, viewStr.cast());
+    final data = ffi_bindings.zd_view_string_data(viewStr.cast());
+    final len = ffi_bindings.zd_view_string_len(viewStr.cast());
     final result = data.cast<Utf8>().toDartString(length: len);
     calloc.free(viewStr);
     return result;
@@ -116,7 +116,7 @@ class Publisher {
   /// An optional [attachment] can be included (consumed by this call).
   void put(String value, {Encoding? encoding, ZBytes? attachment}) {
     _ensureOpen();
-    final loaned = bindings.zd_publisher_loan(_ptr.cast());
+    final loaned = ffi_bindings.zd_publisher_loan(_ptr.cast());
     final payload = ZBytes.fromString(value);
 
     final encodingStr = encoding != null
@@ -125,7 +125,7 @@ class Publisher {
     final attachmentPtr = attachment != null ? attachment.nativePtr : nullptr;
 
     try {
-      final rc = bindings.zd_publisher_put(
+      final rc = ffi_bindings.zd_publisher_put(
         loaned,
         payload.nativePtr.cast(),
         encodingStr.cast(),
@@ -149,7 +149,7 @@ class Publisher {
   /// An optional [attachment] can be included (consumed by this call).
   void putBytes(ZBytes payload, {Encoding? encoding, ZBytes? attachment}) {
     _ensureOpen();
-    final loaned = bindings.zd_publisher_loan(_ptr.cast());
+    final loaned = ffi_bindings.zd_publisher_loan(_ptr.cast());
     final payloadPtr = payload.nativePtr;
 
     final encodingStr = encoding != null
@@ -158,7 +158,7 @@ class Publisher {
     final attachmentPtr = attachment != null ? attachment.nativePtr : nullptr;
 
     try {
-      final rc = bindings.zd_publisher_put(
+      final rc = ffi_bindings.zd_publisher_put(
         loaned,
         payloadPtr.cast(),
         encodingStr.cast(),
@@ -179,8 +179,8 @@ class Publisher {
   /// Sends a DELETE through this publisher.
   void deleteResource() {
     _ensureOpen();
-    final loaned = bindings.zd_publisher_loan(_ptr.cast());
-    final rc = bindings.zd_publisher_delete(loaned);
+    final loaned = ffi_bindings.zd_publisher_loan(_ptr.cast());
+    final rc = ffi_bindings.zd_publisher_delete(loaned);
     if (rc != 0) {
       throw ZenohException('Publisher delete failed', rc);
     }
@@ -190,10 +190,10 @@ class Publisher {
   /// key expression.
   bool hasMatchingSubscribers() {
     _ensureOpen();
-    final loaned = bindings.zd_publisher_loan(_ptr.cast());
+    final loaned = ffi_bindings.zd_publisher_loan(_ptr.cast());
     final Pointer<Int> matching = calloc<Int>();
     try {
-      final rc = bindings.zd_publisher_get_matching_status(loaned, matching);
+      final rc = ffi_bindings.zd_publisher_get_matching_status(loaned, matching);
       if (rc != 0) {
         throw ZenohException('Failed to get matching status', rc);
       }
@@ -213,7 +213,7 @@ class Publisher {
   void close() {
     if (_closed) return;
     _closed = true;
-    bindings.zd_publisher_drop(_ptr.cast());
+    ffi_bindings.zd_publisher_drop(_ptr.cast());
     _matchingPort?.close();
     _matchingController?.close();
     calloc.free(_ptr);
