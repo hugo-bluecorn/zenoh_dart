@@ -13,6 +13,8 @@ zenoh-dart/                     # git repo root
   pubspec.yaml                  # Dart workspace + Melos config
   packages/
     zenoh/                      # pure Dart FFI package
+      hook/                     # build hook for @Native code asset registration
+      native/                   # prebuilt native libraries (linux/x86_64/)
   src/                          # C shim source (monorepo level)
     zenoh_dart.{h,c}
     CMakeLists.txt

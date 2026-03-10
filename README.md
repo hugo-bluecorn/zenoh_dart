@@ -8,7 +8,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 ┌─────────────────────────────┐
 │   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes, ShmProvider, ShmMutBuffer, ZenohId, WhatAmI, Hello
 ├─────────────────────────────┤
-│   Generated FFI Bindings     │  bindings.dart (auto-generated via ffigen)
+│   Generated FFI Bindings     │  bindings.dart (@Native annotations, resolved via hook/build.dart)
 ├─────────────────────────────┤
 │   C Shim (src/zenoh_dart.c)  │  zd_* functions flattening zenoh-c macros
 ├─────────────────────────────┤
