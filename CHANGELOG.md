@@ -1,4 +1,20 @@
 # Changelog
+## Experiment A2: Prebuilt + @Native Annotations (2026-03-10)
+
+### Added
+- Experiment package `exp_hooks_prebuilt_native` testing Dart build hooks with prebuilt native libraries and `@Native` annotation loading
+- Build hook (`hook/build.dart`) declaring two `CodeAsset` entries with `DynamicLoadingBundled()`
+- `@DefaultAsset` library directive + `@Native` external function declarations (no `DynamicLibrary.open()`)
+- RUNPATH patching via `patchelf --set-rpath '$ORIGIN'` for DT_NEEDED resolution
+- 9 automated tests (all pass)
+- `lessons-learned.md` with empirical results and A1 vs A2 comparison
+
+### Results
+- **POSITIVE**: `@Native` + `@DefaultAsset` successfully resolves hook-bundled assets without `LD_LIBRARY_PATH`
+- DT_NEEDED dependency (`libzenohc.so`) resolves via co-located RUNPATH=`$ORIGIN`
+- CodeAsset names must use bare relative paths (constructor auto-prefixes `package:<name>/`)
+- Post-test SEGV during VM teardown is cosmetic (zenoh cleanup ordering)
+
 ## Experiment A1: Both-Prebuilt + DynamicLibrary.open() (2026-03-10)
 
 ### Added
