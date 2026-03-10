@@ -145,10 +145,11 @@ void main() {
       );
       if (result.exitCode != 0) {
         // Negative result: DynamicLibrary.open fails without LD_LIBRARY_PATH.
+        final combined = '${result.stdout}${result.stderr}';
         expect(
-          result.stderr.toString(),
+          combined,
           contains('libzenoh_dart.so'),
-          reason: 'Error should mention the library name',
+          reason: 'Error output should mention the library name',
         );
       } else {
         // Positive result: library loaded successfully.
