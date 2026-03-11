@@ -3,30 +3,6 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// Known issue: Inter-process TCP connections crash the listener process.
-///
-/// The crash occurs on a tokio worker thread (pc=0, si_addr=nil) when a
-/// remote Dart process connects via TCP. The `zd_promote_zenohc_global()`
-/// function successfully promotes libzenohc.so symbols to RTLD_GLOBAL scope
-/// (verified via DynamicLibrary.process().lookup()), but the tokio runtime's
-/// waker vtable dispatch still fails.
-///
-/// Root cause: The tokio runtime is initialized when the session opens.
-/// At that point, libzenohc.so is loaded with RTLD_LOCAL. The waker vtable
-/// pointers are set up using the RTLD_LOCAL symbol addresses. Promoting to
-/// RTLD_GLOBAL after initialization does not retroactively fix existing
-/// vtable pointers. The crash triggers when a remote TCP connection causes
-/// tokio to dispatch on a worker thread using the stale vtable.
-///
-/// This affects ALL loading mechanisms: @Native, LD_LIBRARY_PATH, and
-/// LD_PRELOAD with both libraries all produce the same crash.
-///
-/// Blocked on: zenoh-c or Dart VM fix for dlopen-loaded tokio runtimes.
-const _interprocessSkipReason =
-    'Inter-process TCP connection crashes listener — '
-    'tokio waker vtable dispatch fails when libzenohc.so loaded via dlopen. '
-    'See docs/reviews/rtld-local-crash-investigation.md';
-
 /// Starts the interprocess_connect helper in the given mode.
 ///
 /// Returns the [Process] after the ready signal has been received.
@@ -85,7 +61,6 @@ void main() {
         expect(listenerExit, equals(0),
             reason: 'Listener process should exit cleanly');
       },
-      skip: _interprocessSkipReason,
     );
 
     test(
@@ -108,7 +83,6 @@ void main() {
         expect(listenerExit, equals(0),
             reason: 'Listener should exit cleanly (no SIGSEGV/SIGBUS)');
       },
-      skip: _interprocessSkipReason,
     );
 
     test(
@@ -141,7 +115,6 @@ void main() {
         expect(connectorExit, equals(0));
         expect(listenerExit, equals(0));
       },
-      skip: _interprocessSkipReason,
     );
 
     test('standalone helper process exits cleanly without connection',

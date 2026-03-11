@@ -10,7 +10,6 @@ import 'encoding.dart';
 import 'exceptions.dart';
 import 'id.dart';
 import 'keyexpr.dart';
-import 'bindings.dart' as ffi_bindings;
 import 'native_lib.dart';
 import 'priority.dart';
 import 'publisher.dart';
@@ -36,7 +35,7 @@ class Session {
   /// Throws [ZenohException] if the session cannot be opened.
   static Session open({Config? config}) {
     ensureInitialized();
-    final size = ffi_bindings.zd_session_sizeof();
+    final size = bindings.zd_session_sizeof();
     final Pointer<Void> ptr = calloc.allocate(size);
 
     Config effectiveConfig;
@@ -49,7 +48,7 @@ class Session {
       ownsConfig = true;
     }
 
-    final rc = ffi_bindings.zd_open_session(
+    final rc = bindings.zd_open_session(
       ptr.cast(),
       effectiveConfig.nativePtr.cast(),
     );
@@ -75,7 +74,7 @@ class Session {
   void close() {
     if (_closed) return;
     _closed = true;
-    ffi_bindings.zd_close_session(_ptr.cast());
+    bindings.zd_close_session(_ptr.cast());
     calloc.free(_ptr);
   }
 
@@ -90,8 +89,8 @@ class Session {
     _ensureOpen();
     final outId = calloc<Uint8>(16);
     try {
-      final loanedSession = ffi_bindings.zd_session_loan(_ptr.cast());
-      ffi_bindings.zd_info_zid(loanedSession, outId);
+      final loanedSession = bindings.zd_session_loan(_ptr.cast());
+      bindings.zd_info_zid(loanedSession, outId);
       return ZenohId(Uint8List.fromList(outId.asTypedList(16)));
     } finally {
       calloc.free(outId);
@@ -106,7 +105,7 @@ class Session {
     const maxCount = 64;
     final outIds = calloc<Uint8>(maxCount * 16);
     try {
-      final loanedSession = ffi_bindings.zd_session_loan(_ptr.cast());
+      final loanedSession = bindings.zd_session_loan(_ptr.cast());
       final count = nativeCall(loanedSession, outIds, maxCount);
       final allBytes = outIds.asTypedList(count * 16);
       return [
@@ -123,14 +122,14 @@ class Session {
   /// May return an empty list if no router is connected (e.g., in peer mode).
   ///
   /// Throws [StateError] if the session has been closed.
-  List<ZenohId> routersZid() => _collectZids(ffi_bindings.zd_info_routers_zid);
+  List<ZenohId> routersZid() => _collectZids(bindings.zd_info_routers_zid);
 
   /// Returns the [ZenohId]s of all connected peers.
   ///
   /// May return an empty list if no peer is connected.
   ///
   /// Throws [StateError] if the session has been closed.
-  List<ZenohId> peersZid() => _collectZids(ffi_bindings.zd_info_peers_zid);
+  List<ZenohId> peersZid() => _collectZids(bindings.zd_info_peers_zid);
 
   /// Executes [action] with a loaned session and a loaned key expression,
   /// guaranteeing cleanup of the key expression in all cases.
@@ -142,9 +141,9 @@ class Session {
     final ke = KeyExpr(keyExpr);
     try {
       final loanedSession =
-          ffi_bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
       final loanedKe =
-          ffi_bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
       action(loanedSession, loanedKe);
     } finally {
       ke.dispose();
@@ -158,7 +157,7 @@ class Session {
   void put(String keyExpr, String value) {
     _withKeyExpr(keyExpr, (loanedSession, loanedKe) {
       final payload = ZBytes.fromString(value);
-      final rc = ffi_bindings.zd_put(
+      final rc = bindings.zd_put(
         loanedSession.cast(),
         loanedKe.cast(),
         payload.nativePtr.cast(),
@@ -182,7 +181,7 @@ class Session {
     // Validate payload state before allocating KeyExpr
     final payloadPtr = payload.nativePtr;
     _withKeyExpr(keyExpr, (loanedSession, loanedKe) {
-      final rc = ffi_bindings.zd_put(
+      final rc = bindings.zd_put(
         loanedSession.cast(),
         loanedKe.cast(),
         payloadPtr.cast(),
@@ -200,7 +199,7 @@ class Session {
   /// Throws [StateError] if the session has been closed.
   void deleteResource(String keyExpr) {
     _withKeyExpr(keyExpr, (loanedSession, loanedKe) {
-      final rc = ffi_bindings.zd_delete(loanedSession.cast(), loanedKe.cast());
+      final rc = bindings.zd_delete(loanedSession.cast(), loanedKe.cast());
       if (rc != 0) {
         throw ZenohException('Delete failed', rc);
       }
@@ -225,9 +224,9 @@ class Session {
     final ke = KeyExpr(keyExpr);
     try {
       final loanedSession =
-          ffi_bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
       final loanedKe =
-          ffi_bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
       return Publisher.declare(
         loanedSession,
         loanedKe,
@@ -253,9 +252,9 @@ class Session {
     final ke = KeyExpr(keyExpr);
     try {
       final loanedSession =
-          ffi_bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
       final loanedKe =
-          ffi_bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
       return Subscriber.declare(loanedSession, loanedKe);
     } finally {
       ke.dispose();

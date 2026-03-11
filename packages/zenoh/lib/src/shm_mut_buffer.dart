@@ -4,7 +4,7 @@ import 'package:ffi/ffi.dart';
 
 import 'bytes.dart';
 import 'exceptions.dart';
-import 'bindings.dart' as ffi_bindings;
+import 'native_lib.dart';
 
 /// A mutable shared memory buffer allocated from an [ShmProvider].
 ///
@@ -28,8 +28,8 @@ class ShmMutBuffer {
   /// Returns the length (in bytes) of this buffer.
   int get length {
     _ensureUsable();
-    final loaned = ffi_bindings.zd_shm_mut_loan_mut(_ptr.cast());
-    return ffi_bindings.zd_shm_mut_len(loaned);
+    final loaned = bindings.zd_shm_mut_loan_mut(_ptr.cast());
+    return bindings.zd_shm_mut_len(loaned);
   }
 
   /// Returns a mutable pointer to the buffer data.
@@ -37,8 +37,8 @@ class ShmMutBuffer {
   /// Use this to write data into the SHM buffer before calling [toBytes].
   Pointer<Uint8> get data {
     _ensureUsable();
-    final loaned = ffi_bindings.zd_shm_mut_loan_mut(_ptr.cast());
-    return ffi_bindings.zd_shm_mut_data_mut(loaned);
+    final loaned = bindings.zd_shm_mut_loan_mut(_ptr.cast());
+    return bindings.zd_shm_mut_data_mut(loaned);
   }
 
   /// Converts this SHM buffer into a [ZBytes] (zero-copy).
@@ -50,8 +50,8 @@ class ShmMutBuffer {
   /// Throws [ZenohException] if the conversion fails.
   ZBytes toBytes() {
     _ensureUsable();
-    final Pointer<Void> bytesPtr = calloc.allocate(ffi_bindings.zd_bytes_sizeof());
-    final rc = ffi_bindings.zd_bytes_from_shm_mut(bytesPtr.cast(), _ptr.cast());
+    final Pointer<Void> bytesPtr = calloc.allocate(bindings.zd_bytes_sizeof());
+    final rc = bindings.zd_bytes_from_shm_mut(bytesPtr.cast(), _ptr.cast());
     if (rc != 0) {
       calloc.free(bytesPtr);
       throw ZenohException('Failed to convert ShmMutBuffer to ZBytes', rc);
@@ -69,7 +69,7 @@ class ShmMutBuffer {
     if (_disposed) return;
     _disposed = true;
     if (!_consumed) {
-      ffi_bindings.zd_shm_mut_drop(_ptr.cast());
+      bindings.zd_shm_mut_drop(_ptr.cast());
     }
     calloc.free(_ptr);
   }
