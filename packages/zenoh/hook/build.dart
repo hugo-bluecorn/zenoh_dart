@@ -7,7 +7,7 @@ void main(List<String> args) async {
 
     final nativeDir = input.packageRoot.resolve('native/linux/x86_64/');
 
-    // Primary: C shim (resolved by @Native via asset ID)
+    // Primary: C shim (bundled for distribution; loaded at runtime via DynamicLibrary.open())
     output.assets.code.add(
       CodeAsset(
         package: input.packageName,
