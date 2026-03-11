@@ -11,11 +11,12 @@ void main() {
 
   group('z_scout CLI', () {
     Future<ProcessResult> runZScout([List<String> args = const []]) async {
-      return Process.run(
-        'fvm',
-        ['dart', 'run', 'example/z_scout.dart', ...args],
-        workingDirectory: packageRoot,
-      ).timeout(const Duration(seconds: 15));
+      return Process.run('fvm', [
+        'dart',
+        'run',
+        'example/z_scout.dart',
+        ...args,
+      ], workingDirectory: packageRoot).timeout(const Duration(seconds: 15));
     }
 
     test('runs with default arguments', () async {
@@ -87,15 +88,11 @@ Future<void> main() async {
 
       // Run the helper script from the repo root so it can
       // resolve the package:zenoh import via workspace package_config.json
-      final result = await Process.run(
-        dartBin,
-        [
-          'run',
-          '--packages=$repoRoot/.dart_tool/package_config.json',
-          tempScript.path,
-        ],
-        workingDirectory: packageRoot,
-      ).timeout(const Duration(seconds: 15));
+      final result = await Process.run(dartBin, [
+        'run',
+        '--packages=$repoRoot/.dart_tool/package_config.json',
+        tempScript.path,
+      ], workingDirectory: packageRoot).timeout(const Duration(seconds: 15));
 
       expect(result.exitCode, equals(0), reason: 'stderr: ${result.stderr}');
       final stdout = result.stdout as String;

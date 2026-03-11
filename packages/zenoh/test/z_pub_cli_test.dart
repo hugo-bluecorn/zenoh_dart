@@ -23,11 +23,10 @@ void main() {
 
   group('z_pub CLI', () {
     test('runs and prints publisher declaration', () async {
-      final process = await Process.start(
-        _dartExe,
-        ['run', 'example/z_pub.dart'],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_pub.dart',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final subscription = process.stdout

@@ -9,11 +9,12 @@ void main() {
 
   group('z_info CLI', () {
     Future<ProcessResult> runZInfo([List<String> args = const []]) async {
-      return Process.run(
-        'fvm',
-        ['dart', 'run', 'example/z_info.dart', ...args],
-        workingDirectory: packageRoot,
-      ).timeout(const Duration(seconds: 30));
+      return Process.run('fvm', [
+        'dart',
+        'run',
+        'example/z_info.dart',
+        ...args,
+      ], workingDirectory: packageRoot).timeout(const Duration(seconds: 30));
     }
 
     test('runs with default arguments and prints own id', () async {

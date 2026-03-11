@@ -56,8 +56,7 @@ void main(List<String> args) async {
     await for (final sample in subscriber.stream) {
       stdout.writeln('RECEIVED:${sample.payload}');
       final bytes = sample.payloadBytes;
-      final hex =
-          bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+      final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
       stdout.writeln('BYTES:$hex');
       received++;
       if (received >= count) break;

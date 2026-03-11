@@ -25,11 +25,10 @@ void main() {
     test(
       'runs and prints SHM provider creation and publisher declaration',
       () async {
-        final process = await Process.start(
-          _dartExe,
-          ['run', 'example/z_pub_shm.dart'],
-          workingDirectory: packageRoot,
-          );
+        final process = await Process.start(_dartExe, [
+          'run',
+          'example/z_pub_shm.dart',
+        ], workingDirectory: packageRoot);
 
         final stdout = StringBuffer();
         final subscription = process.stdout
@@ -50,18 +49,14 @@ void main() {
     );
 
     test('accepts -k and -p flags', () async {
-      final process = await Process.start(
-        _dartExe,
-        [
-          'run',
-          'example/z_pub_shm.dart',
-          '-k',
-          'demo/shm/test',
-          '-p',
-          'SHM data',
-        ],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_pub_shm.dart',
+        '-k',
+        'demo/shm/test',
+        '-p',
+        'SHM data',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final subscription = process.stdout
@@ -78,11 +73,11 @@ void main() {
     });
 
     test('accepts --add-matching-listener flag without crashing', () async {
-      final process = await Process.start(
-        _dartExe,
-        ['run', 'example/z_pub_shm.dart', '--add-matching-listener'],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_pub_shm.dart',
+        '--add-matching-listener',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final stderr = StringBuffer();
@@ -104,11 +99,12 @@ void main() {
     });
 
     test('accepts -e endpoint flag', () async {
-      final process = await Process.start(
-        _dartExe,
-        ['run', 'example/z_pub_shm.dart', '-e', 'tcp/127.0.0.1:7447'],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_pub_shm.dart',
+        '-e',
+        'tcp/127.0.0.1:7447',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final subscription = process.stdout

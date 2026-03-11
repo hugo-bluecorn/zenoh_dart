@@ -42,95 +42,125 @@ Future<Process> _startHelper({
 
 void main() {
   group('Inter-process connection', () {
+    test('two Dart processes connect via TCP without crashing', () async {
+      const port = '19001';
+
+      final listener = await _startHelper(
+        mode: '--listen',
+        port: port,
+        duration: 8,
+      );
+      final connector = await _startHelper(
+        mode: '--connect',
+        port: port,
+        duration: 3,
+      );
+
+      final connectorExit = await connector.exitCode.timeout(
+        Duration(seconds: 15),
+      );
+      expect(
+        connectorExit,
+        equals(0),
+        reason: 'Connector process should exit cleanly',
+      );
+
+      final listenerExit = await listener.exitCode.timeout(
+        Duration(seconds: 20),
+      );
+      expect(
+        listenerExit,
+        equals(0),
+        reason: 'Listener process should exit cleanly',
+      );
+    });
+
+    test('both processes exit with code 0', () async {
+      const port = '19002';
+
+      final listener = await _startHelper(
+        mode: '--listen',
+        port: port,
+        duration: 8,
+      );
+      final connector = await _startHelper(
+        mode: '--connect',
+        port: port,
+        duration: 3,
+      );
+
+      final connectorExit = await connector.exitCode.timeout(
+        Duration(seconds: 15),
+      );
+      final listenerExit = await listener.exitCode.timeout(
+        Duration(seconds: 20),
+      );
+
+      expect(
+        connectorExit,
+        equals(0),
+        reason: 'Connector should exit cleanly (no SIGSEGV/SIGBUS)',
+      );
+      expect(
+        listenerExit,
+        equals(0),
+        reason: 'Listener should exit cleanly (no SIGSEGV/SIGBUS)',
+      );
+    });
+
+    test('connection works without LD_LIBRARY_PATH or LD_PRELOAD', () async {
+      const port = '19003';
+
+      final env = Map<String, String>.from(Platform.environment);
+      env.remove('LD_LIBRARY_PATH');
+      env.remove('LD_PRELOAD');
+
+      final listener = await _startHelper(
+        mode: '--listen',
+        port: port,
+        duration: 8,
+        environment: env,
+      );
+      final connector = await _startHelper(
+        mode: '--connect',
+        port: port,
+        duration: 3,
+        environment: env,
+      );
+
+      final connectorExit = await connector.exitCode.timeout(
+        Duration(seconds: 15),
+      );
+      final listenerExit = await listener.exitCode.timeout(
+        Duration(seconds: 20),
+      );
+
+      expect(connectorExit, equals(0));
+      expect(listenerExit, equals(0));
+    });
+
     test(
-      'two Dart processes connect via TCP without crashing',
+      'standalone helper process exits cleanly without connection',
       () async {
-        const port = '19001';
-
-        final listener =
-            await _startHelper(mode: '--listen', port: port, duration: 8);
-        final connector =
-            await _startHelper(mode: '--connect', port: port, duration: 3);
-
-        final connectorExit =
-            await connector.exitCode.timeout(Duration(seconds: 15));
-        expect(connectorExit, equals(0),
-            reason: 'Connector process should exit cleanly');
-
-        final listenerExit =
-            await listener.exitCode.timeout(Duration(seconds: 20));
-        expect(listenerExit, equals(0),
-            reason: 'Listener process should exit cleanly');
-      },
-    );
-
-    test(
-      'both processes exit with code 0',
-      () async {
-        const port = '19002';
-
-        final listener =
-            await _startHelper(mode: '--listen', port: port, duration: 8);
-        final connector =
-            await _startHelper(mode: '--connect', port: port, duration: 3);
-
-        final connectorExit =
-            await connector.exitCode.timeout(Duration(seconds: 15));
-        final listenerExit =
-            await listener.exitCode.timeout(Duration(seconds: 20));
-
-        expect(connectorExit, equals(0),
-            reason: 'Connector should exit cleanly (no SIGSEGV/SIGBUS)');
-        expect(listenerExit, equals(0),
-            reason: 'Listener should exit cleanly (no SIGSEGV/SIGBUS)');
-      },
-    );
-
-    test(
-      'connection works without LD_LIBRARY_PATH or LD_PRELOAD',
-      () async {
-        const port = '19003';
-
-        final env = Map<String, String>.from(Platform.environment);
-        env.remove('LD_LIBRARY_PATH');
-        env.remove('LD_PRELOAD');
+        const port = '19004';
 
         final listener = await _startHelper(
           mode: '--listen',
           port: port,
-          duration: 8,
-          environment: env,
-        );
-        final connector = await _startHelper(
-          mode: '--connect',
-          port: port,
-          duration: 3,
-          environment: env,
+          duration: 2,
         );
 
-        final connectorExit =
-            await connector.exitCode.timeout(Duration(seconds: 15));
-        final listenerExit =
-            await listener.exitCode.timeout(Duration(seconds: 20));
-
-        expect(connectorExit, equals(0));
-        expect(listenerExit, equals(0));
+        // No connector — just verify the listener exits on its own
+        final listenerExit = await listener.exitCode.timeout(
+          Duration(seconds: 15),
+        );
+        expect(
+          listenerExit,
+          equals(0),
+          reason: 'Standalone listener should exit cleanly',
+        );
       },
     );
-
-    test('standalone helper process exits cleanly without connection',
-        () async {
-      const port = '19004';
-
-      final listener =
-          await _startHelper(mode: '--listen', port: port, duration: 2);
-
-      // No connector — just verify the listener exits on its own
-      final listenerExit =
-          await listener.exitCode.timeout(Duration(seconds: 15));
-      expect(listenerExit, equals(0),
-          reason: 'Standalone listener should exit cleanly');
-    });
   });
 
   group('Inter-process pub/sub', () {
@@ -144,25 +174,21 @@ void main() {
       String payload = 'hello',
       int count = 1,
     }) async {
-      final process = await Process.start(
-        'fvm',
-        [
-          'dart',
-          'run',
-          'test/helpers/interprocess_pubsub.dart',
-          '--mode',
-          mode,
-          '--port',
-          port,
-          '--key',
-          key,
-          '--payload',
-          payload,
-          '--count',
-          '$count',
-        ],
-        workingDirectory: '.',
-      );
+      final process = await Process.start('fvm', [
+        'dart',
+        'run',
+        'test/helpers/interprocess_pubsub.dart',
+        '--mode',
+        mode,
+        '--port',
+        port,
+        '--key',
+        key,
+        '--payload',
+        payload,
+        '--count',
+        '$count',
+      ], workingDirectory: '.');
 
       final output = <String>[];
       final readyCompleter = Completer<void>();
@@ -172,19 +198,19 @@ void main() {
           .transform(const SystemEncoding().decoder)
           .transform(const LineSplitter())
           .listen((line) {
-        output.add(line);
-        if (line.contains(readySignal) && !readyCompleter.isCompleted) {
-          readyCompleter.complete();
-        }
-      });
+            output.add(line);
+            if (line.contains(readySignal) && !readyCompleter.isCompleted) {
+              readyCompleter.complete();
+            }
+          });
 
       // Also forward stderr for debugging
       process.stderr
           .transform(const SystemEncoding().decoder)
           .transform(const LineSplitter())
           .listen((line) {
-        // ignore stderr but don't let it block
-      });
+            // ignore stderr but don't let it block
+          });
 
       await readyCompleter.future.timeout(Duration(seconds: 15));
       return (process: process, output: output);
@@ -214,12 +240,14 @@ void main() {
           count: 1,
         );
 
-        final pubExit =
-            await pub.process.exitCode.timeout(Duration(seconds: 20));
+        final pubExit = await pub.process.exitCode.timeout(
+          Duration(seconds: 20),
+        );
         expect(pubExit, equals(0), reason: 'Publisher should exit cleanly');
 
-        final subExit =
-            await sub.process.exitCode.timeout(Duration(seconds: 20));
+        final subExit = await sub.process.exitCode.timeout(
+          Duration(seconds: 20),
+        );
         expect(subExit, equals(0), reason: 'Subscriber should exit cleanly');
 
         // Verify subscriber received the payload
@@ -232,54 +260,49 @@ void main() {
       },
     );
 
-    test(
-      'payload bytes are preserved across processes',
-      () async {
-        const port = '19011';
-        const key = 'interprocess/test/bytes';
-        const payload = 'deadbeef';
+    test('payload bytes are preserved across processes', () async {
+      const port = '19011';
+      const key = 'interprocess/test/bytes';
+      const payload = 'deadbeef';
 
-        final sub = await startPubsubHelper(
-          mode: 'sub',
-          port: port,
-          key: key,
-          count: 1,
-        );
+      final sub = await startPubsubHelper(
+        mode: 'sub',
+        port: port,
+        key: key,
+        count: 1,
+      );
 
-        final pub = await startPubsubHelper(
-          mode: 'pub',
-          port: port,
-          key: key,
-          payload: payload,
-          count: 1,
-        );
+      final pub = await startPubsubHelper(
+        mode: 'pub',
+        port: port,
+        key: key,
+        payload: payload,
+        count: 1,
+      );
 
-        final pubExit =
-            await pub.process.exitCode.timeout(Duration(seconds: 20));
-        expect(pubExit, equals(0));
+      final pubExit = await pub.process.exitCode.timeout(Duration(seconds: 20));
+      expect(pubExit, equals(0));
 
-        final subExit =
-            await sub.process.exitCode.timeout(Duration(seconds: 20));
-        expect(subExit, equals(0));
+      final subExit = await sub.process.exitCode.timeout(Duration(seconds: 20));
+      expect(subExit, equals(0));
 
-        // Verify subscriber received the exact payload string
-        expect(
-          sub.output.any((line) => line == 'RECEIVED:$payload'),
-          isTrue,
-          reason:
-              'Subscriber should have received "$payload", got: ${sub.output}',
-        );
+      // Verify subscriber received the exact payload string
+      expect(
+        sub.output.any((line) => line == 'RECEIVED:$payload'),
+        isTrue,
+        reason:
+            'Subscriber should have received "$payload", got: ${sub.output}',
+      );
 
-        // Verify the BYTES line shows the UTF-8 encoding of "deadbeef"
-        // "deadbeef" in UTF-8 hex is: 64656164626565660a (without newline)
-        // Actually just 6465616462656566
-        expect(
-          sub.output.any((line) => line.startsWith('BYTES:')),
-          isTrue,
-          reason: 'Subscriber should have printed BYTES line',
-        );
-      },
-    );
+      // Verify the BYTES line shows the UTF-8 encoding of "deadbeef"
+      // "deadbeef" in UTF-8 hex is: 64656164626565660a (without newline)
+      // Actually just 6465616462656566
+      expect(
+        sub.output.any((line) => line.startsWith('BYTES:')),
+        isTrue,
+        reason: 'Subscriber should have printed BYTES line',
+      );
+    });
 
     test(
       'subscriber receives multiple messages from remote publisher',
@@ -304,12 +327,14 @@ void main() {
           count: count,
         );
 
-        final pubExit =
-            await pub.process.exitCode.timeout(Duration(seconds: 30));
+        final pubExit = await pub.process.exitCode.timeout(
+          Duration(seconds: 30),
+        );
         expect(pubExit, equals(0), reason: 'Publisher should exit cleanly');
 
-        final subExit =
-            await sub.process.exitCode.timeout(Duration(seconds: 30));
+        final subExit = await sub.process.exitCode.timeout(
+          Duration(seconds: 30),
+        );
         expect(subExit, equals(0), reason: 'Subscriber should exit cleanly');
 
         // Verify all 3 messages received
@@ -317,7 +342,8 @@ void main() {
           expect(
             sub.output.any((line) => line == 'RECEIVED:$payload-$i'),
             isTrue,
-            reason: 'Subscriber should have received "$payload-$i", '
+            reason:
+                'Subscriber should have received "$payload-$i", '
                 'got: ${sub.output}',
           );
         }

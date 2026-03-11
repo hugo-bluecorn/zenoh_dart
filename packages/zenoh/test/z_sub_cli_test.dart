@@ -25,11 +25,10 @@ void main() {
 
   group('z_sub CLI', () {
     test('runs and prints subscriber declaration', () async {
-      final process = await Process.start(
-        _dartExe,
-        ['run', 'example/z_sub.dart'],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_sub.dart',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final subscription = process.stdout
@@ -52,23 +51,26 @@ void main() {
       const endpoint = 'tcp/127.0.0.1:$port';
 
       // Start z_sub listening on a specific key with TCP listener
-      final subProcess = await Process.start(
-        _dartExe,
-        ['run', 'example/z_sub.dart', '-k', 'demo/cli/test', '-l', endpoint],
-        workingDirectory: packageRoot,
-      );
+      final subProcess = await Process.start(_dartExe, [
+        'run',
+        'example/z_sub.dart',
+        '-k',
+        'demo/cli/test',
+        '-l',
+        endpoint,
+      ], workingDirectory: packageRoot);
 
       final subStdout = StringBuffer();
       final completer = Completer<void>();
       final subSubscription = subProcess.stdout
           .transform(const SystemEncoding().decoder)
           .listen((data) {
-        subStdout.write(data);
-        if (!completer.isCompleted &&
-            subStdout.toString().contains('Received PUT')) {
-          completer.complete();
-        }
-      });
+            subStdout.write(data);
+            if (!completer.isCompleted &&
+                subStdout.toString().contains('Received PUT')) {
+              completer.complete();
+            }
+          });
 
       try {
         // Wait for subscriber session to bind TCP listener
@@ -77,10 +79,7 @@ void main() {
 
         // Use in-process session to put (avoids subprocess startup race)
         final config = Config();
-        config.insertJson5(
-          'connect/endpoints',
-          '["$endpoint"]',
-        );
+        config.insertJson5('connect/endpoints', '["$endpoint"]');
         final session = Session.open(config: config);
 
         // Give the TCP connection time to negotiate
@@ -103,11 +102,12 @@ void main() {
     });
 
     test('accepts --key flag', () async {
-      final process = await Process.start(
-        _dartExe,
-        ['run', 'example/z_sub.dart', '--key', 'demo/custom/**'],
-        workingDirectory: packageRoot,
-      );
+      final process = await Process.start(_dartExe, [
+        'run',
+        'example/z_sub.dart',
+        '--key',
+        'demo/custom/**',
+      ], workingDirectory: packageRoot);
 
       final stdout = StringBuffer();
       final subscription = process.stdout
@@ -122,11 +122,12 @@ void main() {
     });
 
     test('with empty key expression fails', () async {
-      final result = await Process.run(
-        _dartExe,
-        ['run', 'example/z_sub.dart', '--key', ''],
-        workingDirectory: packageRoot,
-      ).timeout(const Duration(seconds: 30));
+      final result = await Process.run(_dartExe, [
+        'run',
+        'example/z_sub.dart',
+        '--key',
+        '',
+      ], workingDirectory: packageRoot).timeout(const Duration(seconds: 30));
 
       expect(result.exitCode, isNot(0));
     });
