@@ -1,7 +1,6 @@
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
 import 'package:zenoh/src/bindings.dart' as ffi_bindings;
-import 'package:zenoh/src/exceptions.dart';
 import 'package:zenoh/src/native_lib.dart';
 import 'package:zenoh/zenoh.dart';
 

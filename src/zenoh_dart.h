@@ -29,16 +29,6 @@ FFI_PLUGIN_EXPORT intptr_t zd_init_dart_api_dl(void* data);
 /// @param fallback_filter  Filter string (e.g., "error", "info", "debug").
 FFI_PLUGIN_EXPORT void zd_init_log(const char* fallback_filter);
 
-/// Promotes libzenohc.so to RTLD_GLOBAL visibility.
-///
-/// The Dart VM loads shared libraries with RTLD_LOCAL (the dlopen default),
-/// which prevents tokio's waker vtable from resolving on worker threads
-/// when two Dart processes connect via zenoh TCP. This function re-opens
-/// libzenohc.so with RTLD_LAZY | RTLD_GLOBAL to promote its symbols.
-///
-/// @return 0 on success, -1 on failure.
-FFI_PLUGIN_EXPORT int zd_promote_zenohc_global(void);
-
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------

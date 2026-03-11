@@ -1,8 +1,3 @@
-#ifndef _WIN32
-#define _GNU_SOURCE
-#include <dlfcn.h>
-#endif
-
 #include "zenoh_dart.h"
 #include "dart/dart_api_dl.h"
 
@@ -19,29 +14,6 @@ FFI_PLUGIN_EXPORT intptr_t zd_init_dart_api_dl(void* data) {
 
 FFI_PLUGIN_EXPORT void zd_init_log(const char* fallback_filter) {
   zc_init_log_from_env_or(fallback_filter);
-}
-
-FFI_PLUGIN_EXPORT int zd_promote_zenohc_global(void) {
-#ifdef _WIN32
-  return 0;  // Windows loads all symbols globally by default
-#else
-  // First, find the already-loaded libzenohc.so to discover its filesystem path.
-  // Then re-open it with RTLD_GLOBAL to promote its symbols to global scope.
-  // This is needed because the Dart VM loads shared libraries with RTLD_LOCAL
-  // (the dlopen default), which prevents tokio's waker vtable from resolving
-  // on worker threads.
-
-  // Use Dl_info to find the path of an already-resolved symbol from libzenohc.
-  Dl_info info;
-  // z_config_default is a function we know exists in libzenohc.so
-  if (!dladdr((void*)z_config_default, &info)) return -1;
-
-  // Re-open by absolute path with RTLD_GLOBAL to promote visibility
-  void* handle = dlopen(info.dli_fname, RTLD_LAZY | RTLD_GLOBAL);
-  if (!handle) return -1;
-  // Note: we intentionally do NOT dlclose — the library stays loaded globally
-  return 0;
-#endif
 }
 
 // ---------------------------------------------------------------------------

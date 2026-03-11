@@ -23,17 +23,6 @@ external int zd_init_dart_api_dl(ffi.Pointer<ffi.Void> data);
 @ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Char>)>()
 external void zd_init_log(ffi.Pointer<ffi.Char> fallback_filter);
 
-/// Promotes libzenohc.so to RTLD_GLOBAL visibility.
-///
-/// The Dart VM loads shared libraries with RTLD_LOCAL (the dlopen default),
-/// which prevents tokio's waker vtable from resolving on worker threads
-/// when two Dart processes connect via zenoh TCP. This function re-opens
-/// libzenohc.so with RTLD_LAZY | RTLD_GLOBAL to promote its symbols.
-///
-/// @return 0 on success, -1 on failure.
-@ffi.Native<ffi.Int Function()>()
-external int zd_promote_zenohc_global();
-
 /// Returns the size of z_owned_config_t in bytes.
 ///
 /// Used by Dart to allocate the correct amount of native memory
