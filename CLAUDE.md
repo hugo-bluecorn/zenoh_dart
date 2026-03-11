@@ -13,7 +13,7 @@ zenoh-dart/                     # git repo root
   pubspec.yaml                  # Dart workspace + Melos config
   packages/
     zenoh/                      # pure Dart FFI package
-      hook/                     # build hook for @Native code asset registration
+      hook/                     # build hook for CodeAsset registration (distribution)
       native/                   # prebuilt native libraries (linux/x86_64/)
   src/                          # C shim source (monorepo level)
     zenoh_dart.{h,c}
@@ -35,6 +35,7 @@ zenoh-dart/                     # git repo root
 **Phase 3 Publisher: COMPLETE** — 43 C shim functions, 120 integration tests. `Publisher` with `put`/`putBytes`/`deleteResource`/`keyExpr`/`hasMatchingSubscribers`/`matchingStatus`/`close`; `Encoding`, `CongestionControl`, `Priority` types; `Sample.encoding` field; CLI example `z_pub.dart`.
 **Phase 4 SHM Provider: COMPLETE** — 56 C shim functions, 148 integration tests. `ShmProvider`, `ShmMutBuffer` with zero-copy alloc/write/publish; SHM-published data received transparently by standard subscribers; CLI example `z_pub_shm.dart`.
 **Phase 5 Scout/Info: COMPLETE** — 62 C shim functions, 185 integration tests. `ZenohId`, `WhatAmI`, `Hello` classes; `Session.zid`/`routersZid()`/`peersZid()`; `Zenoh.scout()`; CLI examples `z_info.dart` and `z_scout.dart`. `Sample.payloadBytes` (`Uint8List`) added as patch 0.6.1.
+**Patch v0.6.2: Inter-process crash fix** — Reverted from `@Native` ffi-native bindings to class-based `ZenohDartBindings(DynamicLibrary)` loaded eagerly via `DynamicLibrary.open()`. Root cause: `@Native` lazy loading via `NoActiveIsolateScope` caused tokio waker vtable crashes when two Dart processes connected via zenoh TCP. 62 C shim functions (unchanged), 193 integration tests (13 new inter-process TCP + pub/sub tests).
 
 Available Dart API classes:
 - `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`); `scout(config)` discovers zenoh entities on the network
@@ -188,9 +189,9 @@ Native C code in `src/` is compiled into a shared library and loaded at runtime 
 - **Short-lived native functions**: Call directly from any isolate (e.g., `zd_put()`)
 - **Long-lived native functions**: Must run on a helper isolate to avoid blocking. Uses `SendPort`/`ReceivePort` request-response pattern with `Completer`-based futures.
 - **`zd_` prefix**: All C shim symbols (functions, structs, enums, typedefs) must use the `zd_` prefix to avoid collisions with zenoh-c's `z_`/`zc_` namespace. The ffigen.yaml filters on `zd_.*` — symbols without this prefix won't appear in bindings.dart.
-- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated with `@Native` annotations — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
-- **`@Native` resolution**: FFI functions use `@Native` annotations with `@DefaultAsset('package:zenoh/src/bindings.dart')`. The Dart runtime resolves `libzenoh_dart.so` via build hook metadata — no `DynamicLibrary.open()`. The OS linker resolves `libzenohc.so` automatically via the `DT_NEEDED` entry.
-- **Build hook**: `packages/zenoh/hook/build.dart` registers two `CodeAsset` entries (libzenoh_dart.so and libzenohc.so) from `packages/zenoh/native/linux/x86_64/`.
+- **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated as a class-based `ZenohDartBindings(DynamicLibrary)` — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
+- **`DynamicLibrary.open()` loading**: `native_lib.dart::ensureInitialized()` resolves `libzenoh_dart.so` via `Isolate.resolvePackageUriSync()` (preferring `native/linux/x86_64/` over `.dart_tool/lib/`) and loads it eagerly on the main thread with `DynamicLibrary.open()`. This avoids `@Native`'s `NoActiveIsolateScope` lazy-load path, which caused tokio waker vtable crashes in multi-process TCP scenarios. The OS linker resolves `libzenohc.so` transitively via the `DT_NEEDED` entry.
+- **Build hook**: `packages/zenoh/hook/build.dart` registers two `CodeAsset` entries (libzenoh_dart.so and libzenohc.so) from `packages/zenoh/native/linux/x86_64/` for distribution. The hook bundles the libraries for consumers; actual loading uses `DynamicLibrary.open()`, not `@Native` annotation resolution.
 
 ### Dynamic Library Names by Platform
 
@@ -400,8 +401,9 @@ don't create new files.
 ### Testing Constraints
 
 - Tests require `libzenohc.so` and `libzenoh_dart.so` to be built and
-  placed in `packages/zenoh/native/linux/x86_64/`. Build hooks register
-  these as code assets for `@Native` resolution.
+  placed in `packages/zenoh/native/linux/x86_64/`. Build hooks bundle
+  these for distribution; `ensureInitialized()` loads them at runtime via
+  `DynamicLibrary.open()` with path resolution from the package root.
 - Session-based tests need a zenoh router or peer — use `Session.open()` with
   default config (peer mode) for unit tests. Tests that need two endpoints
   (pub/sub, get/queryable) open two sessions in the same process.

@@ -8,7 +8,7 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 ┌─────────────────────────────┐
 │   Dart API (packages/zenoh)  │  Config, Session, Publisher, Subscriber, Sample, Encoding, CongestionControl, Priority, KeyExpr, ZBytes, ShmProvider, ShmMutBuffer, ZenohId, WhatAmI, Hello
 ├─────────────────────────────┤
-│   Generated FFI Bindings     │  bindings.dart (@Native annotations, resolved via hook/build.dart)
+│   Generated FFI Bindings     │  bindings.dart (ZenohDartBindings class, loaded via DynamicLibrary.open())
 ├─────────────────────────────┤
 │   C Shim (src/zenoh_dart.c)  │  zd_* functions flattening zenoh-c macros
 ├─────────────────────────────┤
@@ -67,6 +67,13 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - `Zenoh.scout()`: discovers zenoh entities on the network via NativePort callback bridge
 - CLI examples: `z_info.dart`, `z_scout.dart`
 - 185 integration tests passing
+
+**Patch v0.6.2 — Inter-process crash fix**
+
+- Reverted from `@Native` ffi-native bindings to class-based `ZenohDartBindings(DynamicLibrary)`
+- Root cause: `@Native` lazy loading via `NoActiveIsolateScope` caused tokio waker vtable crashes when two Dart processes connected via zenoh TCP
+- `ensureInitialized()` now loads `libzenoh_dart.so` eagerly via `DynamicLibrary.open()` with absolute path resolved from the package root
+- 62 C shim functions (unchanged); 193 integration tests passing (13 new inter-process TCP + pub/sub tests)
 
 Phases 6–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 
