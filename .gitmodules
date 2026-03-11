@@ -16,3 +16,6 @@
 [submodule "extern/zenoh"]
 	path = extern/zenoh
 	url = https://github.com/eclipse-zenoh/zenoh.git
+[submodule "extern/dart-sdk"]
+	path = extern/dart-sdk
+	url = https://github.com/dart-lang/sdk.git
