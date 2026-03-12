@@ -24,6 +24,7 @@ migrate_working_dir/
 **/doc/api/
 .dart_tool/
 /build/
+/build_asan/
 /coverage/
 
 # FVM
@@ -40,6 +41,9 @@ migrate_working_dir/
 
 # Coverage artifacts
 packages/*/coverage/
+
+# Android prebuilt native libraries (developer-generated, ~7MB per ABI)
+packages/zenoh/native/android/
 
 # zenoh-c build artifacts
 extern/zenoh-c/build/

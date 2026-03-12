@@ -14,7 +14,7 @@ zenoh-dart/                     # git repo root
   packages/
     zenoh/                      # pure Dart FFI package
       hook/                     # build hook for CodeAsset registration (distribution)
-      native/                   # prebuilt native libraries (linux/x86_64/)
+      native/                   # prebuilt native libraries (linux/x86_64/, android/<abi>/)
   src/                          # C shim source (monorepo level)
     zenoh_dart.{h,c}
     CMakeLists.txt
@@ -36,6 +36,7 @@ zenoh-dart/                     # git repo root
 **Phase 4 SHM Provider: COMPLETE** — 56 C shim functions, 148 integration tests. `ShmProvider`, `ShmMutBuffer` with zero-copy alloc/write/publish; SHM-published data received transparently by standard subscribers; CLI example `z_pub_shm.dart`.
 **Phase 5 Scout/Info: COMPLETE** — 62 C shim functions, 185 integration tests. `ZenohId`, `WhatAmI`, `Hello` classes; `Session.zid`/`routersZid()`/`peersZid()`; `Zenoh.scout()`; CLI examples `z_info.dart` and `z_scout.dart`. `Sample.payloadBytes` (`Uint8List`) added as patch 0.6.1.
 **Patch v0.6.2: Inter-process crash fix** — Reverted from `@Native` ffi-native bindings to class-based `ZenohDartBindings(DynamicLibrary)` loaded eagerly via `DynamicLibrary.open()`. Root cause: `@Native` lazy loading via `NoActiveIsolateScope` caused tokio waker vtable crashes when two Dart processes connected via zenoh TCP. 62 C shim functions (unchanged), 193 integration tests (13 new inter-process TCP + pub/sub tests).
+**Patch v0.6.3: Android native library support** — `native_lib.dart` adds `Platform.isAndroid` short-circuit (bare `DynamicLibrary.open`); `hook/build.dart` is now target-aware (dispatches on `targetOS`/`targetArchitecture` for Android ABI mapping); `build_zenoh_android.sh` cross-compiles both `libzenohc.so` (cargo-ndk) and `libzenoh_dart.so` (CMake + NDK toolchain) per ABI; SHM feature flags excluded on Android (`if(NOT ANDROID)` in CMakeLists.txt). Prebuilts at `native/android/<abi>/`. Validated E2E: C++ SHM publisher → zenohd → WiFi → Pixel 9a → Flutter subscriber.
 
 Available Dart API classes:
 - `Zenoh` — Static utilities: `initLog(fallback)` for runtime logger initialization (call before `Session.open()`); `scout(config)` discovers zenoh entities on the network
@@ -117,10 +118,14 @@ patchelf --set-rpath '$ORIGIN' packages/zenoh/native/linux/x86_64/libzenoh_dart.
 ### Android cross-compilation
 
 ```bash
-# Build libzenohc.so for Android ABIs (requires Rust, NDK, cargo-ndk)
+# Build libzenohc.so + libzenoh_dart.so for Android ABIs
+# Requires: Rust, Android NDK, cargo-ndk, cmake, ninja
+# Outputs to packages/zenoh/native/android/<abi>/
 ./scripts/build_zenoh_android.sh                  # arm64-v8a + x86_64
 ./scripts/build_zenoh_android.sh --abi arm64-v8a  # single ABI
 ```
+
+**Note:** SHM features (`Z_FEATURE_SHARED_MEMORY`, `Z_FEATURE_UNSTABLE_API`) are excluded on Android — the cargo-ndk build of zenoh-c does not include the `shared-memory` Cargo feature. The C shim's SHM functions are `#ifdef`-guarded and cleanly excluded.
 
 ### Dart package commands
 
@@ -190,8 +195,8 @@ Native C code in `src/` is compiled into a shared library and loaded at runtime 
 - **Long-lived native functions**: Must run on a helper isolate to avoid blocking. Uses `SendPort`/`ReceivePort` request-response pattern with `Completer`-based futures.
 - **`zd_` prefix**: All C shim symbols (functions, structs, enums, typedefs) must use the `zd_` prefix to avoid collisions with zenoh-c's `z_`/`zc_` namespace. The ffigen.yaml filters on `zd_.*` — symbols without this prefix won't appear in bindings.dart.
 - **Binding generation**: `packages/zenoh/lib/src/bindings.dart` is auto-generated as a class-based `ZenohDartBindings(DynamicLibrary)` — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`. The analyzer excludes this file (`analysis_options.yaml`).
-- **`DynamicLibrary.open()` loading**: `native_lib.dart::ensureInitialized()` resolves `libzenoh_dart.so` via `Isolate.resolvePackageUriSync()` (preferring `native/linux/x86_64/` over `.dart_tool/lib/`) and loads it eagerly on the main thread with `DynamicLibrary.open()`. This avoids `@Native`'s `NoActiveIsolateScope` lazy-load path, which caused tokio waker vtable crashes in multi-process TCP scenarios. The OS linker resolves `libzenohc.so` transitively via the `DT_NEEDED` entry.
-- **Build hook**: `packages/zenoh/hook/build.dart` registers two `CodeAsset` entries (libzenoh_dart.so and libzenohc.so) from `packages/zenoh/native/linux/x86_64/` for distribution. The hook bundles the libraries for consumers; actual loading uses `DynamicLibrary.open()`, not `@Native` annotation resolution.
+- **`DynamicLibrary.open()` loading**: `native_lib.dart::ensureInitialized()` resolves `libzenoh_dart.so` via `Isolate.resolvePackageUriSync()` (preferring `native/linux/x86_64/` over `.dart_tool/lib/`) and loads it eagerly on the main thread with `DynamicLibrary.open()`. On Android, a bare `DynamicLibrary.open('libzenoh_dart.so')` call is used — the APK linker resolves from `lib/<abi>/` automatically. This avoids `@Native`'s `NoActiveIsolateScope` lazy-load path, which caused tokio waker vtable crashes in multi-process TCP scenarios. The OS linker resolves `libzenohc.so` transitively via the `DT_NEEDED` entry.
+- **Build hook**: `packages/zenoh/hook/build.dart` registers two `CodeAsset` entries (libzenoh_dart.so and libzenohc.so) for distribution. The hook is target-aware: it dispatches on `targetOS`/`targetArchitecture` to select `native/linux/x86_64/` or `native/android/<abi>/`. Flutter invokes the hook once per target architecture; on Android, the returned assets are automatically placed in `jniLibs/lib/<abi>/` in the APK.
 
 ### Dynamic Library Names by Platform
 

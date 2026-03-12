@@ -78,14 +78,21 @@ String? _resolveLibraryPath(String libraryName) {
 void ensureInitialized() {
   if (_initialized) return;
 
-  final libPath = _resolveLibraryPath('libzenoh_dart.so');
-  if (libPath == null) {
-    throw StateError(
-      'Could not find libzenoh_dart.so. Ensure the build hook has run.',
-    );
+  DynamicLibrary lib;
+  if (Platform.isAndroid) {
+    // Android: APK linker resolves from lib/<abi>/ automatically.
+    // libzenohc.so loads transitively via DT_NEEDED.
+    lib = DynamicLibrary.open('libzenoh_dart.so');
+  } else {
+    final libPath = _resolveLibraryPath('libzenoh_dart.so');
+    if (libPath == null) {
+      throw StateError(
+        'Could not find libzenoh_dart.so. Ensure the build hook has run.',
+      );
+    }
+    lib = DynamicLibrary.open(libPath);
   }
 
-  final lib = DynamicLibrary.open(libPath);
   _bindings = ZenohDartBindings(lib);
 
   final result = _bindings.zd_init_dart_api_dl(NativeApi.initializeApiDLData);

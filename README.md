@@ -75,6 +75,15 @@ Pure Dart FFI bindings for [Zenoh](https://zenoh.io/) — a pub/sub/query protoc
 - `ensureInitialized()` now loads `libzenoh_dart.so` eagerly via `DynamicLibrary.open()` with absolute path resolved from the package root
 - 62 C shim functions (unchanged); 193 integration tests passing (13 new inter-process TCP + pub/sub tests)
 
+**Patch v0.6.3 — Android native library support**
+
+- `native_lib.dart`: `Platform.isAndroid` short-circuit with bare `DynamicLibrary.open('libzenoh_dart.so')` — APK linker resolves automatically
+- `hook/build.dart`: target-aware prebuilt selection dispatching on `targetOS`/`targetArchitecture` (Android ABI mapping)
+- `build_zenoh_android.sh`: now cross-compiles both `libzenohc.so` (cargo-ndk) and `libzenoh_dart.so` (CMake + NDK toolchain) per ABI
+- SHM feature flags excluded on Android (zenoh-c cargo-ndk build doesn't include `shared-memory` feature)
+- Prebuilts at `native/android/<abi>/`; build hooks bundle them into APK automatically
+- Validated end-to-end: C++ SHM publisher → zenohd router → WiFi → Pixel 9a → Flutter subscriber
+
 Phases 6–18 are specified in [`docs/phases/`](docs/phases/) but not yet implemented.
 
 ## Packages
@@ -87,7 +96,8 @@ Phases 6–18 are specified in [`docs/phases/`](docs/phases/) but not yet implem
 
 - [FVM](https://fvm.app/) (Flutter Version Manager) — Dart/Flutter are managed via FVM, not system PATH
 - Dart SDK ^3.11.0 (installed via FVM)
-- For building native libraries: clang, cmake, ninja, Rust (stable, MSRV 1.75.0)
+- For building native libraries (Linux): clang, cmake, ninja, Rust (stable, MSRV 1.75.0)
+- For building native libraries (Android): Android NDK, cargo-ndk, cmake, ninja, Rust (stable)
 
 ## Quick Start
 
@@ -130,6 +140,20 @@ cd packages/zenoh && fvm dart test
 ```
 
 > Build hooks resolve native libraries automatically — no `LD_LIBRARY_PATH` needed.
+
+### Android build
+
+```bash
+# Cross-compile libzenohc.so + libzenoh_dart.so for Android (arm64-v8a + x86_64)
+./scripts/build_zenoh_android.sh
+
+# Or single ABI
+./scripts/build_zenoh_android.sh --abi arm64-v8a
+```
+
+Prebuilts are placed in `packages/zenoh/native/android/<abi>/`. The build hook automatically bundles them into APKs via Flutter's native assets pipeline.
+
+> **Note:** SHM features are excluded on Android. The C shim's SHM functions are `#ifdef`-guarded and cleanly omitted.
 
 ### 5. Try the CLI examples
 
