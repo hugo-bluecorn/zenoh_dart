@@ -91,6 +91,45 @@ for abi in "${ABIS[@]}"; do
   echo "Built: ${JNILIBS_DIR}/${abi}/libzenohc.so"
 done
 
+# --- C shim cross-compilation ---
+# Build libzenoh_dart.so for each ABI using CMake with the NDK toolchain.
+# src/CMakeLists.txt already has full Android support (tier-1 jniLibs discovery).
+
+command -v cmake >/dev/null 2>&1 || { echo "Error: cmake not found"; exit 1; }
+command -v ninja >/dev/null 2>&1 || { echo "Error: ninja not found"; exit 1; }
+
+cd "${PROJECT_ROOT}"
+
+for abi in "${ABIS[@]}"; do
+  echo "Building C shim for ${abi}..."
+
+  BUILD_DIR="${PROJECT_ROOT}/build/android/${abi}"
+  cmake \
+    -S "${PROJECT_ROOT}/src" \
+    -B "${BUILD_DIR}" \
+    -G Ninja \
+    -DCMAKE_TOOLCHAIN_FILE="${ANDROID_NDK_HOME}/build/cmake/android.toolchain.cmake" \
+    -DANDROID_ABI="${abi}" \
+    -DANDROID_PLATFORM="android-${API_LEVEL}" \
+    -DCMAKE_BUILD_TYPE=Release
+
+  cmake --build "${BUILD_DIR}" --config Release
+
+  cp "${BUILD_DIR}/libzenoh_dart.so" "${JNILIBS_DIR}/${abi}/"
+  echo "Built: ${JNILIBS_DIR}/${abi}/libzenoh_dart.so"
+done
+
+# --- Copy prebuilts to native/android/<abi>/ for build hooks ---
+NATIVE_ANDROID_DIR="${PROJECT_ROOT}/packages/zenoh/native/android"
+
+for abi in "${ABIS[@]}"; do
+  DEST="${NATIVE_ANDROID_DIR}/${abi}"
+  mkdir -p "${DEST}"
+  cp "${JNILIBS_DIR}/${abi}/libzenohc.so" "${DEST}/"
+  cp "${JNILIBS_DIR}/${abi}/libzenoh_dart.so" "${DEST}/"
+  echo "Copied prebuilts to: ${DEST}/"
+done
+
 echo ""
-echo "Done. Android prebuilts at: ${JNILIBS_DIR}"
-ls -la "${JNILIBS_DIR}"/*/libzenohc.so
+echo "Done. Android prebuilts at: ${NATIVE_ANDROID_DIR}"
+ls -la "${NATIVE_ANDROID_DIR}"/*/lib*.so
