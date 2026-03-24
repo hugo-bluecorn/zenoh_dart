@@ -6,7 +6,6 @@ void main() {
   // Get the package root (where pubspec.yaml lives)
   // Tests run from packages/zenoh/
   final packageRoot = Directory.current.path;
-  final repoRoot = '$packageRoot/..';
   final dartBin = '/home/hugo-bluecorn/fvm/versions/stable/bin/dart';
 
   group('z_scout CLI', () {
