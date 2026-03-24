@@ -1,0 +1,27 @@
+# Dart
+.dart_tool/
+.packages
+pubspec.lock
+
+# CMake build
+build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# FVM
+.fvm/
+
+# OS
+.DS_Store
+
+# Coverage
+coverage/
+
+# Strace/debug logs
+*.log
+
+# DO NOT exclude package/native/ — prebuilt .so files are the distribution mechanism
+# and must be tracked in git.
