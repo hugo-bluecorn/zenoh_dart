@@ -33,14 +33,40 @@ cmake --preset linux-x64
 cmake --build --preset linux-x64 --target install
 ```
 
-This builds zenoh-c from source via cargo (~3 min first time), compiles the C shim, and installs both `.so` files to `package/native/linux/x86_64/`.
+The superbuild does two things:
+
+1. **cargo** builds `libzenohc.so` from Rust source (~3 min first time, incremental thereafter)
+2. **CMake/Clang** builds `libzenoh_dart.so` (the C shim, ~2s)
+
+Both are installed to `package/native/linux/x86_64/` with `RPATH=$ORIGIN` so the OS linker resolves them without `LD_LIBRARY_PATH`.
 
 ### Android
 
 ```bash
 ./scripts/build_zenoh_android.sh                  # arm64-v8a + x86_64
 ./scripts/build_zenoh_android.sh --abi arm64-v8a  # single ABI
+./scripts/build_zenoh_android.sh --all            # all 4 ABIs
 ```
+
+The script performs two cross-compilation steps per ABI:
+
+1. **cargo-ndk** cross-compiles `libzenohc.so` from Rust targeting the Android ABI
+2. **CMake + NDK toolchain** cross-compiles `libzenoh_dart.so` (C shim)
+
+Both end up in `package/native/android/<abi>/`. The Flutter build hook bundles the correct ABI's `.so` files into the APK at build time.
+
+**Supported ABIs:**
+
+| ABI | Architecture | Use case |
+|-----|-------------|----------|
+| `arm64-v8a` | 64-bit ARM | Real phones (99% of devices) |
+| `x86_64` | 64-bit Intel | Android emulator on x86 host |
+| `armeabi-v7a` | 32-bit ARM | Legacy phones (pre-2015) |
+| `x86` | 32-bit Intel | Old emulators |
+
+Default (no flag) builds the two useful ones: `arm64-v8a` + `x86_64`. `--all` adds the 32-bit ABIs.
+
+**Note:** The `Cannot set "ZENOHC_LIB_DIR": current scope has no parent` warning during the Android C shim build is cosmetic — `set(... PARENT_SCOPE)` in `src/CMakeLists.txt` has no parent when built standalone. It does not affect the output.
 
 ## Usage
 
@@ -51,6 +77,10 @@ See [`package/README.md`](package/README.md) for the Dart API documentation, exa
 ```bash
 cd package && fvm dart test
 ```
+
+The 193 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions, put/delete, publisher lifecycle, SHM alloc/write/publish, scout/info, and inter-process scenarios.
+
+Tests run against the Linux native libraries on the host machine. Android `.so` files cannot be tested on a Linux host (different architecture/linker) — they are validated by deploying a Flutter app to a real device or emulator. SHM features are excluded on Android.
 
 ## License
 
