@@ -44,6 +44,7 @@ fvm flutter ...
 
 ```bash
 # Full build: zenoh-c from source + C shim + install to package/native/
+git submodule update --init
 cmake --preset linux-x64
 cmake --build --preset linux-x64 --target install
 ```

@@ -28,6 +28,7 @@ The Dart package lives in `package/`. All `fvm dart` commands run from there. Bu
 ### Linux (full build)
 
 ```bash
+git submodule update --init
 cmake --preset linux-x64
 cmake --build --preset linux-x64 --target install
 ```
