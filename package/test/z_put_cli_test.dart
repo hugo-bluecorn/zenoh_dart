@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 
 void main() {
   // Get the package root (where pubspec.yaml lives)
-  // Tests run from packages/zenoh/
+  // Tests run from package/
   final packageRoot = Directory.current.path;
 
   group('z_put CLI', () {

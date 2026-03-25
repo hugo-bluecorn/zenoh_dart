@@ -73,7 +73,7 @@ for abi in "${ABIS[@]}"; do
   rustup target add "${target}"
 done
 
-# Build zenoh-c for each ABI — output directly to package/native/android/<abi>/
+# Build zenoh-c for each ABI, outputting directly to package/native/android/
 # cargo-ndk requires running from the crate directory (--manifest-path is not
 # well supported by cargo-ndk's internal cargo metadata invocation).
 cd "${ZENOHC_DIR}"
