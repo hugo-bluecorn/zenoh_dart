@@ -97,11 +97,11 @@ All examples live in [`example/`](https://github.com/hugo-bluecorn/zenoh_dart/tr
 
 ```bash
 # Quick start examples
-dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
-dart run example/z_sub.dart -k 'demo/example/**'
-dart run example/z_get.dart -s 'demo/example/**'
-dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
-dart run example/z_pull.dart -k 'demo/example/**' -s 3
+fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+fvm dart run example/z_sub.dart -k 'demo/example/**'
+fvm dart run example/z_get.dart -s 'demo/example/**'
+fvm dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
+fvm dart run example/z_pull.dart -k 'demo/example/**' -s 3
 ```
 
 ## Platform Support
