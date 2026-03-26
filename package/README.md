@@ -52,12 +52,13 @@ void main() async {
 |-------|-------------|
 | `Zenoh` | Static utilities: `initLog()`, `scout()` |
 | `Config` | Session configuration with JSON5 insertion |
-| `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe |
+| `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe, querier |
 | `KeyExpr` | Key expression creation and validation |
 | `ZBytes` | Binary payload container; `isShmBacked` detects SHM backing |
 | `Publisher` | Declared publisher with put/delete/matching status |
 | `Subscriber` | Callback-based subscriber delivering `Stream<Sample>` |
 | `PullSubscriber` | Ring-buffer-backed pull subscriber with `tryRecv()` (lossy) |
+| `Querier` | Declared querier for repeated queries with matching status |
 | `Query` | Received query with reply/replyBytes/dispose |
 | `Queryable` | Callback-based queryable delivering `Stream<Query>` |
 | `Reply` | Tagged union: `isOk`, `ok` (Sample), `error` (ReplyError) |
@@ -94,6 +95,7 @@ All examples live in [`example/`](example/) and support `-e`/`--connect` and `-l
 | [`z_get_shm.dart`](example/z_get_shm.dart) | Send a query with SHM payload |
 | [`z_queryable_shm.dart`](example/z_queryable_shm.dart) | Queryable that replies with SHM payloads |
 | [`z_pull.dart`](example/z_pull.dart) | Pull subscriber with ring buffer (interactive polling) |
+| [`z_querier.dart`](example/z_querier.dart) | Declared querier for repeated queries (runs until Ctrl-C) |
 
 ```bash
 # Quick start examples
@@ -101,6 +103,7 @@ dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
 dart run example/z_sub.dart -k 'demo/example/**'
 dart run example/z_get.dart -s 'demo/example/**'
 dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
+dart run example/z_querier.dart -s 'demo/example/**'
 dart run example/z_pull.dart -k 'demo/example/**' -s 3
 ```
 

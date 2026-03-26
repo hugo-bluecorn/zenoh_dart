@@ -99,6 +99,7 @@ cd package && fvm dart run example/z_queryable.dart -k demo/example/zenoh-dart-q
 cd package && fvm dart run example/z_get_shm.dart -s 'demo/example/**'
 cd package && fvm dart run example/z_queryable_shm.dart -k demo/example/zenoh-dart-queryable
 cd package && fvm dart run example/z_pull.dart -k 'demo/example/**' -s 3
+cd package && fvm dart run example/z_querier.dart -s 'demo/example/**'
 ```
 
 ## Architecture
@@ -117,12 +118,13 @@ cd package && fvm dart run example/z_pull.dart -k 'demo/example/**' -s 3
 
 - `Zenoh` — Static utilities: `initLog()`, `scout()`
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declarePublisher`, `get`, `declareQueryable`, `declarePullSubscriber`, `zid`, `routersZid()`, `peersZid()`
+- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declarePublisher`, `get`, `declareQueryable`, `declarePullSubscriber`, `declareQuerier`, `zid`, `routersZid()`, `peersZid()`
 - `KeyExpr` — Key expression creation and validation
 - `ZBytes` — Binary payload container; `isShmBacked` detects SHM backing
 - `Publisher` — Declared publisher with `put`/`putBytes`/`deleteResource`/`matchingStatus`
 - `Subscriber` — Callback-based subscriber delivering `Stream<Sample>`
 - `PullSubscriber` — Ring-buffer-backed pull subscriber with `tryRecv()` (lossy, drops oldest)
+- `Querier` — Declared querier for repeated queries with `get()` → `Stream<Reply>`, `matchingStatus`, `hasMatchingQueryables()`
 - `Query` — Received query with `reply()`/`replyBytes()`/`dispose()`, `keyExpr`, `parameters`, `payloadBytes`
 - `Queryable` — Callback-based queryable delivering `Stream<Query>`
 - `Reply` — Tagged union: `isOk`, `ok` (Sample), `error` (ReplyError)

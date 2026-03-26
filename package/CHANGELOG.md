@@ -1,3 +1,17 @@
+## 0.10.0
+
+### Added
+- `Session.declareQuerier()` returns `Querier` — a long-lived entity for
+  repeated queries to the same key expression (Querier is to `Session.get()`
+  as `Publisher` is to `Session.put()`)
+- `Querier` class with `get()` → `Stream<Reply>`, `keyExpr`,
+  `hasMatchingQueryables()`, `matchingStatus` stream, and `close()`
+- 6 new C shim functions (77 → 83 total): zd_querier_sizeof,
+  zd_declare_querier, zd_querier_get, zd_querier_declare_background_matching_listener,
+  zd_querier_get_matching_status, zd_querier_drop
+- CLI example: `z_querier.dart`
+- 28 new integration tests (282 → 310 total)
+
 ## 0.9.0
 
 ### Added
