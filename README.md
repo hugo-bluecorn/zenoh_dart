@@ -78,7 +78,7 @@ See [`package/README.md`](package/README.md) for the Dart API documentation, exa
 cd package && fvm dart test
 ```
 
-The 193 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions, put/delete, publisher lifecycle, SHM alloc/write/publish, scout/info, and inter-process scenarios.
+The 282 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions, put/delete, publisher lifecycle, SHM alloc/write/publish, scout/info, get/queryable query/reply, SHM get/reply, pull subscriber ring buffer, and inter-process scenarios.
 
 Tests run against the Linux native libraries on the host machine. Android `.so` files cannot be tested on a Linux host (different architecture/linker) — they are validated by deploying a Flutter app to a real device or emulator. SHM features are excluded on Android.
 

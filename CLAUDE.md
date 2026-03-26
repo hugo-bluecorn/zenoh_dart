@@ -14,8 +14,8 @@ zenoh_dart/
     lib/                        #   Dart API
     hook/                       #   Dart build hooks (CodeAsset registration)
     native/                     #   Prebuilt shared libraries (linux/x86_64/, android/<abi>/)
-    example/                    #   CLI examples (z_put, z_sub, z_pub, etc.)
-    test/                       #   Integration tests (193 tests)
+    example/                    #   CLI examples (12: z_put, z_sub, z_pub, z_get, z_queryable, z_pull, etc.)
+    test/                       #   Integration tests (282 tests)
     pubspec.yaml
   src/                          # C shim source (outside publish boundary)
     zenoh_dart.{h,c}
@@ -94,6 +94,11 @@ cd package && fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello fro
 cd package && fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
 cd package && fvm dart run example/z_info.dart
 cd package && fvm dart run example/z_scout.dart
+cd package && fvm dart run example/z_get.dart -s 'demo/example/**'
+cd package && fvm dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
+cd package && fvm dart run example/z_get_shm.dart -s 'demo/example/**'
+cd package && fvm dart run example/z_queryable_shm.dart -k demo/example/zenoh-dart-queryable
+cd package && fvm dart run example/z_pull.dart -k 'demo/example/**' -s 3
 ```
 
 ## Architecture
@@ -112,11 +117,18 @@ cd package && fvm dart run example/z_scout.dart
 
 - `Zenoh` — Static utilities: `initLog()`, `scout()`
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declarePublisher`, `zid`, `routersZid()`, `peersZid()`
+- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declarePublisher`, `get`, `declareQueryable`, `declarePullSubscriber`, `zid`, `routersZid()`, `peersZid()`
 - `KeyExpr` — Key expression creation and validation
-- `ZBytes` — Binary payload container
+- `ZBytes` — Binary payload container; `isShmBacked` detects SHM backing
 - `Publisher` — Declared publisher with `put`/`putBytes`/`deleteResource`/`matchingStatus`
 - `Subscriber` — Callback-based subscriber delivering `Stream<Sample>`
+- `PullSubscriber` — Ring-buffer-backed pull subscriber with `tryRecv()` (lossy, drops oldest)
+- `Query` — Received query with `reply()`/`replyBytes()`/`dispose()`, `keyExpr`, `parameters`, `payloadBytes`
+- `Queryable` — Callback-based queryable delivering `Stream<Query>`
+- `Reply` — Tagged union: `isOk`, `ok` (Sample), `error` (ReplyError)
+- `ReplyError` — Error reply with `payloadBytes`, `payload`, `encoding`
+- `QueryTarget` — Enum: `bestMatching`, `all`, `allComplete`
+- `ConsolidationMode` — Enum: `auto`, `none`, `monotonic`, `latest`
 - `Sample` — Received data with `keyExpr`, `payload`, `payloadBytes`, `kind`, `attachment`, `encoding`
 - `SampleKind` — Enum: `put`, `delete`
 - `Encoding` — MIME type wrapper with predefined constants

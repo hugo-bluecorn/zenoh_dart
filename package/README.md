@@ -6,7 +6,9 @@ Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol
 
 - Peer-to-peer and routed communication via zenoh
 - Publish/subscribe with key expressions
-- Shared memory (SHM) zero-copy publishing (Linux)
+- Query/reply (get/queryable) request-response pattern
+- Pull subscriber with ring buffer (lossy, latest-value semantics)
+- Shared memory (SHM) zero-copy for publish, get, and reply (Linux)
 - Network scouting and session info
 - Build hooks for seamless native library distribution
 
@@ -31,6 +33,12 @@ void main() async {
   final publisher = session.declarePublisher(KeyExpr('demo/counter'));
   publisher.put('value');
 
+  // Query/reply
+  final replies = session.get('demo/**');
+  await for (final reply in replies) {
+    if (reply.isOk) print('${reply.ok.keyExpr}: ${reply.ok.payload}');
+  }
+
   // Clean up
   subscriber.close();
   publisher.close();
@@ -44,11 +52,18 @@ void main() async {
 |-------|-------------|
 | `Zenoh` | Static utilities: `initLog()`, `scout()` |
 | `Config` | Session configuration with JSON5 insertion |
-| `Session` | Open/close sessions; put, subscribe, publish, query info |
+| `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe |
 | `KeyExpr` | Key expression creation and validation |
-| `ZBytes` | Binary payload container |
+| `ZBytes` | Binary payload container; `isShmBacked` detects SHM backing |
 | `Publisher` | Declared publisher with put/delete/matching status |
 | `Subscriber` | Callback-based subscriber delivering `Stream<Sample>` |
+| `PullSubscriber` | Ring-buffer-backed pull subscriber with `tryRecv()` (lossy) |
+| `Query` | Received query with reply/replyBytes/dispose |
+| `Queryable` | Callback-based queryable delivering `Stream<Query>` |
+| `Reply` | Tagged union: `isOk`, `ok` (Sample), `error` (ReplyError) |
+| `ReplyError` | Error reply with payload and encoding |
+| `QueryTarget` | Enum: `bestMatching`, `all`, `allComplete` |
+| `ConsolidationMode` | Enum: `auto`, `none`, `monotonic`, `latest` |
 | `Sample` | Received data with key, payload, kind, encoding, attachment |
 | `SampleKind` | Enum: `put`, `delete` |
 | `Encoding` | MIME type wrapper with predefined constants |
@@ -86,6 +101,21 @@ dart run example/z_info.dart
 
 # Discover zenoh entities on the network
 dart run example/z_scout.dart
+
+# Send a query and receive replies
+dart run example/z_get.dart -s 'demo/example/**'
+
+# Declare a queryable that replies to queries (runs until Ctrl-C)
+dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
+
+# Send a query with SHM payload
+dart run example/z_get_shm.dart -s 'demo/example/**'
+
+# Declare a queryable that replies with SHM payloads (runs until Ctrl-C)
+dart run example/z_queryable_shm.dart -k demo/example/zenoh-dart-queryable
+
+# Pull subscriber with ring buffer (press ENTER to poll, 'q' to quit)
+dart run example/z_pull.dart -k 'demo/example/**' -s 3
 ```
 
 ## Platform Support
