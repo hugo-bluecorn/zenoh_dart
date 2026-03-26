@@ -78,22 +78,22 @@ void main() async {
 
 ## CLI Examples
 
-All examples live in [`example/`](https://github.com/hugo-bluecorn/zenoh_dart/tree/main/package/example) and support `-e`/`--connect` and `-l`/`--listen` flags for endpoint configuration.
+All examples live in [`example/`](example/) and support `-e`/`--connect` and `-l`/`--listen` flags for endpoint configuration.
 
 | Example | Description |
 |---|---|
-| [`z_put.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_put.dart) | Put data on a key expression |
-| [`z_delete.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_delete.dart) | Delete a key expression |
-| [`z_sub.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_sub.dart) | Subscribe to a key expression (runs until Ctrl-C) |
-| [`z_pub.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_pub.dart) | Publish in a loop (runs until Ctrl-C) |
-| [`z_pub_shm.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_pub_shm.dart) | Publish via shared memory (runs until Ctrl-C) |
-| [`z_info.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_info.dart) | Print session ZID and connected router/peer ZIDs |
-| [`z_scout.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_scout.dart) | Discover zenoh entities on the network |
-| [`z_get.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_get.dart) | Send a query and receive replies |
-| [`z_queryable.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_queryable.dart) | Declare a queryable that replies to queries |
-| [`z_get_shm.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_get_shm.dart) | Send a query with SHM payload |
-| [`z_queryable_shm.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_queryable_shm.dart) | Queryable that replies with SHM payloads |
-| [`z_pull.dart`](https://github.com/hugo-bluecorn/zenoh_dart/blob/main/package/example/z_pull.dart) | Pull subscriber with ring buffer (interactive polling) |
+| [`z_put.dart`](example/z_put.dart) | Put data on a key expression |
+| [`z_delete.dart`](example/z_delete.dart) | Delete a key expression |
+| [`z_sub.dart`](example/z_sub.dart) | Subscribe to a key expression (runs until Ctrl-C) |
+| [`z_pub.dart`](example/z_pub.dart) | Publish in a loop (runs until Ctrl-C) |
+| [`z_pub_shm.dart`](example/z_pub_shm.dart) | Publish via shared memory (runs until Ctrl-C) |
+| [`z_info.dart`](example/z_info.dart) | Print session ZID and connected router/peer ZIDs |
+| [`z_scout.dart`](example/z_scout.dart) | Discover zenoh entities on the network |
+| [`z_get.dart`](example/z_get.dart) | Send a query and receive replies |
+| [`z_queryable.dart`](example/z_queryable.dart) | Declare a queryable that replies to queries |
+| [`z_get_shm.dart`](example/z_get_shm.dart) | Send a query with SHM payload |
+| [`z_queryable_shm.dart`](example/z_queryable_shm.dart) | Queryable that replies with SHM payloads |
+| [`z_pull.dart`](example/z_pull.dart) | Pull subscriber with ring buffer (interactive polling) |
 
 ```bash
 # Quick start examples
