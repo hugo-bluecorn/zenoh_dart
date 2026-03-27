@@ -20,10 +20,7 @@ class LivelinessToken {
   /// Declares a liveliness token on the given session and key expression.
   ///
   /// This is called internally by [Session.declareLivelinessToken].
-  static LivelinessToken declare(
-    Pointer<Void> loanedSession,
-    String keyExpr,
-  ) {
+  static LivelinessToken declare(Pointer<Void> loanedSession, String keyExpr) {
     final size = bindings.zd_liveliness_token_sizeof();
     final Pointer<Uint8> ptr = calloc<Uint8>(size);
 

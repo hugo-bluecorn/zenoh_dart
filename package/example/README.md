@@ -693,7 +693,7 @@ Which zenoh-c examples does this binding implement, and which are absent?
 | `z_get_liveliness.c` | `z_get_liveliness.dart` | Implemented |
 | `z_ping.c` | `z_ping.dart` | Implemented |
 | `z_pong.c` | `z_pong.dart` | Implemented |
-| `z_ping_shm.c` | `z_ping_shm.dart` | Planned |
+| `z_ping_shm.c` | `z_ping_shm.dart` | Implemented |
 | `z_sub_shm.c` | -- | Absent (subscriber is SHM-transparent) |
 | `z_bytes.c` | -- | Absent (Dart has `dart:convert`) |
 | `z_queryable_with_channels.c` | -- | Absent (Dart Streams) |
@@ -705,7 +705,7 @@ Which zenoh-c examples does this binding implement, and which are absent?
 | `z_pub_shm_thr.c` | -- | Future |
 | `z_storage.c` | -- | Future |
 
-**Current:** 18 implemented, 1 planned, 4 permanently absent, 6 future.
+**Current:** 19 implemented, 4 permanently absent, 6 future.
 
 ---
 

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:ffi';
+import 'dart:typed_data';
 
 import 'package:test/test.dart';
 import 'package:zenoh/zenoh.dart';
@@ -306,6 +307,160 @@ void main() {
       );
       expect(sample.payload, equals('shm-data'));
       expect(sample.attachment, equals('meta'));
+    });
+  });
+
+  group('SHM Clone Semantics', () {
+    late Session session1;
+    late Session session2;
+    late ShmProvider provider;
+
+    setUpAll(() async {
+      final config1 = Config();
+      config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17456"]');
+      session1 = Session.open(config: config1);
+
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+
+      final config2 = Config();
+      config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17456"]');
+      session2 = Session.open(config: config2);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      provider = ShmProvider(size: 65536);
+    });
+
+    tearDownAll(() {
+      provider.close();
+      session2.close();
+      session1.close();
+    });
+
+    /// Helper: allocate [size] bytes, fill with pattern i % 10, return ZBytes.
+    ZBytes allocShmPattern(int size) {
+      final buffer = provider.allocGcDefragBlocking(size)!;
+      final dataPtr = buffer.data;
+      for (var i = 0; i < size; i++) {
+        dataPtr[i] = i % 10;
+      }
+      return buffer.toBytes();
+    }
+
+    /// Expected Uint8List for the i % 10 pattern of given [size].
+    Uint8List expectedPattern(int size) {
+      return Uint8List.fromList(List<int>.generate(size, (i) => i % 10));
+    }
+
+    test('SHM bytes are SHM-backed after toBytes', () {
+      final buffer = provider.allocGcDefragBlocking(64)!;
+      final dataPtr = buffer.data;
+      for (var i = 0; i < 64; i++) {
+        dataPtr[i] = i % 10;
+      }
+      final shmBytes = buffer.toBytes();
+      addTearDown(shmBytes.dispose);
+
+      expect(shmBytes.isShmBacked, isTrue);
+    });
+
+    test('Clone of SHM bytes is SHM-backed', () {
+      final shmBytes = allocShmPattern(64);
+      addTearDown(shmBytes.dispose);
+
+      final clone = shmBytes.clone();
+      addTearDown(clone.dispose);
+
+      expect(clone.isShmBacked, isTrue);
+    });
+
+    test('Clone of SHM bytes preserves content', () {
+      final shmBytes = allocShmPattern(64);
+      addTearDown(shmBytes.dispose);
+
+      final clone = shmBytes.clone();
+      addTearDown(clone.dispose);
+
+      final expected = expectedPattern(64);
+      expect(shmBytes.toBytes(), equals(expected));
+      expect(clone.toBytes(), equals(expected));
+    });
+
+    test('Multiple clones from same SHM bytes all publishable', () async {
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/shm-clone-multi',
+      );
+      addTearDown(subscriber.close);
+      final publisher = session1.declarePublisher(
+        'zenoh/dart/test/shm-clone-multi',
+      );
+      addTearDown(publisher.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      final shmBytes = allocShmPattern(32);
+      addTearDown(shmBytes.dispose);
+      final expected = expectedPattern(32);
+
+      for (var i = 0; i < 3; i++) {
+        final clone = shmBytes.clone();
+        publisher.putBytes(clone);
+      }
+
+      final samples = await subscriber.stream
+          .take(3)
+          .timeout(const Duration(seconds: 5))
+          .toList();
+
+      expect(samples, hasLength(3));
+      for (final sample in samples) {
+        expect(sample.payloadBytes, equals(expected));
+      }
+    });
+
+    test('Original SHM bytes usable after clones consumed', () async {
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/test/shm-clone-orig',
+      );
+      addTearDown(subscriber.close);
+      final publisher = session1.declarePublisher(
+        'zenoh/dart/test/shm-clone-orig',
+      );
+      addTearDown(publisher.close);
+
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      final shmBytes = allocShmPattern(32);
+      addTearDown(shmBytes.dispose);
+
+      // Publish 3 clones (each clone is consumed by putBytes)
+      for (var i = 0; i < 3; i++) {
+        final clone = shmBytes.clone();
+        publisher.putBytes(clone);
+      }
+
+      // Drain the subscriber so the test doesn't hang
+      await subscriber.stream
+          .take(3)
+          .timeout(const Duration(seconds: 5))
+          .toList();
+
+      // Original should still be fully usable
+      expect(shmBytes.toStr(), isNotNull);
+      expect(shmBytes.toBytes(), equals(expectedPattern(32)));
+      expect(shmBytes.isShmBacked, isTrue);
+    });
+
+    test('Clone of SHM bytes has independent lifetime', () {
+      final shmBytes = allocShmPattern(32);
+      final clone = shmBytes.clone();
+      addTearDown(clone.dispose);
+
+      // Dispose the original
+      shmBytes.dispose();
+
+      // Clone should still be readable
+      expect(clone.toBytes(), equals(expectedPattern(32)));
     });
   });
 }

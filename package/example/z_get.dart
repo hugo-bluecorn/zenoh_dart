@@ -43,9 +43,7 @@ Future<void> main(List<String> arguments) async {
 
   print("Sending Query '$selector'...");
 
-  final zbytes = payloadStr != null
-      ? ZBytes.fromString(payloadStr)
-      : null;
+  final zbytes = payloadStr != null ? ZBytes.fromString(payloadStr) : null;
 
   final stream = session.get(
     selector,
