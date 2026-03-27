@@ -134,6 +134,58 @@ type-map:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque
+    z_owned_querier_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_querier_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_querier_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_queryable_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_queryable_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_queryable_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_query_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_query_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_query_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_closure_reply_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_closure_reply_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_closure_query_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_closure_query_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
     z_owned_shm_provider_t:
       lib: ffi
       c-type: Opaque
@@ -155,6 +207,42 @@ type-map:
       c-type: Opaque
       dart-type: Opaque
     z_moved_shm_mut_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_ring_handler_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_ring_handler_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_ring_handler_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_liveliness_token_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_liveliness_token_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_liveliness_token_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_owned_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_loaned_sample_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    z_moved_sample_t:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque

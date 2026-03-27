@@ -578,4 +578,196 @@ void main() {
       expect(samples[1].payloadBytes, equals(utf8.encode('second')));
     });
   });
+
+  // Background subscriber tests - no handle, lives until session closes
+  group('Background Subscriber (TCP 17512-17514)', () {
+    group('basic operations (TCP 17512)', () {
+      late Session session1;
+      late Session session2;
+
+      setUpAll(() async {
+        final config1 = Config();
+        config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17512"]');
+        session1 = Session.open(config: config1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        final config2 = Config();
+        config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17512"]');
+        session2 = Session.open(config: config2);
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+      });
+
+      tearDownAll(() {
+        session1.close();
+        session2.close();
+      });
+
+      test('receives PUT sample', () async {
+        final stream = session2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-put',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        session1.put('zenoh/dart/test/bg-put', 'bg-hello');
+
+        final sample = await stream.first.timeout(const Duration(seconds: 5));
+
+        expect(sample.keyExpr, equals('zenoh/dart/test/bg-put'));
+        expect(sample.payload, equals('bg-hello'));
+        expect(sample.kind, equals(SampleKind.put));
+      });
+
+      test('receives multiple samples in order', () async {
+        final stream = session2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-multi',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        session1.put('zenoh/dart/test/bg-multi', 'first');
+        session1.put('zenoh/dart/test/bg-multi', 'second');
+        session1.put('zenoh/dart/test/bg-multi', 'third');
+
+        final samples = await stream
+            .take(3)
+            .toList()
+            .timeout(const Duration(seconds: 5));
+
+        expect(samples, hasLength(3));
+        expect(samples[0].payload, equals('first'));
+        expect(samples[1].payload, equals('second'));
+        expect(samples[2].payload, equals('third'));
+      });
+
+      test('receives wildcard-matched samples', () async {
+        final stream = session2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-wild/**',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        session1.put('zenoh/dart/test/bg-wild/a', 'alpha');
+        session1.put('zenoh/dart/test/bg-wild/b', 'beta');
+
+        final samples = await stream
+            .take(2)
+            .toList()
+            .timeout(const Duration(seconds: 5));
+
+        expect(samples, hasLength(2));
+        final keyExprs = samples.map((s) => s.keyExpr).toSet();
+        expect(keyExprs, contains('zenoh/dart/test/bg-wild/a'));
+        expect(keyExprs, contains('zenoh/dart/test/bg-wild/b'));
+      });
+    });
+
+    test('on closed session throws StateError', () {
+      final closedSession = Session.open();
+      closedSession.close();
+      expect(
+        () => closedSession.declareBackgroundSubscriber('demo/example/test'),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('closed'),
+          ),
+        ),
+      );
+    });
+
+    test('with invalid keyexpr throws ZenohException', () {
+      final session = Session.open();
+      addTearDown(session.close);
+      expect(
+        () => session.declareBackgroundSubscriber(''),
+        throwsA(isA<ZenohException>()),
+      );
+    });
+
+    group('stream closes on session close (TCP 17513)', () {
+      test('stream onDone fires when session closes', () async {
+        final config1 = Config();
+        config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17513"]');
+        final s1 = Session.open(config: config1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        final config2 = Config();
+        config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17513"]');
+        final s2 = Session.open(config: config2);
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        final stream = s2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-close',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        // Send a sample to confirm the subscriber works
+        s1.put('zenoh/dart/test/bg-close', 'before-close');
+
+        final doneCompleter = Completer<void>();
+        final samples = <Sample>[];
+        stream.listen(samples.add, onDone: () => doneCompleter.complete());
+
+        // Wait for sample to arrive
+        await Future<void>.delayed(const Duration(seconds: 2));
+        expect(samples, isNotEmpty);
+
+        // Close subscriber's session -- stream should complete
+        s2.close();
+        s1.close();
+
+        await doneCompleter.future.timeout(const Duration(seconds: 5));
+      });
+    });
+
+    group('multiple background subscribers (TCP 17514)', () {
+      late Session session1;
+      late Session session2;
+
+      setUpAll(() async {
+        final config1 = Config();
+        config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17514"]');
+        session1 = Session.open(config: config1);
+
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+
+        final config2 = Config();
+        config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17514"]');
+        session2 = Session.open(config: config2);
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+      });
+
+      tearDownAll(() {
+        session1.close();
+        session2.close();
+      });
+
+      test('two bg subscribers on same key both receive sample', () async {
+        final stream1 = session2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-dual',
+        );
+        final stream2 = session2.declareBackgroundSubscriber(
+          'zenoh/dart/test/bg-dual',
+        );
+
+        await Future<void>.delayed(const Duration(seconds: 1));
+
+        session1.put('zenoh/dart/test/bg-dual', 'for-both');
+
+        final sample1 = await stream1.first.timeout(const Duration(seconds: 5));
+        final sample2 = await stream2.first.timeout(const Duration(seconds: 5));
+
+        expect(sample1.payload, equals('for-both'));
+        expect(sample2.payload, equals('for-both'));
+      });
+    });
+  });
 }

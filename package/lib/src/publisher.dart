@@ -33,6 +33,7 @@ class Publisher {
     Encoding? encoding,
     CongestionControl congestionControl = CongestionControl.block,
     Priority priority = Priority.data,
+    bool isExpress = false,
     bool enableMatchingListener = false,
   }) {
     final size = bindings.zd_publisher_sizeof();
@@ -50,6 +51,7 @@ class Publisher {
         encodingStr.cast(),
         congestionControl.index,
         priority.index + 1, // zenoh-c uses 1-indexed priority
+        isExpress ? 1 : 0,
       );
 
       if (rc != 0) {

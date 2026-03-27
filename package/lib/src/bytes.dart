@@ -102,6 +102,55 @@ class ZBytes {
     return result;
   }
 
+  /// Reads the payload content as a [Uint8List].
+  ///
+  /// This is a non-destructive read -- the [ZBytes] can still be used after
+  /// calling this method.
+  ///
+  /// Throws [StateError] if this [ZBytes] has been disposed or consumed.
+  Uint8List toBytes() {
+    _ensureNotDisposed();
+    _ensureNotConsumed();
+    final len = bindings.zd_bytes_len(_ptr.cast());
+    if (len == 0) return Uint8List(0);
+    final buf = malloc<Uint8>(len);
+    try {
+      bindings.zd_bytes_to_buf(_ptr.cast(), buf, len);
+      return Uint8List.fromList(buf.asTypedList(len));
+    } finally {
+      malloc.free(buf);
+    }
+  }
+
+  /// Creates an independent shallow copy of this [ZBytes].
+  ///
+  /// The clone shares the underlying reference-counted data but has its own
+  /// native ownership -- disposing the clone does not affect the original,
+  /// and vice versa.
+  ///
+  /// Throws [StateError] if this [ZBytes] has been disposed or consumed.
+  /// Throws [ZenohException] if the native clone fails.
+  ZBytes clone() {
+    _ensureNotDisposed();
+    _ensureNotConsumed();
+    final Pointer<Void> dst = calloc.allocate(bindings.zd_bytes_sizeof());
+    final rc = bindings.zd_bytes_clone(dst.cast(), _ptr.cast());
+    if (rc != 0) {
+      calloc.free(dst);
+      throw ZenohException('Failed to clone ZBytes', rc);
+    }
+    return ZBytes._(dst);
+  }
+
+  /// Returns whether this payload is backed by shared memory.
+  ///
+  /// Throws [StateError] if this [ZBytes] has been consumed or disposed.
+  bool get isShmBacked {
+    _ensureNotDisposed();
+    _ensureNotConsumed();
+    return bindings.zd_bytes_is_shm(_ptr.cast()) == 1;
+  }
+
   /// Releases native resources held by this payload.
   ///
   /// Safe to call multiple times -- subsequent calls are no-ops.

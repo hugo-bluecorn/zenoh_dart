@@ -94,8 +94,31 @@ FFI_PLUGIN_EXPORT const z_loaned_bytes_t* zd_bytes_loan(
   return z_bytes_loan(bytes);
 }
 
+FFI_PLUGIN_EXPORT int32_t zd_bytes_len(const uint8_t* bytes) {
+  const z_owned_bytes_t* owned = (const z_owned_bytes_t*)bytes;
+  const z_loaned_bytes_t* loaned = z_bytes_loan(owned);
+  return (int32_t)z_bytes_len(loaned);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_bytes_to_buf(const uint8_t* bytes,
+                                          uint8_t* out, int32_t capacity) {
+  const z_owned_bytes_t* owned = (const z_owned_bytes_t*)bytes;
+  const z_loaned_bytes_t* loaned = z_bytes_loan(owned);
+  z_bytes_reader_t reader = z_bytes_get_reader(loaned);
+  z_bytes_reader_read(&reader, out, (size_t)capacity);
+  return 0;
+}
+
 FFI_PLUGIN_EXPORT void zd_bytes_drop(z_owned_bytes_t* bytes) {
   z_bytes_drop(z_bytes_move(bytes));
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_bytes_clone(uint8_t* dst, const uint8_t* src) {
+  z_owned_bytes_t* dst_owned = (z_owned_bytes_t*)dst;
+  const z_owned_bytes_t* src_owned = (const z_owned_bytes_t*)src;
+  const z_loaned_bytes_t* loaned = z_bytes_loan(src_owned);
+  z_bytes_clone(dst_owned, loaned);
+  return 0;
 }
 
 // ---------------------------------------------------------------------------
@@ -290,6 +313,17 @@ static void _zd_sample_drop(void* context) {
   free(context);
 }
 
+/// Drop callback that posts a null sentinel before freeing.
+/// Used by background subscribers to signal stream completion when the
+/// session closes and the background subscriber is dropped by zenoh-c.
+static void _zd_sample_drop_with_sentinel(void* context) {
+  zd_subscriber_context_t* ctx = (zd_subscriber_context_t*)context;
+  Dart_CObject null_obj;
+  null_obj.type = Dart_CObject_kNull;
+  Dart_PostCObject_DL(ctx->dart_port, &null_obj);
+  free(context);
+}
+
 FFI_PLUGIN_EXPORT size_t zd_subscriber_sizeof(void) {
   return sizeof(z_owned_subscriber_t);
 }
@@ -323,6 +357,36 @@ FFI_PLUGIN_EXPORT void zd_subscriber_drop(z_owned_subscriber_t* subscriber) {
   z_subscriber_drop(z_subscriber_move(subscriber));
 }
 
+FFI_PLUGIN_EXPORT int8_t zd_declare_background_subscriber(
+    const z_loaned_session_t* session,
+    const char* key_expr,
+    int64_t dart_port) {
+  // Validate key expression
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  zd_subscriber_context_t* ctx =
+      (zd_subscriber_context_t*)malloc(sizeof(zd_subscriber_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+
+  z_owned_closure_sample_t callback;
+  z_closure_sample(&callback, _zd_sample_callback,
+                   _zd_sample_drop_with_sentinel, ctx);
+
+  int rc = z_declare_background_subscriber(
+      session, z_view_keyexpr_loan(&ke),
+      z_closure_sample_move(&callback), NULL);
+
+  if (rc != 0) {
+    z_closure_sample_drop(z_closure_sample_move(&callback));
+  }
+
+  return rc;
+}
+
 // ---------------------------------------------------------------------------
 // Publisher
 // ---------------------------------------------------------------------------
@@ -337,7 +401,8 @@ FFI_PLUGIN_EXPORT int zd_declare_publisher(
     const z_loaned_keyexpr_t* keyexpr,
     const char* encoding,
     int congestion_control,
-    int priority) {
+    int priority,
+    int8_t is_express) {
   z_publisher_options_t opts;
   z_publisher_options_default(&opts);
 
@@ -351,6 +416,9 @@ FFI_PLUGIN_EXPORT int zd_declare_publisher(
   }
   if (priority >= 0) {
     opts.priority = (z_priority_t)priority;
+  }
+  if (is_express >= 0) {
+    opts.is_express = (bool)is_express;
   }
 
   return z_declare_publisher(session, publisher, keyexpr, &opts);
@@ -620,6 +688,475 @@ FFI_PLUGIN_EXPORT int zd_whatami_to_view_string(int whatami,
 }
 
 // ---------------------------------------------------------------------------
+// Queryable
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT int32_t zd_queryable_sizeof(void) {
+  return (int32_t)sizeof(z_owned_queryable_t);
+}
+
+FFI_PLUGIN_EXPORT int32_t zd_query_sizeof(void) {
+  return (int32_t)sizeof(z_owned_query_t);
+}
+
+/// Context struct for queryable callback.
+typedef struct {
+  Dart_Port_DL dart_port;
+} zd_queryable_context_t;
+
+/// Query callback: clones the query and posts fields to Dart via native port.
+static void _zd_query_callback(z_loaned_query_t* query, void* context) {
+  zd_queryable_context_t* ctx = (zd_queryable_context_t*)context;
+
+  // 1. Clone query to heap (query is only valid during this callback)
+  z_owned_query_t* cloned = (z_owned_query_t*)malloc(sizeof(z_owned_query_t));
+  if (!cloned) return;
+  z_query_clone(cloned, query);
+
+  // 2. Key expression as string
+  const z_loaned_keyexpr_t* ke = z_query_keyexpr(query);
+  z_view_string_t key_view;
+  z_keyexpr_as_view_string(ke, &key_view);
+  const z_loaned_string_t* key_loaned = z_view_string_loan(&key_view);
+  size_t key_len = z_string_len(key_loaned);
+  const char* key_data = z_string_data(key_loaned);
+
+  char* key_buf = (char*)malloc(key_len + 1);
+  memcpy(key_buf, key_data, key_len);
+  key_buf[key_len] = '\0';
+
+  // 3. Parameters as string
+  z_view_string_t params_view;
+  z_query_parameters(query, &params_view);
+  const z_loaned_string_t* params_loaned = z_view_string_loan(&params_view);
+  size_t params_len = z_string_len(params_loaned);
+  const char* params_data = z_string_data(params_loaned);
+
+  char* params_buf = (char*)malloc(params_len + 1);
+  memcpy(params_buf, params_data, params_len);
+  params_buf[params_len] = '\0';
+
+  // 4. Payload (nullable)
+  const z_loaned_bytes_t* payload = z_query_payload(query);
+
+  // Build Dart_CObject array: [query_ptr, keyexpr, params, payload_or_null]
+  Dart_CObject c_query_ptr;
+  c_query_ptr.type = Dart_CObject_kInt64;
+  c_query_ptr.value.as_int64 = (int64_t)(intptr_t)cloned;
+
+  Dart_CObject c_keyexpr;
+  c_keyexpr.type = Dart_CObject_kString;
+  c_keyexpr.value.as_string = key_buf;
+
+  Dart_CObject c_params;
+  c_params.type = Dart_CObject_kString;
+  c_params.value.as_string = params_buf;
+
+  Dart_CObject c_payload;
+  z_owned_string_t payload_str;
+  bool has_payload = (payload != NULL);
+  if (has_payload) {
+    // Check if bytes are empty
+    z_bytes_to_string(payload, &payload_str);
+    const z_loaned_string_t* pl_loaned = z_string_loan(&payload_str);
+    size_t pl_len = z_string_len(pl_loaned);
+    if (pl_len > 0) {
+      c_payload.type = Dart_CObject_kTypedData;
+      c_payload.value.as_typed_data.type = Dart_TypedData_kUint8;
+      c_payload.value.as_typed_data.length = (intptr_t)pl_len;
+      c_payload.value.as_typed_data.values = (uint8_t*)z_string_data(pl_loaned);
+    } else {
+      has_payload = false;
+      c_payload.type = Dart_CObject_kNull;
+    }
+  } else {
+    c_payload.type = Dart_CObject_kNull;
+  }
+
+  Dart_CObject* elements[4] = {&c_query_ptr, &c_keyexpr, &c_params, &c_payload};
+  Dart_CObject c_array;
+  c_array.type = Dart_CObject_kArray;
+  c_array.value.as_array.length = 4;
+  c_array.value.as_array.values = elements;
+
+  Dart_PostCObject_DL(ctx->dart_port, &c_array);
+
+  // Cleanup temporary buffers
+  free(key_buf);
+  free(params_buf);
+  if (has_payload) {
+    z_string_drop(z_string_move(&payload_str));
+  }
+}
+
+/// Drop callback for queryable context.
+static void _zd_queryable_drop(void* context) {
+  free(context);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_declare_queryable(
+    uint8_t* queryable_out,
+    const uint8_t* session,
+    const char* key_expr,
+    int64_t port,
+    int8_t complete) {
+  // Create key expression view
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  zd_queryable_context_t* ctx =
+      (zd_queryable_context_t*)malloc(sizeof(zd_queryable_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)port;
+
+  z_owned_closure_query_t callback;
+  z_closure_query(&callback, _zd_query_callback, _zd_queryable_drop, ctx);
+
+  z_queryable_options_t opts;
+  z_queryable_options_default(&opts);
+  opts.complete = (bool)complete;
+
+  int rc = z_declare_queryable(
+      (const z_loaned_session_t*)session,
+      (z_owned_queryable_t*)queryable_out,
+      z_view_keyexpr_loan(&ke),
+      z_closure_query_move(&callback),
+      &opts);
+
+  if (rc != 0) {
+    z_closure_query_drop(z_closure_query_move(&callback));
+  }
+
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT void zd_queryable_drop(uint8_t* queryable) {
+  z_queryable_drop(z_queryable_move((z_owned_queryable_t*)queryable));
+}
+
+FFI_PLUGIN_EXPORT void zd_query_drop(uint8_t* query) {
+  z_query_drop(z_query_move((z_owned_query_t*)query));
+}
+
+// ---------------------------------------------------------------------------
+// Get (query with reply callback via NativePort)
+// ---------------------------------------------------------------------------
+
+/// Context struct for get reply callback.
+typedef struct {
+  Dart_Port_DL dart_port;
+} zd_get_context_t;
+
+/// Reply callback: extracts reply fields and posts to Dart via native port.
+/// Ok reply: [1, keyexpr_string, payload_bytes, kind_int, attachment_or_null, encoding_string]
+/// Error reply: [0, error_payload_bytes, error_encoding_string]
+static void _zd_reply_callback(z_loaned_reply_t* reply, void* context) {
+  zd_get_context_t* ctx = (zd_get_context_t*)context;
+
+  if (z_reply_is_ok(reply)) {
+    const z_loaned_sample_t* sample = z_reply_ok(reply);
+
+    // 1. Key expression as string
+    const z_loaned_keyexpr_t* ke = z_sample_keyexpr(sample);
+    z_view_string_t key_view;
+    z_keyexpr_as_view_string(ke, &key_view);
+    const z_loaned_string_t* key_loaned = z_view_string_loan(&key_view);
+    size_t key_len = z_string_len(key_loaned);
+    const char* key_data = z_string_data(key_loaned);
+
+    char* key_buf = (char*)malloc(key_len + 1);
+    memcpy(key_buf, key_data, key_len);
+    key_buf[key_len] = '\0';
+
+    // 2. Payload as bytes
+    const z_loaned_bytes_t* payload_loaned = z_sample_payload(sample);
+    z_owned_string_t payload_str;
+    z_bytes_to_string(payload_loaned, &payload_str);
+    const z_loaned_string_t* payload_str_loaned = z_string_loan(&payload_str);
+    size_t payload_len = z_string_len(payload_str_loaned);
+    const char* payload_data = z_string_data(payload_str_loaned);
+
+    // 3. Kind as int
+    z_sample_kind_t kind = z_sample_kind(sample);
+
+    // 4. Attachment (nullable)
+    const z_loaned_bytes_t* attachment = z_sample_attachment(sample);
+
+    // 5. Encoding as string
+    const z_loaned_encoding_t* encoding = z_sample_encoding(sample);
+    z_owned_string_t encoding_str;
+    z_encoding_to_string(encoding, &encoding_str);
+    const z_loaned_string_t* enc_loaned = z_string_loan(&encoding_str);
+    size_t enc_len = z_string_len(enc_loaned);
+    const char* enc_data = z_string_data(enc_loaned);
+
+    // Build tag
+    Dart_CObject c_tag;
+    c_tag.type = Dart_CObject_kInt64;
+    c_tag.value.as_int64 = 1;
+
+    Dart_CObject c_keyexpr;
+    c_keyexpr.type = Dart_CObject_kString;
+    c_keyexpr.value.as_string = key_buf;
+
+    Dart_CObject c_payload;
+    c_payload.type = Dart_CObject_kTypedData;
+    c_payload.value.as_typed_data.type = Dart_TypedData_kUint8;
+    c_payload.value.as_typed_data.length = (intptr_t)payload_len;
+    c_payload.value.as_typed_data.values = (uint8_t*)payload_data;
+
+    Dart_CObject c_kind;
+    c_kind.type = Dart_CObject_kInt64;
+    c_kind.value.as_int64 = (int64_t)kind;
+
+    Dart_CObject c_attachment;
+    z_owned_string_t attachment_str;
+    bool has_attachment = (attachment != NULL);
+    if (has_attachment) {
+      z_bytes_to_string(attachment, &attachment_str);
+      const z_loaned_string_t* att_loaned = z_string_loan(&attachment_str);
+      c_attachment.type = Dart_CObject_kTypedData;
+      c_attachment.value.as_typed_data.type = Dart_TypedData_kUint8;
+      c_attachment.value.as_typed_data.length = (intptr_t)z_string_len(att_loaned);
+      c_attachment.value.as_typed_data.values = (uint8_t*)z_string_data(att_loaned);
+    } else {
+      c_attachment.type = Dart_CObject_kNull;
+    }
+
+    char* enc_buf = (char*)malloc(enc_len + 1);
+    memcpy(enc_buf, enc_data, enc_len);
+    enc_buf[enc_len] = '\0';
+
+    Dart_CObject c_encoding;
+    c_encoding.type = Dart_CObject_kString;
+    c_encoding.value.as_string = enc_buf;
+
+    Dart_CObject* elements[6] = {&c_tag, &c_keyexpr, &c_payload, &c_kind, &c_attachment, &c_encoding};
+    Dart_CObject c_array;
+    c_array.type = Dart_CObject_kArray;
+    c_array.value.as_array.length = 6;
+    c_array.value.as_array.values = elements;
+
+    Dart_PostCObject_DL(ctx->dart_port, &c_array);
+
+    // Cleanup
+    free(key_buf);
+    free(enc_buf);
+    z_string_drop(z_string_move(&payload_str));
+    z_string_drop(z_string_move(&encoding_str));
+    if (has_attachment) {
+      z_string_drop(z_string_move(&attachment_str));
+    }
+  } else {
+    // Error reply
+    const z_loaned_reply_err_t* err = z_reply_err(reply);
+
+    // Error payload as bytes
+    const z_loaned_bytes_t* err_payload = z_reply_err_payload(err);
+    z_owned_string_t err_payload_str;
+    z_bytes_to_string(err_payload, &err_payload_str);
+    const z_loaned_string_t* err_pl_loaned = z_string_loan(&err_payload_str);
+    size_t err_pl_len = z_string_len(err_pl_loaned);
+    const char* err_pl_data = z_string_data(err_pl_loaned);
+
+    // Error encoding as string
+    const z_loaned_encoding_t* err_encoding = z_reply_err_encoding(err);
+    z_owned_string_t err_enc_str;
+    z_encoding_to_string(err_encoding, &err_enc_str);
+    const z_loaned_string_t* err_enc_loaned = z_string_loan(&err_enc_str);
+    size_t err_enc_len = z_string_len(err_enc_loaned);
+    const char* err_enc_data = z_string_data(err_enc_loaned);
+
+    Dart_CObject c_tag;
+    c_tag.type = Dart_CObject_kInt64;
+    c_tag.value.as_int64 = 0;
+
+    Dart_CObject c_err_payload;
+    c_err_payload.type = Dart_CObject_kTypedData;
+    c_err_payload.value.as_typed_data.type = Dart_TypedData_kUint8;
+    c_err_payload.value.as_typed_data.length = (intptr_t)err_pl_len;
+    c_err_payload.value.as_typed_data.values = (uint8_t*)err_pl_data;
+
+    char* err_enc_buf = (char*)malloc(err_enc_len + 1);
+    memcpy(err_enc_buf, err_enc_data, err_enc_len);
+    err_enc_buf[err_enc_len] = '\0';
+
+    Dart_CObject c_err_encoding;
+    c_err_encoding.type = Dart_CObject_kString;
+    c_err_encoding.value.as_string = err_enc_buf;
+
+    Dart_CObject* elements[3] = {&c_tag, &c_err_payload, &c_err_encoding};
+    Dart_CObject c_array;
+    c_array.type = Dart_CObject_kArray;
+    c_array.value.as_array.length = 3;
+    c_array.value.as_array.values = elements;
+
+    Dart_PostCObject_DL(ctx->dart_port, &c_array);
+
+    free(err_enc_buf);
+    z_string_drop(z_string_move(&err_payload_str));
+    z_string_drop(z_string_move(&err_enc_str));
+  }
+}
+
+/// Drop callback for get context: posts null sentinel and frees context.
+static void _zd_get_drop(void* context) {
+  zd_get_context_t* ctx = (zd_get_context_t*)context;
+
+  // Post null sentinel to signal completion to Dart
+  Dart_CObject null_obj;
+  null_obj.type = Dart_CObject_kNull;
+  Dart_PostCObject_DL(ctx->dart_port, &null_obj);
+
+  free(ctx);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_get(
+    const uint8_t* session,
+    const char* selector,
+    int64_t port,
+    int8_t target,
+    int8_t consolidation,
+    uint8_t* payload,
+    const char* encoding,
+    uint64_t timeout_ms,
+    const char* parameters) {
+  // Create key expression view from selector
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, selector) != 0) {
+    return -1;
+  }
+
+  zd_get_context_t* ctx =
+      (zd_get_context_t*)malloc(sizeof(zd_get_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)port;
+
+  z_owned_closure_reply_t callback;
+  z_closure_reply(&callback, _zd_reply_callback, _zd_get_drop, ctx);
+
+  z_get_options_t opts;
+  z_get_options_default(&opts);
+  opts.target = (z_query_target_t)target;
+  opts.timeout_ms = timeout_ms;
+
+  if (consolidation == -1) {
+    opts.consolidation = z_query_consolidation_default();
+  } else {
+    opts.consolidation.mode = (z_consolidation_mode_t)consolidation;
+  }
+
+  // Optional payload (z_owned_bytes_t*, consumed via move)
+  if (payload != NULL) {
+    opts.payload = z_bytes_move((z_owned_bytes_t*)payload);
+  }
+
+  // Optional encoding
+  z_owned_encoding_t owned_encoding;
+  if (encoding != NULL) {
+    z_encoding_from_str(&owned_encoding, encoding);
+    opts.encoding = z_encoding_move(&owned_encoding);
+  }
+
+  int rc = z_get(
+      (const z_loaned_session_t*)session,
+      z_view_keyexpr_loan(&ke),
+      parameters,
+      z_closure_reply_move(&callback),
+      &opts);
+
+  if (rc != 0) {
+    z_closure_reply_drop(z_closure_reply_move(&callback));
+  }
+
+  return (int8_t)rc;
+}
+
+// ---------------------------------------------------------------------------
+// Query reply
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT int8_t zd_query_reply(
+    const uint8_t* query,
+    const char* key_expr,
+    uint8_t* payload,
+    const char* encoding) {
+  // Loan the cloned query
+  const z_loaned_query_t* loaned = z_query_loan((z_owned_query_t*)query);
+
+  // Create key expression view
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  // Options
+  z_query_reply_options_t opts;
+  z_query_reply_options_default(&opts);
+
+  z_owned_encoding_t owned_encoding;
+  if (encoding != NULL) {
+    z_encoding_from_str(&owned_encoding, encoding);
+    opts.encoding = z_encoding_move(&owned_encoding);
+  }
+
+  int rc = z_query_reply(
+      loaned,
+      z_view_keyexpr_loan(&ke),
+      z_bytes_move((z_owned_bytes_t*)payload),
+      &opts);
+
+  return (int8_t)rc;
+}
+
+// ---------------------------------------------------------------------------
+// Query accessors
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT const char* zd_query_keyexpr(const uint8_t* query) {
+  const z_loaned_query_t* loaned = z_query_loan((z_owned_query_t*)query);
+  const z_loaned_keyexpr_t* ke = z_query_keyexpr(loaned);
+  z_view_string_t str;
+  z_keyexpr_as_view_string(ke, &str);
+  const z_loaned_string_t* loaned_str = z_view_string_loan(&str);
+  // Return pointer into query's internal storage -- valid while query lives
+  return z_string_data(loaned_str);
+}
+
+FFI_PLUGIN_EXPORT const char* zd_query_parameters(const uint8_t* query) {
+  const z_loaned_query_t* loaned = z_query_loan((z_owned_query_t*)query);
+  z_view_string_t params;
+  z_query_parameters(loaned, &params);
+  const z_loaned_string_t* loaned_str = z_view_string_loan(&params);
+  return z_string_data(loaned_str);
+}
+
+FFI_PLUGIN_EXPORT int32_t zd_query_payload(
+    const uint8_t* query,
+    uint8_t* payload_out,
+    int32_t max_len) {
+  const z_loaned_query_t* loaned = z_query_loan((z_owned_query_t*)query);
+  const z_loaned_bytes_t* payload = z_query_payload(loaned);
+  if (payload == NULL) {
+    return 0;
+  }
+  size_t actual_len = z_bytes_len(payload);
+  if (actual_len == 0) {
+    return 0;
+  }
+  // Copy payload bytes
+  z_owned_string_t payload_str;
+  z_bytes_to_string(payload, &payload_str);
+  const z_loaned_string_t* pl_loaned = z_string_loan(&payload_str);
+  size_t copy_len = actual_len < (size_t)max_len ? actual_len : (size_t)max_len;
+  memcpy(payload_out, z_string_data(pl_loaned), copy_len);
+  z_string_drop(z_string_move(&payload_str));
+  return (int32_t)actual_len;
+}
+
+// ---------------------------------------------------------------------------
 // Shared Memory (SHM)
 // ---------------------------------------------------------------------------
 #if defined(Z_FEATURE_SHARED_MEMORY) && defined(Z_FEATURE_UNSTABLE_API)
@@ -699,4 +1236,374 @@ FFI_PLUGIN_EXPORT void zd_shm_mut_drop(z_owned_shm_mut_t* buf) {
   z_shm_mut_drop(z_shm_mut_move(buf));
 }
 
+FFI_PLUGIN_EXPORT int8_t zd_bytes_is_shm(const uint8_t* bytes) {
+  const z_owned_bytes_t* owned = (const z_owned_bytes_t*)bytes;
+  const z_loaned_bytes_t* loaned = z_bytes_loan(owned);
+  const z_loaned_shm_t* shm = NULL;
+  z_result_t rc = z_bytes_as_loaned_shm(loaned, &shm);
+  return (rc == 0) ? 1 : 0;
+}
+
 #endif // Z_FEATURE_SHARED_MEMORY && Z_FEATURE_UNSTABLE_API
+
+// ---------------------------------------------------------------------------
+// Pull Subscriber (ring channel)
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT int32_t zd_ring_handler_sample_sizeof(void) {
+  return (int32_t)sizeof(z_owned_ring_handler_sample_t);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_declare_pull_subscriber(
+    uint8_t* subscriber_out, uint8_t* handler_out,
+    const uint8_t* session, const char* key_expr,
+    int32_t capacity) {
+  // Validate key expression
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  // Create ring channel
+  z_owned_closure_sample_t closure;
+  z_ring_channel_sample_new(
+      &closure,
+      (z_owned_ring_handler_sample_t*)handler_out,
+      (size_t)capacity);
+
+  // Declare subscriber with ring closure
+  int rc = z_declare_subscriber(
+      (const z_loaned_session_t*)session,
+      (z_owned_subscriber_t*)subscriber_out,
+      z_view_keyexpr_loan(&ke),
+      z_closure_sample_move(&closure),
+      NULL);
+
+  if (rc != 0) {
+    // On failure, drop the ring handler (closure was not consumed)
+    z_ring_handler_sample_drop(
+        z_ring_handler_sample_move((z_owned_ring_handler_sample_t*)handler_out));
+  }
+
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_pull_subscriber_try_recv(
+    const uint8_t* handler,
+    char** out_keyexpr, uint8_t** out_payload, int32_t* out_payload_len,
+    int8_t* out_kind, char** out_encoding,
+    uint8_t** out_attachment, int32_t* out_attachment_len) {
+  const z_loaned_ring_handler_sample_t* h =
+      z_ring_handler_sample_loan((const z_owned_ring_handler_sample_t*)handler);
+
+  z_owned_sample_t sample;
+  z_result_t res = z_ring_handler_sample_try_recv(h, &sample);
+
+  if (res == Z_CHANNEL_DISCONNECTED) {
+    return 1;  // channel disconnected
+  }
+  if (res == Z_CHANNEL_NODATA) {
+    return 2;  // buffer empty
+  }
+
+  // res == Z_OK: extract sample fields
+  const z_loaned_sample_t* s = z_sample_loan(&sample);
+
+  // 1. Key expression
+  z_view_string_t key_view;
+  z_keyexpr_as_view_string(z_sample_keyexpr(s), &key_view);
+  const z_loaned_string_t* key_loaned = z_view_string_loan(&key_view);
+  size_t key_len = z_string_len(key_loaned);
+  const char* key_data = z_string_data(key_loaned);
+  *out_keyexpr = (char*)malloc(key_len + 1);
+  memcpy(*out_keyexpr, key_data, key_len);
+  (*out_keyexpr)[key_len] = '\0';
+
+  // 2. Payload as bytes (via string conversion, matching existing pattern)
+  const z_loaned_bytes_t* payload_loaned = z_sample_payload(s);
+  size_t payload_byte_len = z_bytes_len(payload_loaned);
+  if (payload_byte_len > 0) {
+    z_owned_string_t payload_str;
+    z_bytes_to_string(payload_loaned, &payload_str);
+    const z_loaned_string_t* pl_loaned = z_string_loan(&payload_str);
+    size_t pl_len = z_string_len(pl_loaned);
+    const char* pl_data = z_string_data(pl_loaned);
+    *out_payload = (uint8_t*)malloc(pl_len);
+    memcpy(*out_payload, pl_data, pl_len);
+    *out_payload_len = (int32_t)pl_len;
+    z_string_drop(z_string_move(&payload_str));
+  } else {
+    *out_payload = NULL;
+    *out_payload_len = 0;
+  }
+
+  // 3. Kind
+  *out_kind = (int8_t)z_sample_kind(s);
+
+  // 4. Encoding
+  const z_loaned_encoding_t* encoding = z_sample_encoding(s);
+  z_owned_string_t enc_str;
+  z_encoding_to_string(encoding, &enc_str);
+  const z_loaned_string_t* enc_loaned = z_string_loan(&enc_str);
+  size_t enc_len = z_string_len(enc_loaned);
+  const char* enc_data = z_string_data(enc_loaned);
+  if (enc_len > 0) {
+    *out_encoding = (char*)malloc(enc_len + 1);
+    memcpy(*out_encoding, enc_data, enc_len);
+    (*out_encoding)[enc_len] = '\0';
+  } else {
+    *out_encoding = NULL;
+  }
+  z_string_drop(z_string_move(&enc_str));
+
+  // 5. Attachment (nullable)
+  const z_loaned_bytes_t* attachment = z_sample_attachment(s);
+  if (attachment != NULL) {
+    z_owned_string_t att_str;
+    z_bytes_to_string(attachment, &att_str);
+    const z_loaned_string_t* att_loaned = z_string_loan(&att_str);
+    size_t att_len = z_string_len(att_loaned);
+    const char* att_data = z_string_data(att_loaned);
+    *out_attachment = (uint8_t*)malloc(att_len);
+    memcpy(*out_attachment, att_data, att_len);
+    *out_attachment_len = (int32_t)att_len;
+    z_string_drop(z_string_move(&att_str));
+  } else {
+    *out_attachment = NULL;
+    *out_attachment_len = 0;
+  }
+
+  // Drop the owned sample
+  z_sample_drop(z_sample_move(&sample));
+
+  return 0;  // success
+}
+
+FFI_PLUGIN_EXPORT void zd_ring_handler_sample_drop(uint8_t* handler) {
+  z_owned_ring_handler_sample_t* h = (z_owned_ring_handler_sample_t*)handler;
+  z_ring_handler_sample_drop(z_ring_handler_sample_move(h));
+}
+
+// ---------------------------------------------------------------------------
+// Querier
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_querier_sizeof(void) {
+  return sizeof(z_owned_querier_t);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_declare_querier(
+    uint8_t* querier_out, const uint8_t* session,
+    const char* key_expr, int8_t target,
+    int8_t consolidation, uint64_t timeout_ms) {
+  // Create key expression view
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  z_querier_options_t opts;
+  z_querier_options_default(&opts);
+
+  opts.target = (z_query_target_t)target;
+
+  if (consolidation == -1) {
+    opts.consolidation = z_query_consolidation_default();
+  } else {
+    opts.consolidation.mode = (z_consolidation_mode_t)consolidation;
+  }
+
+  if (timeout_ms > 0) {
+    opts.timeout_ms = timeout_ms;
+  }
+
+  return (int8_t)z_declare_querier(
+      (const z_loaned_session_t*)session,
+      (z_owned_querier_t*)querier_out,
+      z_view_keyexpr_loan(&ke),
+      &opts);
+}
+
+FFI_PLUGIN_EXPORT void zd_querier_drop(uint8_t* querier) {
+  z_querier_drop(z_querier_move((z_owned_querier_t*)querier));
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_querier_get(
+    const uint8_t* querier, const char* parameters,
+    int64_t port, uint8_t* payload, const char* encoding) {
+  const z_loaned_querier_t* loaned =
+      z_querier_loan((const z_owned_querier_t*)querier);
+
+  zd_get_context_t* ctx =
+      (zd_get_context_t*)malloc(sizeof(zd_get_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)port;
+
+  z_owned_closure_reply_t callback;
+  z_closure_reply(&callback, _zd_reply_callback, _zd_get_drop, ctx);
+
+  z_querier_get_options_t opts;
+  z_querier_get_options_default(&opts);
+
+  // Optional payload (z_owned_bytes_t*, consumed via move)
+  if (payload != NULL) {
+    opts.payload = z_bytes_move((z_owned_bytes_t*)payload);
+  }
+
+  // Optional encoding
+  z_owned_encoding_t owned_encoding;
+  if (encoding != NULL) {
+    z_encoding_from_str(&owned_encoding, encoding);
+    opts.encoding = z_encoding_move(&owned_encoding);
+  }
+
+  int rc = z_querier_get(
+      loaned,
+      parameters,
+      z_closure_reply_move(&callback),
+      &opts);
+
+  if (rc != 0) {
+    z_closure_reply_drop(z_closure_reply_move(&callback));
+  }
+
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_querier_declare_background_matching_listener(
+    const uint8_t* querier, int64_t dart_port) {
+  const z_loaned_querier_t* loaned =
+      z_querier_loan((const z_owned_querier_t*)querier);
+
+  zd_matching_context_t* ctx =
+      (zd_matching_context_t*)malloc(sizeof(zd_matching_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+
+  z_owned_closure_matching_status_t callback;
+  z_closure_matching_status(
+      &callback, _zd_matching_status_callback, _zd_matching_drop, ctx);
+
+  int rc = z_querier_declare_background_matching_listener(
+      loaned, z_closure_matching_status_move(&callback));
+
+  if (rc != 0) {
+    z_closure_matching_status_drop(z_closure_matching_status_move(&callback));
+  }
+
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_querier_get_matching_status(
+    const uint8_t* querier, int8_t* matching_out) {
+  const z_loaned_querier_t* loaned =
+      z_querier_loan((const z_owned_querier_t*)querier);
+
+  z_matching_status_t status;
+  int rc = z_querier_get_matching_status(loaned, &status);
+  if (rc == 0) {
+    *matching_out = status.matching ? 1 : 0;
+  }
+  return (int8_t)rc;
+}
+
+// ---------------------------------------------------------------------------
+// Liveliness
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT size_t zd_liveliness_token_sizeof(void) {
+  return sizeof(z_owned_liveliness_token_t);
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_liveliness_declare_token(
+    uint8_t* token_out, const uint8_t* session, const char* key_expr) {
+  const z_loaned_session_t* loaned_session =
+      (const z_loaned_session_t*)session;
+
+  // Validate key expression
+  z_view_keyexpr_t ke;
+  int rc = z_view_keyexpr_from_str(&ke, key_expr);
+  if (rc != 0) return (int8_t)rc;
+
+  z_owned_liveliness_token_t* token = (z_owned_liveliness_token_t*)token_out;
+  rc = z_liveliness_declare_token(
+      loaned_session, token, z_view_keyexpr_loan(&ke), NULL);
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT void zd_liveliness_token_drop(uint8_t* token) {
+  z_owned_liveliness_token_t* t = (z_owned_liveliness_token_t*)token;
+  z_liveliness_token_drop(z_liveliness_token_move(t));
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_liveliness_declare_subscriber(
+    uint8_t* subscriber_out, const uint8_t* session,
+    const char* key_expr, int64_t port, int8_t history) {
+  const z_loaned_session_t* loaned_session =
+      (const z_loaned_session_t*)session;
+
+  // Validate key expression
+  z_view_keyexpr_t ke;
+  int rc = z_view_keyexpr_from_str(&ke, key_expr);
+  if (rc != 0) return (int8_t)rc;
+
+  // Allocate context for the sample callback
+  zd_subscriber_context_t* ctx =
+      (zd_subscriber_context_t*)malloc(sizeof(zd_subscriber_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)port;
+
+  // Create closure reusing the existing sample callback/drop
+  z_owned_closure_sample_t callback;
+  z_closure_sample(&callback, _zd_sample_callback, _zd_sample_drop, ctx);
+
+  // Set up options with history flag
+  z_liveliness_subscriber_options_t opts;
+  z_liveliness_subscriber_options_default(&opts);
+  opts.history = history ? true : false;
+
+  z_owned_subscriber_t* subscriber = (z_owned_subscriber_t*)subscriber_out;
+  rc = z_liveliness_declare_subscriber(
+      loaned_session, subscriber, z_view_keyexpr_loan(&ke),
+      z_closure_sample_move(&callback), &opts);
+
+  if (rc != 0) {
+    z_closure_sample_drop(z_closure_sample_move(&callback));
+  }
+
+  return (int8_t)rc;
+}
+
+FFI_PLUGIN_EXPORT int8_t zd_liveliness_get(
+    const uint8_t* session, const char* key_expr,
+    int64_t port, uint64_t timeout_ms) {
+  // Validate key expression
+  z_view_keyexpr_t ke;
+  if (z_view_keyexpr_from_str(&ke, key_expr) != 0) {
+    return -1;
+  }
+
+  zd_get_context_t* ctx =
+      (zd_get_context_t*)malloc(sizeof(zd_get_context_t));
+  if (!ctx) return -1;
+  ctx->dart_port = (Dart_Port_DL)port;
+
+  z_owned_closure_reply_t callback;
+  z_closure_reply(&callback, _zd_reply_callback, _zd_get_drop, ctx);
+
+  z_liveliness_get_options_t opts;
+  z_liveliness_get_options_default(&opts);
+  opts.timeout_ms = timeout_ms;
+
+  int rc = z_liveliness_get(
+      (const z_loaned_session_t*)session,
+      z_view_keyexpr_loan(&ke),
+      z_closure_reply_move(&callback),
+      &opts);
+
+  if (rc != 0) {
+    z_closure_reply_drop(z_closure_reply_move(&callback));
+  }
+
+  return (int8_t)rc;
+}

@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:ffi';
+import 'dart:isolate';
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
@@ -6,13 +9,21 @@ import 'package:ffi/ffi.dart';
 import 'bytes.dart';
 import 'config.dart';
 import 'congestion_control.dart';
+import 'consolidation_mode.dart';
 import 'encoding.dart';
 import 'exceptions.dart';
 import 'id.dart';
 import 'keyexpr.dart';
+import 'liveliness.dart';
 import 'native_lib.dart';
 import 'priority.dart';
+import 'pull_subscriber.dart';
 import 'publisher.dart';
+import 'querier.dart';
+import 'query_target.dart';
+import 'queryable.dart';
+import 'reply.dart';
+import 'sample.dart';
 import 'subscriber.dart';
 
 /// A Zenoh session.
@@ -217,6 +228,7 @@ class Session {
     Encoding? encoding,
     CongestionControl congestionControl = CongestionControl.block,
     Priority priority = Priority.data,
+    bool isExpress = false,
     bool enableMatchingListener = false,
   }) {
     _ensureOpen();
@@ -232,11 +244,79 @@ class Session {
         encoding: encoding,
         congestionControl: congestionControl,
         priority: priority,
+        isExpress: isExpress,
         enableMatchingListener: enableMatchingListener,
       );
     } finally {
       ke.dispose();
     }
+  }
+
+  /// Declares a querier on the given [keyExpr].
+  ///
+  /// Returns a [Querier] that can efficiently send multiple queries
+  /// to the same key expression with pre-configured options.
+  /// Call [Querier.close] when done.
+  ///
+  /// [target] controls which queryables are targeted (default: bestMatching).
+  /// [consolidation] controls reply consolidation (default: auto).
+  /// [timeout] sets the query timeout (default: 10 seconds).
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Querier declareQuerier(
+    String keyExpr, {
+    QueryTarget target = QueryTarget.bestMatching,
+    ConsolidationMode consolidation = ConsolidationMode.auto,
+    Duration? timeout,
+    bool enableMatchingListener = false,
+  }) {
+    _ensureOpen();
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    return Querier.declare(
+      loanedSession,
+      keyExpr,
+      target: target,
+      consolidation: consolidation,
+      timeout: timeout,
+      enableMatchingListener: enableMatchingListener,
+    );
+  }
+
+  /// Declares a background subscriber on the given [keyExpr].
+  ///
+  /// Returns a [Stream] of [Sample]s. Unlike [declareSubscriber], the
+  /// background subscriber has no handle and cannot be explicitly closed.
+  /// It lives until the session is closed, at which point the stream
+  /// completes automatically.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Stream<Sample> declareBackgroundSubscriber(String keyExpr) {
+    _ensureOpen();
+    final (receivePort, controller) = Subscriber.createSampleChannel();
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    final keyExprNative = keyExpr.toNativeUtf8();
+
+    try {
+      final rc = bindings.zd_declare_background_subscriber(
+        loanedSession.cast(),
+        keyExprNative.cast(),
+        receivePort.sendPort.nativePort,
+      );
+
+      if (rc != 0) {
+        receivePort.close();
+        controller.close();
+        throw ZenohException('Failed to declare background subscriber', rc);
+      }
+    } finally {
+      calloc.free(keyExprNative);
+    }
+
+    return controller.stream;
   }
 
   /// Declares a subscriber on the given [keyExpr].
@@ -258,5 +338,289 @@ class Session {
     } finally {
       ke.dispose();
     }
+  }
+
+  /// Declares a pull subscriber on the given [keyExpr].
+  ///
+  /// Returns a [PullSubscriber] that buffers samples in a ring channel of
+  /// the given [capacity]. Use [PullSubscriber.tryRecv] to poll for samples.
+  /// Call [PullSubscriber.close] when done.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  PullSubscriber declarePullSubscriber(String keyExpr, {int capacity = 256}) {
+    _ensureOpen();
+
+    final subscriberSize = bindings.zd_subscriber_sizeof();
+    final handlerSize = bindings.zd_ring_handler_sample_sizeof();
+    final subscriberHandle = calloc<Uint8>(subscriberSize);
+    final handlerHandle = calloc<Uint8>(handlerSize);
+
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    final keyExprNative = keyExpr.toNativeUtf8();
+
+    try {
+      final rc = bindings.zd_declare_pull_subscriber(
+        subscriberHandle,
+        handlerHandle,
+        loanedSession.cast(),
+        keyExprNative.cast(),
+        capacity,
+      );
+
+      if (rc != 0) {
+        calloc.free(subscriberHandle);
+        calloc.free(handlerHandle);
+        throw ZenohException('Failed to declare pull subscriber', rc);
+      }
+    } finally {
+      calloc.free(keyExprNative);
+    }
+
+    return PullSubscriber(subscriberHandle, handlerHandle, keyExpr);
+  }
+
+  /// Declares a queryable on the given [keyExpr].
+  ///
+  /// Returns a [Queryable] whose [Queryable.stream] delivers [Query]s.
+  /// Call [Queryable.close] when done to undeclare and release resources.
+  ///
+  /// The [complete] parameter indicates whether this queryable is a
+  /// complete source of data for its key expression (default: false).
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Queryable declareQueryable(String keyExpr, {bool complete = false}) {
+    _ensureOpen();
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    return Queryable.declare(loanedSession, keyExpr, complete: complete);
+  }
+
+  /// Declares a liveliness subscriber on the given [keyExpr].
+  ///
+  /// Returns a [Subscriber] whose [Subscriber.stream] delivers [Sample]s
+  /// with [SampleKind.put] when a liveliness token is declared and
+  /// [SampleKind.delete] when a token is undeclared.
+  ///
+  /// If [history] is true, the subscriber will also receive notifications
+  /// for liveliness tokens that were declared before the subscription.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  Subscriber declareLivelinessSubscriber(
+    String keyExpr, {
+    bool history = false,
+  }) {
+    _ensureOpen();
+
+    final size = bindings.zd_subscriber_sizeof();
+    final Pointer<Void> ptr = calloc.allocate(size);
+
+    final (receivePort, controller) = Subscriber.createSampleChannel();
+
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    final keyExprNative = keyExpr.toNativeUtf8();
+
+    try {
+      final rc = bindings.zd_liveliness_declare_subscriber(
+        ptr.cast(),
+        loanedSession.cast(),
+        keyExprNative.cast(),
+        receivePort.sendPort.nativePort,
+        history ? 1 : 0,
+      );
+
+      if (rc != 0) {
+        receivePort.close();
+        controller.close();
+        calloc.free(ptr);
+        throw ZenohException('Failed to declare liveliness subscriber', rc);
+      }
+    } finally {
+      calloc.free(keyExprNative);
+    }
+
+    return Subscriber.fromParts(ptr, receivePort, controller);
+  }
+
+  /// Declares a liveliness token on the given [keyExpr].
+  ///
+  /// The token advertises this session's presence on the key expression
+  /// for as long as it remains undeclared. Call [LivelinessToken.close]
+  /// when done.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  LivelinessToken declareLivelinessToken(String keyExpr) {
+    _ensureOpen();
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    return LivelinessToken.declare(loanedSession, keyExpr);
+  }
+
+  /// Queries liveliness tokens matching the given [keyExpr].
+  ///
+  /// Returns a [Stream] of [Reply] objects for each alive token. The stream
+  /// completes when all replies have been received or the [timeout] expires.
+  /// Defaults to 10 seconds if [timeout] is not specified.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid or the query
+  /// fails.
+  /// Throws [StateError] if the session has been closed.
+  Stream<Reply> livelinessGet(String keyExpr, {Duration? timeout}) {
+    _ensureOpen();
+
+    final (receivePort, controller) = _createReplyChannel();
+    final timeoutMs = (timeout ?? const Duration(seconds: 10)).inMilliseconds;
+
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+    final keyExprNative = keyExpr.toNativeUtf8();
+
+    try {
+      final rc = bindings.zd_liveliness_get(
+        loanedSession.cast(),
+        keyExprNative.cast(),
+        receivePort.sendPort.nativePort,
+        timeoutMs,
+      );
+
+      if (rc != 0) {
+        receivePort.close();
+        controller.close();
+        throw ZenohException('Liveliness get failed', rc);
+      }
+    } finally {
+      calloc.free(keyExprNative);
+    }
+
+    return controller.stream;
+  }
+
+  /// Sends a query on the given [selector] and returns a stream of replies.
+  ///
+  /// The returned stream completes when all replies have been received
+  /// or the timeout expires. The [timeout] defaults to 10 seconds.
+  ///
+  /// Optional [parameters] are appended to the query selector.
+  /// Optional [payload] and [encoding] attach data to the query.
+  /// [target] controls which queryables are targeted (default: bestMatching).
+  /// [consolidation] controls reply consolidation (default: auto).
+  ///
+  /// Throws [StateError] if the session has been closed.
+  Stream<Reply> get(
+    String selector, {
+    String? parameters,
+    ZBytes? payload,
+    Encoding? encoding,
+    QueryTarget target = QueryTarget.bestMatching,
+    ConsolidationMode consolidation = ConsolidationMode.auto,
+    Duration? timeout,
+  }) {
+    _ensureOpen();
+
+    final (receivePort, controller) = _createReplyChannel();
+    final timeoutMs = (timeout ?? const Duration(seconds: 10)).inMilliseconds;
+
+    final loanedSession =
+        bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+
+    final selectorNative = selector.toNativeUtf8();
+    Pointer<Utf8> parametersNative = nullptr;
+    Pointer<Utf8> encodingNative = nullptr;
+
+    if (parameters != null) {
+      parametersNative = parameters.toNativeUtf8();
+    }
+    if (encoding != null) {
+      encodingNative = encoding.mimeType.toNativeUtf8();
+    }
+
+    try {
+      final rc = bindings.zd_get(
+        loanedSession.cast(),
+        selectorNative.cast(),
+        receivePort.sendPort.nativePort,
+        target.index,
+        consolidation.value,
+        payload != null ? payload.nativePtr.cast() : nullptr,
+        encoding != null ? encodingNative.cast() : nullptr,
+        timeoutMs,
+        parameters != null ? parametersNative.cast() : nullptr,
+      );
+
+      if (rc != 0) {
+        receivePort.close();
+        controller.close();
+        throw ZenohException('Get query failed', rc);
+      }
+
+      // Mark ZBytes as consumed -- ownership transferred to zenoh-c via
+      // z_bytes_move in zd_get
+      if (payload != null) {
+        payload.markConsumed();
+      }
+    } finally {
+      calloc.free(selectorNative);
+      if (parameters != null) calloc.free(parametersNative);
+      if (encoding != null) calloc.free(encodingNative);
+    }
+
+    return controller.stream;
+  }
+
+  /// Creates a [ReceivePort] and [StreamController] wired for reply parsing.
+  ///
+  /// The returned [ReceivePort] listens for NativePort messages from the C
+  /// shim reply callback. Ok replies (tag=1) and error replies (tag=0) are
+  /// forwarded to the [StreamController]. A null sentinel closes both.
+  static (ReceivePort, StreamController<Reply>) _createReplyChannel() {
+    final controller = StreamController<Reply>();
+    final receivePort = ReceivePort();
+
+    receivePort.listen((dynamic message) {
+      if (message == null) {
+        receivePort.close();
+        controller.close();
+      } else if (message is List) {
+        final tag = message[0] as int;
+        if (tag == 1) {
+          final keyExpr = message[1] as String;
+          final payloadBytes = message[2] as Uint8List;
+          final kind = message[3] as int;
+          final attachmentBytes = message[4] as Uint8List?;
+          final encodingStr = message.length > 5 ? message[5] as String? : null;
+
+          final sample = Sample(
+            keyExpr: keyExpr,
+            payload: utf8.decode(payloadBytes),
+            payloadBytes: payloadBytes,
+            kind: kind == 0 ? SampleKind.put : SampleKind.delete,
+            attachment: attachmentBytes != null
+                ? utf8.decode(attachmentBytes)
+                : null,
+            encoding: encodingStr,
+          );
+          controller.add(Reply.ok(sample));
+        } else if (tag == 0) {
+          final errorPayloadBytes = message[1] as Uint8List;
+          final errorEncoding = message.length > 2
+              ? message[2] as String?
+              : null;
+
+          final replyError = ReplyError(
+            payloadBytes: errorPayloadBytes,
+            payload: utf8.decode(errorPayloadBytes),
+            encoding: errorEncoding,
+          );
+          controller.add(Reply.error(replyError));
+        }
+      }
+    });
+
+    return (receivePort, controller);
   }
 }

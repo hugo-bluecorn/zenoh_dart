@@ -23,21 +23,21 @@ class Subscriber {
 
   Subscriber._(this._ptr, this._receivePort, this._controller);
 
-  /// Creates a subscriber on the given session and key expression.
+  /// Sets up a [ReceivePort] and [StreamController] pair that parses
+  /// incoming NativePort sample messages into [Sample] objects.
   ///
-  /// This is called internally by [Session.declareSubscriber].
-  static Subscriber declare(
-    Pointer<Void> loanedSession,
-    Pointer<Void> loanedKe,
-  ) {
-    final size = bindings.zd_subscriber_sizeof();
-    final Pointer<Void> ptr = calloc.allocate(size);
-
+  /// Returns `(ReceivePort, StreamController<Sample>)`. The caller is
+  /// responsible for passing `receivePort.sendPort.nativePort` to the
+  /// C shim and for cleanup on failure.
+  static (ReceivePort, StreamController<Sample>) createSampleChannel() {
     final receivePort = ReceivePort();
     final controller = StreamController<Sample>();
 
     receivePort.listen((dynamic message) {
-      if (message is List) {
+      if (message == null) {
+        receivePort.close();
+        controller.close();
+      } else if (message is List) {
         final keyExpr = message[0] as String;
         final payloadBytes = message[1] as Uint8List;
         final kind = message[2] as int;
@@ -57,6 +57,35 @@ class Subscriber {
         controller.add(sample);
       }
     });
+
+    return (receivePort, controller);
+  }
+
+  /// Creates a Subscriber from a pre-allocated native handle and a
+  /// sample channel pair.
+  ///
+  /// Used by [Session.declareLivelinessSubscriber] where the native
+  /// subscriber is declared through a different C shim function but
+  /// uses the same `z_owned_subscriber_t` type.
+  factory Subscriber.fromParts(
+    Pointer<Void> ptr,
+    ReceivePort receivePort,
+    StreamController<Sample> controller,
+  ) {
+    return Subscriber._(ptr, receivePort, controller);
+  }
+
+  /// Creates a subscriber on the given session and key expression.
+  ///
+  /// This is called internally by [Session.declareSubscriber].
+  static Subscriber declare(
+    Pointer<Void> loanedSession,
+    Pointer<Void> loanedKe,
+  ) {
+    final size = bindings.zd_subscriber_sizeof();
+    final Pointer<Void> ptr = calloc.allocate(size);
+
+    final (receivePort, controller) = createSampleChannel();
 
     final rc = bindings.zd_declare_subscriber(
       loanedSession.cast(),

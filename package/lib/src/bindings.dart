@@ -406,6 +406,52 @@ class ZenohDartBindings {
   late final _zd_bytes_loan = _zd_bytes_loanPtr
       .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
 
+  /// Returns the total number of bytes in the payload.
+  ///
+  /// @param bytes  Pointer to a z_owned_bytes_t (cast to uint8_t*).
+  /// @return Total number of bytes.
+  int zd_bytes_len(ffi.Pointer<ffi.Uint8> bytes) {
+    return _zd_bytes_len(bytes);
+  }
+
+  late final _zd_bytes_lenPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_bytes_len',
+      );
+  late final _zd_bytes_len = _zd_bytes_lenPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Reads the content of owned bytes into a caller-provided buffer.
+  ///
+  /// Uses z_bytes_reader to copy up to `capacity` bytes into `out`.
+  ///
+  /// @param bytes     Pointer to a z_owned_bytes_t (cast to uint8_t*).
+  /// @param out       Pointer to a buffer to receive the data.
+  /// @param capacity  Maximum number of bytes to read.
+  /// @return 0 on success.
+  int zd_bytes_to_buf(
+    ffi.Pointer<ffi.Uint8> bytes,
+    ffi.Pointer<ffi.Uint8> out,
+    int capacity,
+  ) {
+    return _zd_bytes_to_buf(bytes, out, capacity);
+  }
+
+  late final _zd_bytes_to_bufPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Int32,
+          )
+        >
+      >('zd_bytes_to_buf');
+  late final _zd_bytes_to_buf = _zd_bytes_to_bufPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
   /// Drops (frees) owned bytes.
   ///
   /// After this call the owned bytes are in gravestone state.
@@ -422,6 +468,29 @@ class ZenohDartBindings {
       );
   late final _zd_bytes_drop = _zd_bytes_dropPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Clones owned bytes into a pre-allocated destination.
+  ///
+  /// Loans the source, then calls z_bytes_clone() to produce an independent
+  /// copy that shares the underlying reference-counted data.
+  ///
+  /// @param dst  Pointer to an uninitialized z_owned_bytes_t (cast to uint8_t*).
+  /// @param src  Pointer to a valid z_owned_bytes_t (cast to uint8_t*).
+  /// @return 0 on success.
+  int zd_bytes_clone(ffi.Pointer<ffi.Uint8> dst, ffi.Pointer<ffi.Uint8> src) {
+    return _zd_bytes_clone(dst, src);
+  }
+
+  late final _zd_bytes_clonePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)
+        >
+      >('zd_bytes_clone');
+  late final _zd_bytes_clone = _zd_bytes_clonePtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>)
+      >();
 
   /// Returns the size of z_owned_string_t in bytes.
   ///
@@ -685,6 +754,42 @@ class ZenohDartBindings {
   late final _zd_subscriber_drop = _zd_subscriber_dropPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 
+  /// Declares a background subscriber on the given key expression.
+  ///
+  /// Unlike a regular subscriber, a background subscriber has no handle --
+  /// it lives until the session is closed. Samples are posted to the Dart
+  /// native port. When the session closes and the background subscriber is
+  /// dropped internally by zenoh-c, a null sentinel is posted to signal
+  /// stream completion.
+  ///
+  /// @param session   Const pointer to a loaned session.
+  /// @param key_expr  The key expression string.
+  /// @param dart_port The Dart native port to post samples to.
+  /// @return 0 on success, negative on failure.
+  int zd_declare_background_subscriber(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int dart_port,
+  ) {
+    return _zd_declare_background_subscriber(session, key_expr, dart_port);
+  }
+
+  late final _zd_declare_background_subscriberPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+          )
+        >
+      >('zd_declare_background_subscriber');
+  late final _zd_declare_background_subscriber =
+      _zd_declare_background_subscriberPtr
+          .asFunction<
+            int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Char>, int)
+          >();
+
   /// Returns the size of z_owned_publisher_t in bytes.
   int zd_publisher_sizeof() {
     return _zd_publisher_sizeof();
@@ -703,6 +808,7 @@ class ZenohDartBindings {
   /// @param encoding            MIME type string for default encoding (NULL = default).
   /// @param congestion_control  Congestion control strategy (-1 = default/block).
   /// @param priority            Message priority (-1 = default/data=5).
+  /// @param is_express          Express mode (-1 = default, 0 = false, 1 = true).
   /// @return 0 on success, negative on failure.
   int zd_declare_publisher(
     ffi.Pointer<ffi.Opaque> session,
@@ -711,6 +817,7 @@ class ZenohDartBindings {
     ffi.Pointer<ffi.Char> encoding,
     int congestion_control,
     int priority,
+    int is_express,
   ) {
     return _zd_declare_publisher(
       session,
@@ -719,6 +826,7 @@ class ZenohDartBindings {
       encoding,
       congestion_control,
       priority,
+      is_express,
     );
   }
 
@@ -732,6 +840,7 @@ class ZenohDartBindings {
             ffi.Pointer<ffi.Char>,
             ffi.Int,
             ffi.Int,
+            ffi.Int8,
           )
         >
       >('zd_declare_publisher');
@@ -742,6 +851,7 @@ class ZenohDartBindings {
           ffi.Pointer<ffi.Opaque>,
           ffi.Pointer<ffi.Opaque>,
           ffi.Pointer<ffi.Char>,
+          int,
           int,
           int,
         )
@@ -1045,6 +1155,273 @@ class ZenohDartBindings {
   late final _zd_whatami_to_view_string = _zd_whatami_to_view_stringPtr
       .asFunction<int Function(int, ffi.Pointer<ffi.Opaque>)>();
 
+  /// Returns the size of z_owned_queryable_t in bytes.
+  int zd_queryable_sizeof() {
+    return _zd_queryable_sizeof();
+  }
+
+  late final _zd_queryable_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function()>>('zd_queryable_sizeof');
+  late final _zd_queryable_sizeof = _zd_queryable_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Returns the size of z_owned_query_t in bytes.
+  int zd_query_sizeof() {
+    return _zd_query_sizeof();
+  }
+
+  late final _zd_query_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function()>>('zd_query_sizeof');
+  late final _zd_query_sizeof = _zd_query_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a queryable on the given key expression.
+  ///
+  /// Incoming queries are posted to the Dart isolate via the given native port.
+  ///
+  /// @param queryable_out  Pointer to an uninitialized z_owned_queryable_t.
+  /// @param session        Const pointer to a loaned session (as uint8_t*).
+  /// @param key_expr       Null-terminated key expression string.
+  /// @param port           The Dart native port to post queries to.
+  /// @param complete       Whether this queryable is complete (1) or not (0).
+  /// @return 0 on success, negative on failure.
+  int zd_declare_queryable(
+    ffi.Pointer<ffi.Uint8> queryable_out,
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int port,
+    int complete,
+  ) {
+    return _zd_declare_queryable(
+      queryable_out,
+      session,
+      key_expr,
+      port,
+      complete,
+    );
+  }
+
+  late final _zd_declare_queryablePtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+            ffi.Int8,
+          )
+        >
+      >('zd_declare_queryable');
+  late final _zd_declare_queryable = _zd_declare_queryablePtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          int,
+        )
+      >();
+
+  /// Drops (undeclares and frees) a queryable.
+  ///
+  /// @param queryable  Pointer to a z_owned_queryable_t to drop.
+  void zd_queryable_drop(ffi.Pointer<ffi.Uint8> queryable) {
+    return _zd_queryable_drop(queryable);
+  }
+
+  late final _zd_queryable_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_queryable_drop',
+      );
+  late final _zd_queryable_drop = _zd_queryable_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Performs a get query on the given selector.
+  ///
+  /// Replies are posted to the Dart isolate via the given native port.
+  ///
+  /// @param session        Const pointer to a loaned session (as uint8_t*).
+  /// @param selector       Null-terminated selector string.
+  /// @param port           The Dart native port to post replies to.
+  /// @param target         Query target (0=bestMatching, 1=all, 2=allComplete).
+  /// @param consolidation  Consolidation mode (-1=auto, 0=none, 1=monotonic, 2=latest).
+  /// @param payload        Pointer to z_owned_bytes_t (NULL = no payload).
+  /// Consumed via z_bytes_move if non-NULL.
+  /// @param encoding       MIME type string (NULL = default).
+  /// @param timeout_ms     Timeout in milliseconds.
+  /// @param parameters     Additional query parameters (NULL = none).
+  /// @return 0 on success, negative on failure.
+  int zd_get(
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> selector,
+    int port,
+    int target,
+    int consolidation,
+    ffi.Pointer<ffi.Uint8> payload,
+    ffi.Pointer<ffi.Char> encoding,
+    int timeout_ms,
+    ffi.Pointer<ffi.Char> parameters,
+  ) {
+    return _zd_get(
+      session,
+      selector,
+      port,
+      target,
+      consolidation,
+      payload,
+      encoding,
+      timeout_ms,
+      parameters,
+    );
+  }
+
+  late final _zd_getPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+            ffi.Int8,
+            ffi.Int8,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Uint64,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('zd_get');
+  late final _zd_get = _zd_getPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          int,
+          int,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          ffi.Pointer<ffi.Char>,
+        )
+      >();
+
+  /// Sends a reply to a query.
+  ///
+  /// @param query        Const pointer to a loaned query (as uint8_t*).
+  /// @param key_expr     Null-terminated key expression string.
+  /// @param payload      Pointer to z_owned_bytes_t (consumed via z_bytes_move).
+  /// @param encoding     MIME type string (NULL = default).
+  /// @return 0 on success, negative on failure.
+  int zd_query_reply(
+    ffi.Pointer<ffi.Uint8> query,
+    ffi.Pointer<ffi.Char> key_expr,
+    ffi.Pointer<ffi.Uint8> payload,
+    ffi.Pointer<ffi.Char> encoding,
+  ) {
+    return _zd_query_reply(query, key_expr, payload, encoding);
+  }
+
+  late final _zd_query_replyPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('zd_query_reply');
+  late final _zd_query_reply = _zd_query_replyPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+        )
+      >();
+
+  /// Drops (frees) an owned query.
+  ///
+  /// @param query  Pointer to a z_owned_query_t to drop.
+  void zd_query_drop(ffi.Pointer<ffi.Uint8> query) {
+    return _zd_query_drop(query);
+  }
+
+  late final _zd_query_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_query_drop',
+      );
+  late final _zd_query_drop = _zd_query_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Returns the key expression of a query as a null-terminated string.
+  ///
+  /// @param query  Const pointer to a loaned query (as uint8_t*).
+  /// @return Null-terminated key expression string.
+  ffi.Pointer<ffi.Char> zd_query_keyexpr(ffi.Pointer<ffi.Uint8> query) {
+    return _zd_query_keyexpr(query);
+  }
+
+  late final _zd_query_keyexprPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Uint8>)
+        >
+      >('zd_query_keyexpr');
+  late final _zd_query_keyexpr = _zd_query_keyexprPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Returns the parameters of a query as a null-terminated string.
+  ///
+  /// @param query  Const pointer to a loaned query (as uint8_t*).
+  /// @return Null-terminated parameters string (empty string if no parameters).
+  ffi.Pointer<ffi.Char> zd_query_parameters(ffi.Pointer<ffi.Uint8> query) {
+    return _zd_query_parameters(query);
+  }
+
+  late final _zd_query_parametersPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Uint8>)
+        >
+      >('zd_query_parameters');
+  late final _zd_query_parameters = _zd_query_parametersPtr
+      .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Copies the payload of a query into a caller-provided buffer.
+  ///
+  /// @param query        Const pointer to a loaned query (as uint8_t*).
+  /// @param payload_out  Pointer to a buffer to receive the payload.
+  /// @param max_len      Maximum number of bytes to copy.
+  /// @return Number of bytes copied, or negative on failure.
+  int zd_query_payload(
+    ffi.Pointer<ffi.Uint8> query,
+    ffi.Pointer<ffi.Uint8> payload_out,
+    int max_len,
+  ) {
+    return _zd_query_payload(query, payload_out, max_len);
+  }
+
+  late final _zd_query_payloadPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int32 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Int32,
+          )
+        >
+      >('zd_query_payload');
+  late final _zd_query_payload = _zd_query_payloadPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Uint8>, int)
+      >();
+
   /// Returns the size of z_owned_shm_provider_t in bytes.
   int zd_shm_provider_sizeof() {
     return _zd_shm_provider_sizeof();
@@ -1256,6 +1633,473 @@ class ZenohDartBindings {
       );
   late final _zd_shm_mut_drop = _zd_shm_mut_dropPtr
       .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Checks whether owned bytes are backed by shared memory.
+  ///
+  /// Uses z_bytes_as_loaned_shm() to probe the bytes. If the call succeeds
+  /// (returns 0), the bytes are SHM-backed.
+  ///
+  /// @param bytes  Pointer to a z_owned_bytes_t (cast to uint8_t*).
+  /// @return 1 if SHM-backed, 0 otherwise.
+  int zd_bytes_is_shm(ffi.Pointer<ffi.Uint8> bytes) {
+    return _zd_bytes_is_shm(bytes);
+  }
+
+  late final _zd_bytes_is_shmPtr =
+      _lookup<ffi.NativeFunction<ffi.Int8 Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_bytes_is_shm',
+      );
+  late final _zd_bytes_is_shm = _zd_bytes_is_shmPtr
+      .asFunction<int Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Returns the size of z_owned_ring_handler_sample_t in bytes.
+  int zd_ring_handler_sample_sizeof() {
+    return _zd_ring_handler_sample_sizeof();
+  }
+
+  late final _zd_ring_handler_sample_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Int32 Function()>>(
+        'zd_ring_handler_sample_sizeof',
+      );
+  late final _zd_ring_handler_sample_sizeof = _zd_ring_handler_sample_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a pull subscriber using a ring channel buffer.
+  ///
+  /// @param subscriber_out  Pointer to an uninitialized z_owned_subscriber_t (as uint8_t*).
+  /// @param handler_out     Pointer to an uninitialized z_owned_ring_handler_sample_t (as uint8_t*).
+  /// @param session         Const pointer to a loaned session (as uint8_t*).
+  /// @param key_expr        Null-terminated key expression string.
+  /// @param capacity        Ring buffer capacity.
+  /// @return 0 on success, negative on failure.
+  int zd_declare_pull_subscriber(
+    ffi.Pointer<ffi.Uint8> subscriber_out,
+    ffi.Pointer<ffi.Uint8> handler_out,
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int capacity,
+  ) {
+    return _zd_declare_pull_subscriber(
+      subscriber_out,
+      handler_out,
+      session,
+      key_expr,
+      capacity,
+    );
+  }
+
+  late final _zd_declare_pull_subscriberPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int32,
+          )
+        >
+      >('zd_declare_pull_subscriber');
+  late final _zd_declare_pull_subscriber = _zd_declare_pull_subscriberPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+        )
+      >();
+
+  /// Tries to receive a sample from the ring handler.
+  ///
+  /// Return codes: 0=sample available, 1=channel disconnected, 2=buffer empty.
+  /// When 0, all out_ parameters are populated (malloc'd; caller must free).
+  ///
+  /// @param handler           Const pointer to an owned ring handler (as uint8_t*).
+  /// @param out_keyexpr       Out: malloc'd null-terminated key expression string.
+  /// @param out_payload       Out: malloc'd payload bytes.
+  /// @param out_payload_len   Out: payload length.
+  /// @param out_kind          Out: sample kind (0=put, 1=delete).
+  /// @param out_encoding      Out: malloc'd null-terminated encoding string (or NULL).
+  /// @param out_attachment     Out: malloc'd attachment bytes (or NULL).
+  /// @param out_attachment_len Out: attachment length.
+  /// @return 0=sample, 1=disconnected, 2=empty.
+  int zd_pull_subscriber_try_recv(
+    ffi.Pointer<ffi.Uint8> handler,
+    ffi.Pointer<ffi.Pointer<ffi.Char>> out_keyexpr,
+    ffi.Pointer<ffi.Pointer<ffi.Uint8>> out_payload,
+    ffi.Pointer<ffi.Int32> out_payload_len,
+    ffi.Pointer<ffi.Int8> out_kind,
+    ffi.Pointer<ffi.Pointer<ffi.Char>> out_encoding,
+    ffi.Pointer<ffi.Pointer<ffi.Uint8>> out_attachment,
+    ffi.Pointer<ffi.Int32> out_attachment_len,
+  ) {
+    return _zd_pull_subscriber_try_recv(
+      handler,
+      out_keyexpr,
+      out_payload,
+      out_payload_len,
+      out_kind,
+      out_encoding,
+      out_attachment,
+      out_attachment_len,
+    );
+  }
+
+  late final _zd_pull_subscriber_try_recvPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Pointer<ffi.Char>>,
+            ffi.Pointer<ffi.Pointer<ffi.Uint8>>,
+            ffi.Pointer<ffi.Int32>,
+            ffi.Pointer<ffi.Int8>,
+            ffi.Pointer<ffi.Pointer<ffi.Char>>,
+            ffi.Pointer<ffi.Pointer<ffi.Uint8>>,
+            ffi.Pointer<ffi.Int32>,
+          )
+        >
+      >('zd_pull_subscriber_try_recv');
+  late final _zd_pull_subscriber_try_recv = _zd_pull_subscriber_try_recvPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Pointer<ffi.Char>>,
+          ffi.Pointer<ffi.Pointer<ffi.Uint8>>,
+          ffi.Pointer<ffi.Int32>,
+          ffi.Pointer<ffi.Int8>,
+          ffi.Pointer<ffi.Pointer<ffi.Char>>,
+          ffi.Pointer<ffi.Pointer<ffi.Uint8>>,
+          ffi.Pointer<ffi.Int32>,
+        )
+      >();
+
+  /// Drops (frees) the ring handler.
+  ///
+  /// @param handler  Pointer to a z_owned_ring_handler_sample_t (as uint8_t*).
+  void zd_ring_handler_sample_drop(ffi.Pointer<ffi.Uint8> handler) {
+    return _zd_ring_handler_sample_drop(handler);
+  }
+
+  late final _zd_ring_handler_sample_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_ring_handler_sample_drop',
+      );
+  late final _zd_ring_handler_sample_drop = _zd_ring_handler_sample_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Returns the size of z_owned_querier_t in bytes.
+  int zd_querier_sizeof() {
+    return _zd_querier_sizeof();
+  }
+
+  late final _zd_querier_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>('zd_querier_sizeof');
+  late final _zd_querier_sizeof = _zd_querier_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a querier on the given key expression.
+  ///
+  /// @param querier_out    Pointer to uninitialized z_owned_querier_t (as uint8_t*).
+  /// @param session        Pointer to a loaned session (as uint8_t*).
+  /// @param key_expr       Null-terminated key expression string.
+  /// @param target         Query target (z_query_target_t value).
+  /// @param consolidation  Consolidation mode (-1=auto, 0=none, 1=monotonic, 2=latest).
+  /// @param timeout_ms     Timeout in milliseconds (0 = default).
+  /// @return 0 on success, negative on failure.
+  int zd_declare_querier(
+    ffi.Pointer<ffi.Uint8> querier_out,
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int target,
+    int consolidation,
+    int timeout_ms,
+  ) {
+    return _zd_declare_querier(
+      querier_out,
+      session,
+      key_expr,
+      target,
+      consolidation,
+      timeout_ms,
+    );
+  }
+
+  late final _zd_declare_querierPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int8,
+            ffi.Int8,
+            ffi.Uint64,
+          )
+        >
+      >('zd_declare_querier');
+  late final _zd_declare_querier = _zd_declare_querierPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          int,
+          int,
+        )
+      >();
+
+  /// Drops (frees) the querier.
+  ///
+  /// @param querier  Pointer to a z_owned_querier_t (as uint8_t*).
+  void zd_querier_drop(ffi.Pointer<ffi.Uint8> querier) {
+    return _zd_querier_drop(querier);
+  }
+
+  late final _zd_querier_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_querier_drop',
+      );
+  late final _zd_querier_drop = _zd_querier_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Sends a query via a declared querier.
+  ///
+  /// Replies are delivered asynchronously to the Dart NativePort.
+  /// Reuses the same reply callback as zd_get.
+  ///
+  /// @param querier     Pointer to a z_owned_querier_t (as uint8_t*).
+  /// @param parameters  Optional query parameters string (NULL for none).
+  /// @param port        Dart NativePort for reply callbacks.
+  /// @param payload     Optional z_owned_bytes_t* (consumed if non-NULL).
+  /// @param encoding    Optional encoding string (NULL for none).
+  /// @return 0 on success, negative on failure.
+  int zd_querier_get(
+    ffi.Pointer<ffi.Uint8> querier,
+    ffi.Pointer<ffi.Char> parameters,
+    int port,
+    ffi.Pointer<ffi.Uint8> payload,
+    ffi.Pointer<ffi.Char> encoding,
+  ) {
+    return _zd_querier_get(querier, parameters, port, payload, encoding);
+  }
+
+  late final _zd_querier_getPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('zd_querier_get');
+  late final _zd_querier_get = _zd_querier_getPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+          int,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+        )
+      >();
+
+  /// Declares a background matching listener for a querier.
+  ///
+  /// Reuses the same matching status callback and drop function as publisher.
+  ///
+  /// @param querier    Pointer to a z_owned_querier_t (as uint8_t*).
+  /// @param port       Dart NativePort for matching status callbacks.
+  /// @return 0 on success, negative on failure.
+  int zd_querier_declare_background_matching_listener(
+    ffi.Pointer<ffi.Uint8> querier,
+    int port,
+  ) {
+    return _zd_querier_declare_background_matching_listener(querier, port);
+  }
+
+  late final _zd_querier_declare_background_matching_listenerPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int8 Function(ffi.Pointer<ffi.Uint8>, ffi.Int64)>
+      >('zd_querier_declare_background_matching_listener');
+  late final _zd_querier_declare_background_matching_listener =
+      _zd_querier_declare_background_matching_listenerPtr
+          .asFunction<int Function(ffi.Pointer<ffi.Uint8>, int)>();
+
+  /// Gets the current matching status of a querier.
+  ///
+  /// @param querier        Pointer to a z_owned_querier_t (as uint8_t*).
+  /// @param matching_out   Output: 1 if matching queryables exist, 0 otherwise.
+  /// @return 0 on success, negative on failure.
+  int zd_querier_get_matching_status(
+    ffi.Pointer<ffi.Uint8> querier,
+    ffi.Pointer<ffi.Int8> matching_out,
+  ) {
+    return _zd_querier_get_matching_status(querier, matching_out);
+  }
+
+  late final _zd_querier_get_matching_statusPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Int8>)
+        >
+      >('zd_querier_get_matching_status');
+  late final _zd_querier_get_matching_status =
+      _zd_querier_get_matching_statusPtr
+          .asFunction<
+            int Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Int8>)
+          >();
+
+  /// Returns the size of z_owned_liveliness_token_t in bytes.
+  int zd_liveliness_token_sizeof() {
+    return _zd_liveliness_token_sizeof();
+  }
+
+  late final _zd_liveliness_token_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>(
+        'zd_liveliness_token_sizeof',
+      );
+  late final _zd_liveliness_token_sizeof = _zd_liveliness_token_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares a liveliness token on the given key expression.
+  ///
+  /// @param token_out  Pointer to an uninitialized z_owned_liveliness_token_t (as uint8_t*).
+  /// @param session    Const pointer to a loaned session (as uint8_t*).
+  /// @param key_expr   Null-terminated key expression string.
+  /// @return 0 on success, negative on failure.
+  int zd_liveliness_declare_token(
+    ffi.Pointer<ffi.Uint8> token_out,
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+  ) {
+    return _zd_liveliness_declare_token(token_out, session, key_expr);
+  }
+
+  late final _zd_liveliness_declare_tokenPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+          )
+        >
+      >('zd_liveliness_declare_token');
+  late final _zd_liveliness_declare_token = _zd_liveliness_declare_tokenPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Uint8>,
+          ffi.Pointer<ffi.Char>,
+        )
+      >();
+
+  /// Drops (undeclares and frees) a liveliness token.
+  ///
+  /// @param token  Pointer to a z_owned_liveliness_token_t (as uint8_t*).
+  void zd_liveliness_token_drop(ffi.Pointer<ffi.Uint8> token) {
+    return _zd_liveliness_token_drop(token);
+  }
+
+  late final _zd_liveliness_token_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Uint8>)>>(
+        'zd_liveliness_token_drop',
+      );
+  late final _zd_liveliness_token_drop = _zd_liveliness_token_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Uint8>)>();
+
+  /// Declares a liveliness subscriber on the given key expression.
+  ///
+  /// Reuses the same z_owned_subscriber_t type and _zd_sample_callback/drop
+  /// as the regular subscriber. Samples are posted to the Dart NativePort.
+  ///
+  /// @param subscriber_out  Pointer to an uninitialized z_owned_subscriber_t (as uint8_t*).
+  /// @param session         Const pointer to a loaned session (as uint8_t*).
+  /// @param key_expr        Null-terminated key expression string.
+  /// @param port            Dart NativePort for sample callbacks.
+  /// @param history         Boolean (0=false, 1=true) for receiving pre-existing token state.
+  /// @return 0 on success, negative on failure.
+  int zd_liveliness_declare_subscriber(
+    ffi.Pointer<ffi.Uint8> subscriber_out,
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int port,
+    int history,
+  ) {
+    return _zd_liveliness_declare_subscriber(
+      subscriber_out,
+      session,
+      key_expr,
+      port,
+      history,
+    );
+  }
+
+  late final _zd_liveliness_declare_subscriberPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+            ffi.Int8,
+          )
+        >
+      >('zd_liveliness_declare_subscriber');
+  late final _zd_liveliness_declare_subscriber =
+      _zd_liveliness_declare_subscriberPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Char>,
+              int,
+              int,
+            )
+          >();
+
+  /// Queries liveliness tokens matching the given key expression.
+  ///
+  /// Replies are posted to the Dart NativePort as arrays (same format as
+  /// zd_get replies). A null sentinel signals completion.
+  ///
+  /// @param session   Loaned session pointer.
+  /// @param key_expr  Key expression to query liveliness for.
+  /// @param port      Dart NativePort for reply callbacks.
+  /// @param timeout_ms  Timeout in milliseconds (0 = default).
+  /// @return 0 on success.
+  int zd_liveliness_get(
+    ffi.Pointer<ffi.Uint8> session,
+    ffi.Pointer<ffi.Char> key_expr,
+    int port,
+    int timeout_ms,
+  ) {
+    return _zd_liveliness_get(session, key_expr, port, timeout_ms);
+  }
+
+  late final _zd_liveliness_getPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int8 Function(
+            ffi.Pointer<ffi.Uint8>,
+            ffi.Pointer<ffi.Char>,
+            ffi.Int64,
+            ffi.Uint64,
+          )
+        >
+      >('zd_liveliness_get');
+  late final _zd_liveliness_get = _zd_liveliness_getPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Uint8>, ffi.Pointer<ffi.Char>, int, int)
+      >();
 }
 
 final class UnnamedStruct extends ffi.Struct {

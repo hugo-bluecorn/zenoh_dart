@@ -38,9 +38,7 @@ String? _resolveLibraryPath(String libraryName) {
     if (packageUri != null) {
       final packageRoot = packageUri.resolve('../../');
       final nativeFile = File.fromUri(
-        packageRoot.resolve(
-          'native/linux/x86_64/$libraryName',
-        ),
+        packageRoot.resolve('native/linux/x86_64/$libraryName'),
       );
       if (nativeFile.existsSync()) return nativeFile.path;
       final hookFile = File.fromUri(

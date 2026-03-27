@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:test/test.dart';
 import 'package:zenoh/zenoh.dart';
 
+
 void main() {
   group('ZBytes round-trip', () {
     test('from string round-trip', () {
@@ -106,6 +107,181 @@ void main() {
       expect(bytes.toStr(), equals('reuse me'));
       expect(bytes.toStr(), equals('reuse me'));
       bytes.dispose();
+    });
+  });
+
+  group('ZBytes.toBytes()', () {
+    test('round-trip from string', () {
+      // Given: ZBytes created from string 'hello'
+      final zbytes = ZBytes.fromString('hello');
+
+      // When: toBytes() is called
+      final result = zbytes.toBytes();
+
+      // Then: returns UTF-8 bytes [104, 101, 108, 108, 111]
+      expect(result, equals(Uint8List.fromList([104, 101, 108, 108, 111])));
+      zbytes.dispose();
+    });
+
+    test('round-trip from Uint8List', () {
+      // Given: ZBytes created from Uint8List [1, 2, 3, 4, 5]
+      final data = Uint8List.fromList([1, 2, 3, 4, 5]);
+      final zbytes = ZBytes.fromUint8List(data);
+
+      // When: toBytes() is called
+      final result = zbytes.toBytes();
+
+      // Then: returns identical bytes
+      expect(result, equals(data));
+      zbytes.dispose();
+    });
+
+    test('empty bytes returns empty Uint8List', () {
+      // Given: ZBytes created from empty string
+      final zbytes = ZBytes.fromString('');
+
+      // When: toBytes() is called
+      final result = zbytes.toBytes();
+
+      // Then: returns empty Uint8List
+      expect(result, equals(Uint8List(0)));
+      expect(result.length, equals(0));
+      zbytes.dispose();
+    });
+
+    test('can be called multiple times (non-destructive read)', () {
+      // Given: ZBytes created from 'reuse'
+      final zbytes = ZBytes.fromString('reuse');
+
+      // When: toBytes() is called three times
+      final r1 = zbytes.toBytes();
+      final r2 = zbytes.toBytes();
+      final r3 = zbytes.toBytes();
+
+      // Then: all results are identical
+      expect(r1, equals(Uint8List.fromList([114, 101, 117, 115, 101])));
+      expect(r2, equals(r1));
+      expect(r3, equals(r1));
+      zbytes.dispose();
+    });
+
+    test('on disposed ZBytes throws StateError', () {
+      // Given: a disposed ZBytes
+      final zbytes = ZBytes.fromString('test');
+      zbytes.dispose();
+
+      // When/Then: toBytes() throws StateError
+      expect(() => zbytes.toBytes(), throwsStateError);
+    });
+
+    test('on consumed ZBytes throws StateError', () {
+      // Given: a consumed ZBytes
+      final zbytes = ZBytes.fromString('test');
+      zbytes.markConsumed();
+
+      // When/Then: toBytes() throws StateError
+      expect(() => zbytes.toBytes(), throwsStateError);
+    });
+
+    test('large payload (10KB)', () {
+      // Given: ZBytes created from 10KB of zeros
+      final data = Uint8List(10240);
+      final zbytes = ZBytes.fromUint8List(data);
+
+      // When: toBytes() is called
+      final result = zbytes.toBytes();
+
+      // Then: returns identical 10KB buffer
+      expect(result.length, equals(10240));
+      expect(result, equals(data));
+      zbytes.dispose();
+    });
+  });
+
+  group('ZBytes.clone()', () {
+    test('clone produces valid independent copy', () {
+      // Given: a ZBytes created from a string
+      final original = ZBytes.fromString('hello clone');
+
+      // When: clone() is called
+      final cloned = original.clone();
+
+      // Then: both return the same string
+      expect(cloned.toStr(), equals('hello clone'));
+      expect(original.toStr(), equals('hello clone'));
+
+      cloned.dispose();
+      original.dispose();
+    });
+
+    test('clone and original can be disposed independently', () {
+      // Given: a ZBytes and its clone
+      final original = ZBytes.fromString('independent');
+      final cloned = original.clone();
+
+      // When: original is disposed first
+      original.dispose();
+
+      // Then: clone still works
+      expect(cloned.toStr(), equals('independent'));
+      cloned.dispose();
+
+      // And vice versa: disposing clone after original is fine
+      final a = ZBytes.fromString('reverse');
+      final b = a.clone();
+      b.dispose();
+      expect(a.toStr(), equals('reverse'));
+      a.dispose();
+    });
+
+    test('clone of clone works', () {
+      // Given: a ZBytes
+      final original = ZBytes.fromString('deep');
+
+      // When: clone of clone is created
+      final clone1 = original.clone();
+      final clone2 = clone1.clone();
+
+      // Then: all three hold the same value
+      expect(original.toStr(), equals('deep'));
+      expect(clone1.toStr(), equals('deep'));
+      expect(clone2.toStr(), equals('deep'));
+
+      clone2.dispose();
+      clone1.dispose();
+      original.dispose();
+    });
+
+    test('clone on disposed throws StateError', () {
+      // Given: a disposed ZBytes
+      final zbytes = ZBytes.fromString('disposed');
+      zbytes.dispose();
+
+      // When/Then: clone() throws StateError
+      expect(() => zbytes.clone(), throwsStateError);
+    });
+
+    test('clone on consumed throws StateError', () {
+      // Given: a consumed ZBytes
+      final zbytes = ZBytes.fromString('consumed');
+      zbytes.markConsumed();
+
+      // When/Then: clone() throws StateError
+      expect(() => zbytes.clone(), throwsStateError);
+    });
+
+    test('clone of empty bytes works', () {
+      // Given: ZBytes created from an empty string
+      final original = ZBytes.fromString('');
+
+      // When: clone() is called
+      final cloned = original.clone();
+
+      // Then: clone is valid and returns empty string
+      expect(cloned.toStr(), equals(''));
+
+      cloned.dispose();
+      original.dispose();
     });
   });
 
