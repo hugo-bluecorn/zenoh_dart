@@ -8,6 +8,10 @@ Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol
 - Publish/subscribe with key expressions
 - Query/reply (get/queryable) request-response pattern
 - Pull subscriber with ring buffer (lossy, latest-value semantics)
+- Declared querier for repeated queries with matching status
+- Liveliness tokens for presence detection and subscriber notifications
+- Background subscriber (fire-and-forget, lives until session closes)
+- Ping/pong latency benchmarking with express publisher mode
 - Shared memory (SHM) zero-copy for publish, get, and reply (Linux)
 - Network scouting and session info
 - Build hooks for seamless native library distribution
@@ -52,10 +56,11 @@ void main() async {
 |-------|-------------|
 | `Zenoh` | Static utilities: `initLog()`, `scout()` |
 | `Config` | Session configuration with JSON5 insertion |
-| `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe, querier |
+| `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe, querier, liveliness, background subscribe |
 | `KeyExpr` | Key expression creation and validation |
-| `ZBytes` | Binary payload container; `isShmBacked` detects SHM backing |
-| `Publisher` | Declared publisher with put/delete/matching status |
+| `ZBytes` | Binary payload container; `clone()` (shallow copy), `toBytes()` (read as `Uint8List`), `isShmBacked` |
+| `LivelinessToken` | Announces entity presence; intersecting subscribers notified on declare/close |
+| `Publisher` | Declared publisher with put/delete/matching status/express mode |
 | `Subscriber` | Callback-based subscriber delivering `Stream<Sample>` |
 | `PullSubscriber` | Ring-buffer-backed pull subscriber with `tryRecv()` (lossy) |
 | `Querier` | Declared querier for repeated queries with matching status |
@@ -96,6 +101,11 @@ All examples live in [`example/`](example/) and support `-e`/`--connect` and `-l
 | [`z_queryable_shm.dart`](example/z_queryable_shm.dart) | Queryable that replies with SHM payloads |
 | [`z_pull.dart`](example/z_pull.dart) | Pull subscriber with ring buffer (interactive polling) |
 | [`z_querier.dart`](example/z_querier.dart) | Declared querier for repeated queries (runs until Ctrl-C) |
+| [`z_liveliness.dart`](example/z_liveliness.dart) | Declare a liveliness token (announces presence, runs until Ctrl-C) |
+| [`z_sub_liveliness.dart`](example/z_sub_liveliness.dart) | Subscribe to liveliness changes (runs until Ctrl-C) |
+| [`z_get_liveliness.dart`](example/z_get_liveliness.dart) | Query currently alive liveliness tokens |
+| [`z_pong.dart`](example/z_pong.dart) | Pong responder (echoes ping payload, runs until Ctrl-C) |
+| [`z_ping.dart`](example/z_ping.dart) | Measure round-trip latency (requires z_pong running) |
 
 ```bash
 # Quick start examples
@@ -104,7 +114,11 @@ dart run example/z_sub.dart -k 'demo/example/**'
 dart run example/z_get.dart -s 'demo/example/**'
 dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
 dart run example/z_querier.dart -s 'demo/example/**'
-dart run example/z_pull.dart -k 'demo/example/**' -s 3
+dart run example/z_pull.dart -k 'demo/example/**'
+dart run example/z_liveliness.dart -k group1/zenoh-dart
+dart run example/z_sub_liveliness.dart -k 'group1/**' --history
+dart run example/z_pong.dart
+dart run example/z_ping.dart 64 -n 100 -w 1000
 ```
 
 ## Platform Support

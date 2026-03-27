@@ -4,21 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pure Dart FFI package providing bindings for [Zenoh](https://zenoh.io/) (a pub/sub/query protocol) via a C shim layer wrapping zenoh-c v1.7.2.
+Pure Dart FFI package providing bindings for [Zenoh](https://zenoh.io/) (a pub/sub/query protocol) via a C shim layer wrapping zenoh-c v1.7.2. This is the product repo — clean, publishable code. Development happens in the companion `zenoh_dart_dev` repo.
 
 ## Repository Structure
 
 ```
 zenoh_dart/
   package/                      # PUBLISH BOUNDARY — dart pub publish runs here
-    lib/                        #   Dart API
+    lib/                        #   Dart API (27 classes)
     hook/                       #   Dart build hooks (CodeAsset registration)
     native/                     #   Prebuilt shared libraries (linux/x86_64/, android/<abi>/)
-    example/                    #   CLI examples (12: z_put, z_sub, z_pub, z_get, z_queryable, z_pull, etc.)
-    test/                       #   Integration tests (282 tests)
+    example/                    #   CLI examples (18: z_put, z_sub, z_pub, z_get, z_queryable, z_ping, etc.)
+    test/                       #   Integration tests (372 tests)
     pubspec.yaml
   src/                          # C shim source (outside publish boundary)
-    zenoh_dart.{h,c}
+    zenoh_dart.{h,c}            #   92 C shim functions
     CMakeLists.txt
     dart/                       #   Dart API DL headers
   extern/
@@ -27,15 +27,6 @@ zenoh_dart/
     build_zenoh_android.sh      # Android cross-compilation
   CMakeLists.txt                # Root superbuild
   CMakePresets.json             # Platform presets
-```
-
-## FVM Requirement
-
-**Dart and Flutter are NOT on PATH.** ALL commands must use `fvm`:
-
-```bash
-fvm dart ...
-fvm flutter ...
 ```
 
 ## Build & Development Commands
@@ -72,59 +63,103 @@ SHM features are excluded on Android.
 
 ```bash
 # Regenerate FFI bindings after modifying src/zenoh_dart.h
-cd package && fvm dart run ffigen --config ffigen.yaml
+cd package && dart run ffigen --config ffigen.yaml
 
 # Analyze Dart code
-cd package && fvm dart analyze
+cd package && dart analyze
 
 # Run all tests
-cd package && fvm dart test
+cd package && dart test
 
 # Run a single test file
-cd package && fvm dart test test/session_test.dart
+cd package && dart test test/session_test.dart
+
+# Run a single test by name
+cd package && dart test --name "opens session"
 ```
 
 ### CLI examples
 
 ```bash
-cd package && fvm dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
-cd package && fvm dart run example/z_delete.dart -k demo/example/test
-cd package && fvm dart run example/z_sub.dart -k 'demo/example/**'
-cd package && fvm dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
-cd package && fvm dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
-cd package && fvm dart run example/z_info.dart
-cd package && fvm dart run example/z_scout.dart
-cd package && fvm dart run example/z_get.dart -s 'demo/example/**'
-cd package && fvm dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable
-cd package && fvm dart run example/z_get_shm.dart -s 'demo/example/**'
-cd package && fvm dart run example/z_queryable_shm.dart -k demo/example/zenoh-dart-queryable
-cd package && fvm dart run example/z_pull.dart -k 'demo/example/**' -s 3
-cd package && fvm dart run example/z_querier.dart -s 'demo/example/**'
+# Put data on a key expression
+cd package && dart run example/z_put.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Delete a key expression
+cd package && dart run example/z_delete.dart -k demo/example/test
+
+# Subscribe to a key expression (runs until Ctrl-C)
+cd package && dart run example/z_sub.dart -k 'demo/example/**'
+
+# Publish in a loop on a key expression (runs until Ctrl-C)
+cd package && dart run example/z_pub.dart -k demo/example/test -p 'Hello from Dart!'
+
+# Publish via shared memory in a loop (runs until Ctrl-C)
+cd package && dart run example/z_pub_shm.dart -k demo/example/test -p 'Hello from SHM!'
+
+# Print own session ZID and connected router/peer ZIDs
+cd package && dart run example/z_info.dart
+
+# Discover zenoh entities on the network
+cd package && dart run example/z_scout.dart
+
+# Send a query and receive replies
+cd package && dart run example/z_get.dart -s 'demo/example/**' -t BEST_MATCHING
+
+# Declare a queryable and reply to incoming queries (runs until Ctrl-C)
+cd package && dart run example/z_queryable.dart -k demo/example/zenoh-dart-queryable -p 'Reply from Dart!'
+
+# Send a query with an SHM-backed payload
+cd package && dart run example/z_get_shm.dart -s 'demo/example/**' -p 'Query from SHM!'
+
+# Declare a queryable and reply with SHM-backed payload (runs until Ctrl-C)
+cd package && dart run example/z_queryable_shm.dart -k demo/example/zenoh-dart-queryable -p 'SHM reply from Dart!'
+
+# Declare a pull subscriber; press ENTER to poll buffered samples, 'q' to quit
+cd package && dart run example/z_pull.dart -k 'demo/example/**'
+
+# Declare a querier and send periodic queries (runs until Ctrl-C)
+cd package && dart run example/z_querier.dart -s 'demo/example/**' -t BEST_MATCHING
+
+# Declare a liveliness token (announces presence, runs until Ctrl-C)
+cd package && dart run example/z_liveliness.dart -k group1/zenoh-dart
+
+# Subscribe to liveliness changes (runs until Ctrl-C)
+cd package && dart run example/z_sub_liveliness.dart -k 'group1/**' --history
+
+# Query currently alive liveliness tokens
+cd package && dart run example/z_get_liveliness.dart -k 'group1/**'
+
+# Start pong responder (echoes ping payload, runs until Ctrl-C)
+cd package && dart run example/z_pong.dart
+
+# Measure round-trip latency (requires z_pong running; PAYLOAD_SIZE in bytes)
+cd package && dart run example/z_ping.dart 64 -n 100 -w 1000
 ```
 
 ## Architecture
 
-**Data flow:** Dart API (`package/lib/zenoh.dart`) → Generated bindings (`package/lib/src/bindings.dart`) → Native C (`src/zenoh_dart.{h,c}`) → `libzenohc.so` (resolved by OS linker via DT_NEEDED)
+**Data flow:** Dart API (`package/lib/zenoh.dart`) -> Generated bindings (`package/lib/src/bindings.dart`) -> Native C (`src/zenoh_dart.{h,c}`) -> `libzenohc.so` (resolved by OS linker via DT_NEEDED)
 
 ### Key Conventions
 
 - **`zd_` prefix**: All C shim symbols use `zd_` to avoid collisions with zenoh-c's `z_`/`zc_` namespace.
-- **Binding generation**: `package/lib/src/bindings.dart` is auto-generated — never edit manually. Regenerate with `fvm dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`.
+- **Binding generation**: `package/lib/src/bindings.dart` is auto-generated — never edit manually. Regenerate with `dart run ffigen --config ffigen.yaml` after changing `src/zenoh_dart.h`.
 - **`DynamicLibrary.open()` loading**: `native_lib.dart::ensureInitialized()` resolves `libzenoh_dart.so` via `Isolate.resolvePackageUriSync()` and loads eagerly. On Android, bare `DynamicLibrary.open('libzenoh_dart.so')` is used. Do NOT use `@Native` annotations — they cause tokio waker vtable crashes in multi-process TCP scenarios.
 - **Build hook**: `package/hook/build.dart` registers CodeAsset entries for distribution. The hook is target-aware (Linux/Android).
-- **Entity lifecycle**: sizeof → declare → loan → operations → drop/close. Idempotent close, StateError after close.
+- **Entity lifecycle**: sizeof -> declare -> loan -> operations -> drop/close. Idempotent close, StateError after close.
 
 ### Available Dart API classes
 
 - `Zenoh` — Static utilities: `initLog()`, `scout()`
 - `Config` — Session configuration with JSON5 insertion
-- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declarePublisher`, `get`, `declareQueryable`, `declarePullSubscriber`, `declareQuerier`, `zid`, `routersZid()`, `peersZid()`
+- `Session` — Open/close sessions; `put`, `putBytes`, `deleteResource`, `declareSubscriber`, `declareBackgroundSubscriber`, `declarePublisher`, `get`, `declareQueryable`, `declarePullSubscriber`, `declareQuerier`, `declareLivelinessToken`, `declareLivelinessSubscriber`, `livelinessGet`, `zid`, `routersZid()`, `peersZid()`
 - `KeyExpr` — Key expression creation and validation
-- `ZBytes` — Binary payload container; `isShmBacked` detects SHM backing
-- `Publisher` — Declared publisher with `put`/`putBytes`/`deleteResource`/`matchingStatus`
+- `ZBytes` — Binary payload container; `clone()` (shallow ref-counted copy), `toBytes()` (read content as `Uint8List`), `isShmBacked` detects SHM backing
+- `LivelinessToken` — Announces entity presence on the network; `keyExpr`, `close()`
+- `Publisher` — Declared publisher with `put`/`putBytes`/`deleteResource`/`matchingStatus`/`isExpress` mode
 - `Subscriber` — Callback-based subscriber delivering `Stream<Sample>`
 - `PullSubscriber` — Ring-buffer-backed pull subscriber with `tryRecv()` (lossy, drops oldest)
-- `Querier` — Declared querier for repeated queries with `get()` → `Stream<Reply>`, `matchingStatus`, `hasMatchingQueryables()`
+- `Querier` — Declared querier for repeated queries with `get()` -> `Stream<Reply>`, `matchingStatus`, `hasMatchingQueryables()`
 - `Query` — Received query with `reply()`/`replyBytes()`/`dispose()`, `keyExpr`, `parameters`, `payloadBytes`
 - `Queryable` — Callback-based queryable delivering `Stream<Query>`
 - `Reply` — Tagged union: `isOk`, `ok` (Sample), `error` (ReplyError)
@@ -154,7 +189,7 @@ Uses `lints` package (configured in `package/analysis_options.yaml`).
 1. Add the function declaration to `src/zenoh_dart.h` and implementation to `src/zenoh_dart.c`
 2. Use the `zd_` prefix
 3. Rebuild: `cmake --build --preset linux-x64 --target install`
-4. Regenerate bindings: `cd package && fvm dart run ffigen --config ffigen.yaml`
+4. Regenerate bindings: `cd package && dart run ffigen --config ffigen.yaml`
 5. Add Dart API wrapper in `package/lib/src/`
 6. Add tests in `package/test/`
-7. Run: `cd package && fvm dart test`
+7. Run: `cd package && dart test`

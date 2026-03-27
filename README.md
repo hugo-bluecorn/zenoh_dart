@@ -7,18 +7,18 @@ Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol
 ```
 zenoh_dart/
   package/          Dart package (publish boundary)
-  src/              C shim source
+  src/              C shim source (92 functions)
   extern/zenoh-c/   zenoh-c submodule (v1.7.2)
   scripts/          Build scripts (Android cross-compilation)
   CMakeLists.txt    Root superbuild
   CMakePresets.json Platform presets
 ```
 
-The Dart package lives in `package/`. All `fvm dart` commands run from there. Build infrastructure lives at the repo root, outside the publish boundary.
+The Dart package lives in `package/`. All `dart` commands run from there. Build infrastructure lives at the repo root, outside the publish boundary.
 
 ## Prerequisites
 
-- [FVM](https://fvm.app/) (Flutter Version Management) — `fvm dart` / `fvm flutter`
+- Dart SDK ^3.11.0
 - CMake 3.16+, Ninja, Clang/Clang++
 - Rust 1.85.0 (`rustup toolchain install 1.85.0`)
 - For Android: Android NDK, [cargo-ndk](https://github.com/nicholasrq/cargo-ndk)
@@ -75,10 +75,10 @@ See [`package/README.md`](package/README.md) for the Dart API documentation, exa
 ## Running Tests
 
 ```bash
-cd package && fvm dart test
+cd package && dart test
 ```
 
-The 310 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions, put/delete, publisher lifecycle, SHM alloc/write/publish, scout/info, get/queryable query/reply, SHM get/reply, pull subscriber ring buffer, and inter-process scenarios.
+The 372 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions, put/delete, publisher lifecycle (including express mode), SHM alloc/write/publish, scout/info, get/queryable query/reply, SHM get/reply, pull subscriber ring buffer, declared querier with matching status, liveliness token/subscriber/get, background subscriber, ZBytes clone/toBytes, ping/pong CLI benchmarks, and inter-process scenarios.
 
 Tests run against the Linux native libraries on the host machine. Android `.so` files cannot be tested on a Linux host (different architecture/linker) — they are validated by deploying a Flutter app to a real device or emulator. SHM features are excluded on Android.
 
