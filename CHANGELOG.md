@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.14.0 — Phase 14: Throughput Benchmarks
+
+- **Composition phase** — no new C shim functions or Dart API classes
+- `z_pub_thr.dart`: heap-based tight-loop publisher with `CongestionControl.block` and clone-in-loop
+- `z_sub_thr.dart`: background subscriber counting messages per round, reports throughput in `msg/s`
+- `z_pub_shm_thr.dart`: SHM zero-copy tight-loop publisher using allocate-once-clone-in-loop pattern
+- 92 C shim functions, 394 integration tests
+
+## 0.13.0 — Phase 13: SHM Ping
+
+- **Composition phase** — no new C shim functions or Dart API classes
+- `z_ping_shm.dart`: SHM zero-copy latency benchmark using allocate-once-clone-in-loop pattern; reuses `z_pong.dart` unchanged (SHM-transparent)
+- SHM pool minimum size enforced at 65536 bytes for Talc allocator compatibility
+- 92 C shim functions, 382 integration tests
+
 ## 0.12.0 — Phase 12: Ping/Pong Latency Benchmark
 
 - **Background subscriber**: `Session.declareBackgroundSubscriber()` returns `Stream<Sample>` (fire-and-forget, lives until session closes)
