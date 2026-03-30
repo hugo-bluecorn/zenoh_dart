@@ -55,4 +55,106 @@ void main() {
       expect(() => ke.value, throwsStateError);
     });
   });
+
+  group('KeyExpr.intersects', () {
+    test('exact match intersects', () {
+      final a = KeyExpr('demo/example/test');
+      final b = KeyExpr('demo/example/test');
+      expect(a.intersects(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('double-wildcard intersects specific', () {
+      final a = KeyExpr('demo/**');
+      final b = KeyExpr('demo/example/test');
+      expect(a.intersects(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('single-level wildcard intersects', () {
+      final a = KeyExpr('demo/*/test');
+      final b = KeyExpr('demo/example/test');
+      expect(a.intersects(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('non-matching does not intersect', () {
+      final a = KeyExpr('demo/a');
+      final b = KeyExpr('demo/b');
+      expect(a.intersects(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('disjoint paths do not intersect', () {
+      final a = KeyExpr('demo/example');
+      final b = KeyExpr('other/path');
+      expect(a.intersects(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+  });
+
+  group('KeyExpr.includes', () {
+    test('wildcard includes specific', () {
+      final a = KeyExpr('demo/**');
+      final b = KeyExpr('demo/example/test');
+      expect(a.includes(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('specific does not include wildcard', () {
+      final a = KeyExpr('demo/example/test');
+      final b = KeyExpr('demo/**');
+      expect(a.includes(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('exact includes itself', () {
+      final a = KeyExpr('demo/example');
+      final b = KeyExpr('demo/example');
+      expect(a.includes(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('disjoint does not include', () {
+      final a = KeyExpr('demo/a');
+      final b = KeyExpr('demo/b');
+      expect(a.includes(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+  });
+
+  group('KeyExpr.equals', () {
+    test('identical expressions are equal', () {
+      final a = KeyExpr('demo/example');
+      final b = KeyExpr('demo/example');
+      expect(a.equals(b), isTrue);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('different expressions are not equal', () {
+      final a = KeyExpr('demo/a');
+      final b = KeyExpr('demo/b');
+      expect(a.equals(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+
+    test('wildcard not equal to specific', () {
+      final a = KeyExpr('demo/**');
+      final b = KeyExpr('demo/example');
+      expect(a.equals(b), isFalse);
+      a.dispose();
+      b.dispose();
+    });
+  });
 }

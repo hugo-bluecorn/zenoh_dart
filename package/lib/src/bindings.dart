@@ -301,6 +301,72 @@ class ZenohDartBindings {
         void Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
       >();
 
+  /// Returns true if the key expressions intersect (share at least one key).
+  ///
+  /// @param a  Pointer to a valid z_view_keyexpr_t.
+  /// @param b  Pointer to a valid z_view_keyexpr_t.
+  /// @return true if the key expressions intersect.
+  bool zd_keyexpr_intersects(
+    ffi.Pointer<ffi.Opaque> a,
+    ffi.Pointer<ffi.Opaque> b,
+  ) {
+    return _zd_keyexpr_intersects(a, b);
+  }
+
+  late final _zd_keyexpr_intersectsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_keyexpr_intersects');
+  late final _zd_keyexpr_intersects = _zd_keyexpr_intersectsPtr
+      .asFunction<
+        bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Returns true if key expression a includes b (every key in b is in a).
+  ///
+  /// @param a  Pointer to a valid z_view_keyexpr_t.
+  /// @param b  Pointer to a valid z_view_keyexpr_t.
+  /// @return true if a includes b.
+  bool zd_keyexpr_includes(
+    ffi.Pointer<ffi.Opaque> a,
+    ffi.Pointer<ffi.Opaque> b,
+  ) {
+    return _zd_keyexpr_includes(a, b);
+  }
+
+  late final _zd_keyexpr_includesPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_keyexpr_includes');
+  late final _zd_keyexpr_includes = _zd_keyexpr_includesPtr
+      .asFunction<
+        bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Returns true if the key expressions are equal in zenoh semantics.
+  ///
+  /// @param a  Pointer to a valid z_view_keyexpr_t.
+  /// @param b  Pointer to a valid z_view_keyexpr_t.
+  /// @return true if the key expressions are equal.
+  bool zd_keyexpr_equals(ffi.Pointer<ffi.Opaque> a, ffi.Pointer<ffi.Opaque> b) {
+    return _zd_keyexpr_equals(a, b);
+  }
+
+  late final _zd_keyexpr_equalsPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_keyexpr_equals');
+  late final _zd_keyexpr_equals = _zd_keyexpr_equalsPtr
+      .asFunction<
+        bool Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
   /// Returns the size of z_owned_bytes_t in bytes.
   ///
   /// Used by Dart to allocate the correct amount of native memory

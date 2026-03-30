@@ -69,6 +69,34 @@ class KeyExpr {
     calloc.free(_kePtr);
   }
 
+  /// Returns true if this key expression intersects with [other].
+  ///
+  /// Two key expressions intersect if there exists at least one key
+  /// that belongs to both sets.
+  bool intersects(KeyExpr other) {
+    _ensureNotDisposed();
+    other._ensureNotDisposed();
+    return bindings.zd_keyexpr_intersects(_kePtr.cast(), other._kePtr.cast());
+  }
+
+  /// Returns true if this key expression includes [other].
+  ///
+  /// A key expression includes another if every key in [other]
+  /// is also contained in this expression.
+  bool includes(KeyExpr other) {
+    _ensureNotDisposed();
+    other._ensureNotDisposed();
+    return bindings.zd_keyexpr_includes(_kePtr.cast(), other._kePtr.cast());
+  }
+
+  /// Returns true if this key expression is equal to [other]
+  /// in zenoh semantics.
+  bool equals(KeyExpr other) {
+    _ensureNotDisposed();
+    other._ensureNotDisposed();
+    return bindings.zd_keyexpr_equals(_kePtr.cast(), other._kePtr.cast());
+  }
+
   void _ensureNotDisposed() {
     if (_disposed) throw StateError('KeyExpr has been disposed');
   }

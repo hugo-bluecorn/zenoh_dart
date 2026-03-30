@@ -142,6 +142,30 @@ FFI_PLUGIN_EXPORT const z_loaned_keyexpr_t* zd_view_keyexpr_loan(
 FFI_PLUGIN_EXPORT void zd_keyexpr_as_view_string(
     const z_loaned_keyexpr_t* ke, z_view_string_t* out);
 
+/// Returns true if the key expressions intersect (share at least one key).
+///
+/// @param a  Pointer to a valid z_view_keyexpr_t.
+/// @param b  Pointer to a valid z_view_keyexpr_t.
+/// @return true if the key expressions intersect.
+FFI_PLUGIN_EXPORT bool zd_keyexpr_intersects(const z_view_keyexpr_t* a,
+                                             const z_view_keyexpr_t* b);
+
+/// Returns true if key expression a includes b (every key in b is in a).
+///
+/// @param a  Pointer to a valid z_view_keyexpr_t.
+/// @param b  Pointer to a valid z_view_keyexpr_t.
+/// @return true if a includes b.
+FFI_PLUGIN_EXPORT bool zd_keyexpr_includes(const z_view_keyexpr_t* a,
+                                           const z_view_keyexpr_t* b);
+
+/// Returns true if the key expressions are equal in zenoh semantics.
+///
+/// @param a  Pointer to a valid z_view_keyexpr_t.
+/// @param b  Pointer to a valid z_view_keyexpr_t.
+/// @return true if the key expressions are equal.
+FFI_PLUGIN_EXPORT bool zd_keyexpr_equals(const z_view_keyexpr_t* a,
+                                         const z_view_keyexpr_t* b);
+
 // ---------------------------------------------------------------------------
 // Bytes
 // ---------------------------------------------------------------------------

@@ -169,6 +169,21 @@ FFI_PLUGIN_EXPORT void zd_keyexpr_as_view_string(
   z_keyexpr_as_view_string(ke, out);
 }
 
+FFI_PLUGIN_EXPORT bool zd_keyexpr_intersects(const z_view_keyexpr_t* a,
+                                             const z_view_keyexpr_t* b) {
+  return z_keyexpr_intersects(z_view_keyexpr_loan(a), z_view_keyexpr_loan(b));
+}
+
+FFI_PLUGIN_EXPORT bool zd_keyexpr_includes(const z_view_keyexpr_t* a,
+                                           const z_view_keyexpr_t* b) {
+  return z_keyexpr_includes(z_view_keyexpr_loan(a), z_view_keyexpr_loan(b));
+}
+
+FFI_PLUGIN_EXPORT bool zd_keyexpr_equals(const z_view_keyexpr_t* a,
+                                         const z_view_keyexpr_t* b) {
+  return z_keyexpr_equals(z_view_keyexpr_loan(a), z_view_keyexpr_loan(b));
+}
+
 // ---------------------------------------------------------------------------
 // View String utilities
 // ---------------------------------------------------------------------------
