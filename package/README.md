@@ -11,7 +11,10 @@ Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol
 - Declared querier for repeated queries with matching status
 - Liveliness tokens for presence detection and subscriber notifications
 - Background subscriber (fire-and-forget, lives until session closes)
-- Ping/pong latency benchmarking with express publisher mode
+- Ping/pong latency benchmarking with express publisher mode (heap and SHM)
+- Throughput benchmarking (heap tight-loop and SHM zero-copy)
+- Cross-language typed serialization/deserialization (ZSerializer, ZDeserializer)
+- Raw byte assembly (ZBytesWriter) and fragmented slice iteration
 - Shared memory (SHM) zero-copy for publish, get, and reply (Linux)
 - Network scouting and session info
 - Build hooks for seamless native library distribution
@@ -58,7 +61,10 @@ void main() async {
 | `Config` | Session configuration with JSON5 insertion |
 | `Session` | Open/close sessions; put, subscribe, publish, get, queryable, pull subscribe, querier, liveliness, background subscribe |
 | `KeyExpr` | Key expression creation and validation |
-| `ZBytes` | Binary payload container; `clone()` (shallow copy), `toBytes()` (read as `Uint8List`), `isShmBacked` |
+| `ZBytes` | Binary payload container; `clone()`, `toBytes()`, `fromInt()`/`toInt()`, `fromDouble()`/`toDouble()`, `fromBool()`/`toBool()`, `slices` (fragment iteration), `isShmBacked` |
+| `ZSerializer` | Streaming serializer for multi-value payloads (uint8–int64, float, double, bool, string, bytes, sequence length) |
+| `ZDeserializer` | Type-safe streaming deserializer with `isDone` state tracking |
+| `ZBytesWriter` | Raw byte assembler via `writeAll()`, `append()` (consumed), `finish()` |
 | `LivelinessToken` | Announces entity presence; intersecting subscribers notified on declare/close |
 | `Publisher` | Declared publisher with put/delete/matching status/express mode |
 | `Subscriber` | Callback-based subscriber delivering `Stream<Sample>` |
@@ -106,6 +112,11 @@ All examples live in [`example/`](example/) and support `-e`/`--connect` and `-l
 | [`z_get_liveliness.dart`](example/z_get_liveliness.dart) | Query currently alive liveliness tokens |
 | [`z_pong.dart`](example/z_pong.dart) | Pong responder (echoes ping payload, runs until Ctrl-C) |
 | [`z_ping.dart`](example/z_ping.dart) | Measure round-trip latency (requires z_pong running) |
+| [`z_ping_shm.dart`](example/z_ping_shm.dart) | Measure round-trip latency with SHM zero-copy (requires z_pong running) |
+| [`z_pub_thr.dart`](example/z_pub_thr.dart) | Tight-loop throughput publisher (heap, requires z_sub_thr) |
+| [`z_sub_thr.dart`](example/z_sub_thr.dart) | Background subscriber counting throughput (reports msg/s) |
+| [`z_pub_shm_thr.dart`](example/z_pub_shm_thr.dart) | Tight-loop SHM throughput publisher (requires z_sub_thr) |
+| [`z_bytes.dart`](example/z_bytes.dart) | Serialization round-trip demo (no network) |
 
 ```bash
 # Quick start examples
@@ -119,6 +130,11 @@ dart run example/z_liveliness.dart -k group1/zenoh-dart
 dart run example/z_sub_liveliness.dart -k 'group1/**' --history
 dart run example/z_pong.dart
 dart run example/z_ping.dart 64 -n 100 -w 1000
+dart run example/z_ping_shm.dart 64 -n 100 -w 1000
+dart run example/z_pub_thr.dart 8192 --express
+dart run example/z_sub_thr.dart -s 10 -n 100000
+dart run example/z_pub_shm_thr.dart 8192
+dart run example/z_bytes.dart
 ```
 
 ## Platform Support
