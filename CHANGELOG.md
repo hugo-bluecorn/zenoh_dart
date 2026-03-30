@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.17.0 — Phase 17: In-Memory Storage
+
+- `KeyExpr.intersects(other)`: returns true if two key expressions share at least one key
+- `KeyExpr.includes(other)`: returns true if this expression is a superset of another
+- `KeyExpr.equals(other)`: returns true if two key expressions are semantically equal
+- **CLI example**: `z_storage.dart` — in-memory storage combining a subscriber (stores PUT/DELETE samples in a `Map`) and a queryable (replies with matching entries using `KeyExpr.intersects`)
+- 3 new C shim functions (141 → 144 total)
+- 18 new integration tests (455 → 473 total)
+
 ## 0.16.0 — Phase 16: Bytes Serialization/Deserialization
 
 - `ZSerializer`: streaming multi-value serialization (uint8–int64, float, double, bool, string, bytes, sequence length)
