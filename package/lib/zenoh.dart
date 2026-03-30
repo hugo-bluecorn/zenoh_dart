@@ -2,7 +2,9 @@
 library;
 
 export 'src/bytes.dart';
+export 'src/bytes_writer.dart';
 export 'src/config.dart';
+export 'src/deserializer.dart';
 export 'src/congestion_control.dart';
 export 'src/consolidation_mode.dart';
 export 'src/encoding.dart';
@@ -20,6 +22,7 @@ export 'src/query_target.dart';
 export 'src/queryable.dart';
 export 'src/reply.dart';
 export 'src/sample.dart';
+export 'src/serializer.dart';
 export 'src/session.dart';
 export 'src/shm_mut_buffer.dart';
 export 'src/shm_provider.dart';

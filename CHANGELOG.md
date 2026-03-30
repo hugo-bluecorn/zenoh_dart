@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.16.0 — Phase 16: Bytes Serialization/Deserialization
+
+- `ZSerializer`: streaming multi-value serialization (uint8–int64, float, double, bool, string, bytes, sequence length)
+- `ZDeserializer`: type-safe deserialization with `isDone` state tracking
+- `ZBytesWriter`: raw byte assembly via `writeAll()`, `append()` (consumed), and `finish()`
+- `ZBytes.fromInt()` / `toInt()`, `fromDouble()` / `toDouble()`, `fromBool()` / `toBool()` convenience methods
+- `ZBytes.slices` lazy iterable for fragmented payload access
+- **CLI example**: `z_bytes.dart` — serialization round-trip demo (no network)
+- 49 new C shim functions (92 → 141 total)
+- 61 new integration tests (394 → 455 total)
+
+## 0.15.0 — Phase 15: SHM Throughput (Subsumed)
+
+- Subsumed by Phase 14 — `z_pub_shm_thr.dart` was delivered as part of the throughput benchmarks
+
 ## 0.14.0 — Phase 14: Throughput Benchmarks
 
 - **Composition phase** — no new C shim functions or Dart API classes

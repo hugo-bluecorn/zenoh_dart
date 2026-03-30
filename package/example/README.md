@@ -48,46 +48,6 @@ zero cognitive overhead for zenoh users switching languages.
 
 ---
 
-## Coverage Map
-
-Which zenoh-c examples does this binding implement, and which are absent?
-
-| zenoh-c Example | zenoh-dart | Status |
-|-----------------|------------|--------|
-| `z_put.c` | `z_put.dart` | Implemented |
-| `z_delete.c` | `z_delete.dart` | Implemented |
-| `z_sub.c` | `z_sub.dart` | Implemented |
-| `z_pub.c` | `z_pub.dart` | Implemented |
-| `z_pub_shm.c` | `z_pub_shm.dart` | Implemented |
-| `z_info.c` | `z_info.dart` | Implemented |
-| `z_scout.c` | `z_scout.dart` | Implemented |
-| `z_get.c` | `z_get.dart` | Implemented |
-| `z_queryable.c` | `z_queryable.dart` | Implemented |
-| `z_get_shm.c` | `z_get_shm.dart` | Implemented |
-| `z_queryable_shm.c` | `z_queryable_shm.dart` | Implemented |
-| `z_pull.c` | `z_pull.dart` | Implemented (C-side ring buffer) |
-| `z_querier.c` | `z_querier.dart` | Implemented |
-| `z_liveliness.c` | `z_liveliness.dart` | Implemented |
-| `z_sub_liveliness.c` | `z_sub_liveliness.dart` | Implemented |
-| `z_get_liveliness.c` | `z_get_liveliness.dart` | Implemented |
-| `z_ping.c` | `z_ping.dart` | Implemented |
-| `z_pong.c` | `z_pong.dart` | Implemented |
-| `z_ping_shm.c` | `z_ping_shm.dart` | Implemented |
-| `z_pub_thr.c` | `z_pub_thr.dart` | Implemented |
-| `z_sub_thr.c` | `z_sub_thr.dart` | Implemented |
-| `z_pub_shm_thr.c` | `z_pub_shm_thr.dart` | Implemented |
-| `z_sub_shm.c` | -- | Absent (subscriber is SHM-transparent) |
-| `z_bytes.c` | -- | Absent (Dart has `dart:convert`) |
-| `z_queryable_with_channels.c` | -- | Absent (Dart Streams) |
-| `z_non_blocking_get.c` | -- | Absent (Dart Streams) |
-| `z_advanced_pub.c` | -- | Future |
-| `z_advanced_sub.c` | -- | Future |
-| `z_storage.c` | -- | Future |
-
-**Current:** 22 implemented, 4 permanently absent, 3 future.
-
----
-
 ## Absent Examples
 
 These zenoh-c examples are intentionally not implemented. Each omission
@@ -119,14 +79,6 @@ already receive SHM-backed data transparently — `Sample.payloadBytes`
 returns the bytes regardless of backing. The `ZBytes.isShmBacked` property
 lets callers detect SHM when needed, but no separate subscriber example
 is required.
-
-### z_bytes — Serialization Utility Demo
-
-zenoh-c's `z_bytes.c` demonstrates custom struct serialization into
-`z_owned_bytes_t`. This is a codec tutorial, not a networking pattern.
-Dart developers use `dart:convert` for serialization. The `ZBytes` class
-provides `fromString()`, `fromUint8List()`, `toBytes()`, and `clone()` —
-sufficient for all payload operations.
 
 ### z_advanced_pub / z_advanced_sub — Advanced Publication (Future)
 
@@ -710,13 +662,6 @@ receives bytes transparently (SHM or heap) and echoes them back.
 Compose from `Publisher` with `CongestionControl.block`, `Session.declareBackgroundSubscriber()`,
 `ShmProvider`, `ShmMutBuffer`, and `ZBytes.clone()`.
 
-**What's new**
-
-- 3 CLI examples: `z_pub_thr.dart` (heap throughput), `z_sub_thr.dart`
-  (throughput measurement), `z_pub_shm_thr.dart` (SHM throughput)
-- ~12 tests: CLI argument validation (3), throughput reporting (3),
-  SHM startup (2), cross-example integration (4)
-
 **The pattern they demonstrate**
 
 ```
@@ -771,6 +716,88 @@ z_pub_shm_thr.dart 8192 -s 32
 | `-s, --shared-memory` | `32` | SHM pool size in MB |
 | `-e, --connect` | -- | Connect endpoint(s) |
 | `-l, --listen` | -- | Listen endpoint(s) |
+
+---
+
+### z_bytes — Serialization Round-Trip Demo
+
+**Follows canon.**
+
+**What's new**
+
+- 1 CLI example: `z_bytes.dart` — serialization round-trip validation
+  (no network operations)
+- ~61 tests: serializer lifecycle (6), arithmetic types (6), compound
+  types (5), deserializer round-trips (19), composite sequences (4),
+  convenience methods (7), writer (6), slice iterator (4), error
+  handling (3), CLI (1)
+
+**The pattern it demonstrates**
+
+```
+z_bytes: ZSerializer → serialize types → finish → ZDeserializer → deserialize → verify
+         ZBytesWriter → writeAll/append → finish → slices → iterate fragments
+         ZBytes.fromInt(42) → toInt() == 42   (convenience, uses serializer internally)
+```
+
+Pure serialization — no sessions, no network. Validates cross-language
+wire format compatibility: a Dart-serialized uint32 produces the same
+bytes as zenoh-c's `ze_serialize_uint32`, enabling interop between
+language bindings.
+
+**Dart-specific note**
+
+The C example uses `z_bytes_reader_*` for reading back writer output.
+The reader API is deferred in Dart — `toBytes()` reads the full payload
+instead. The C++ `ze_serialize_*` / `ze_deserialize_*` one-shot functions
+are replaced by `ZSerializer` / `ZDeserializer` used internally by
+convenience methods (`fromInt`, `toInt`, etc.).
+
+```
+z_bytes.dart
+```
+
+No flags — runs all sections and prints PASS/FAIL for each.
+
+---
+
+## Coverage Map
+
+Which zenoh-c examples does this binding implement, and which are absent?
+
+| zenoh-c Example | zenoh-dart | Status |
+|-----------------|------------|--------|
+| `z_put.c` | `z_put.dart` | Implemented |
+| `z_delete.c` | `z_delete.dart` | Implemented |
+| `z_sub.c` | `z_sub.dart` | Implemented |
+| `z_pub.c` | `z_pub.dart` | Implemented |
+| `z_pub_shm.c` | `z_pub_shm.dart` | Implemented |
+| `z_info.c` | `z_info.dart` | Implemented |
+| `z_scout.c` | `z_scout.dart` | Implemented |
+| `z_get.c` | `z_get.dart` | Implemented |
+| `z_queryable.c` | `z_queryable.dart` | Implemented |
+| `z_get_shm.c` | `z_get_shm.dart` | Implemented |
+| `z_queryable_shm.c` | `z_queryable_shm.dart` | Implemented |
+| `z_pull.c` | `z_pull.dart` | Implemented (C-side ring buffer) |
+| `z_querier.c` | `z_querier.dart` | Implemented |
+| `z_liveliness.c` | `z_liveliness.dart` | Implemented |
+| `z_sub_liveliness.c` | `z_sub_liveliness.dart` | Implemented |
+| `z_get_liveliness.c` | `z_get_liveliness.dart` | Implemented |
+| `z_ping.c` | `z_ping.dart` | Implemented |
+| `z_pong.c` | `z_pong.dart` | Implemented |
+| `z_ping_shm.c` | `z_ping_shm.dart` | Implemented |
+| `z_sub_shm.c` | -- | Absent (subscriber is SHM-transparent) |
+| `z_bytes.c` | `z_bytes.dart` | Implemented |
+| `z_queryable_with_channels.c` | -- | Absent (Dart Streams) |
+| `z_non_blocking_get.c` | -- | Absent (Dart Streams) |
+| `z_advanced_pub.c` | -- | Future |
+| `z_advanced_sub.c` | -- | Future |
+| `z_pub_thr.c` | `z_pub_thr.dart` | Implemented |
+| `z_sub_thr.c` | `z_sub_thr.dart` | Implemented |
+| `z_pub_shm_thr.c` | `z_pub_shm_thr.dart` | Implemented |
+| `z_storage.c` | -- | Future |
+
+**Current:** 23 implemented, 3 permanently absent, 3 future.
 
 ---
 

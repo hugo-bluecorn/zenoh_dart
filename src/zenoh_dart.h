@@ -847,4 +847,239 @@ FFI_PLUGIN_EXPORT int8_t zd_liveliness_get(
     const uint8_t* session, const char* key_expr,
     int64_t port, uint64_t timeout_ms);
 
+// ---------------------------------------------------------------------------
+// Serializer
+// ---------------------------------------------------------------------------
+
+/// Returns the size of ze_owned_serializer_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_serializer_sizeof(void);
+
+/// Initializes an empty serializer.
+///
+/// @param ser  Pointer to an uninitialized ze_owned_serializer_t.
+/// @return 0 on success.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_empty(ze_owned_serializer_t* ser);
+
+/// Obtains a mutable loaned reference to the owned serializer.
+///
+/// @param ser  Pointer to a valid ze_owned_serializer_t.
+/// @param out  Receives the mutable loaned pointer.
+FFI_PLUGIN_EXPORT void zd_serializer_loan_mut(
+    ze_owned_serializer_t* ser, ze_loaned_serializer_t** out);
+
+/// Finishes the serializer and produces a z_owned_bytes_t.
+///
+/// The serializer is consumed (moved) by this call.
+///
+/// @param ser  Pointer to a valid ze_owned_serializer_t (consumed).
+/// @param out  Receives the produced z_owned_bytes_t.
+FFI_PLUGIN_EXPORT void zd_serializer_finish(
+    ze_owned_serializer_t* ser, z_owned_bytes_t* out);
+
+/// Drops (frees) an owned serializer.
+///
+/// After this call the owned serializer is in gravestone state.
+///
+/// @param ser  Pointer to a ze_owned_serializer_t to drop.
+FFI_PLUGIN_EXPORT void zd_serializer_drop(ze_owned_serializer_t* ser);
+
+// ---------------------------------------------------------------------------
+// Serializer — arithmetic type serialization
+// ---------------------------------------------------------------------------
+
+/// Serializes a uint8_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_uint8(
+    ze_loaned_serializer_t* ser, uint8_t val);
+
+/// Serializes a uint16_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_uint16(
+    ze_loaned_serializer_t* ser, uint16_t val);
+
+/// Serializes a uint32_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_uint32(
+    ze_loaned_serializer_t* ser, uint32_t val);
+
+/// Serializes a uint64_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_uint64(
+    ze_loaned_serializer_t* ser, uint64_t val);
+
+/// Serializes an int8_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_int8(
+    ze_loaned_serializer_t* ser, int8_t val);
+
+/// Serializes an int16_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_int16(
+    ze_loaned_serializer_t* ser, int16_t val);
+
+/// Serializes an int32_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_int32(
+    ze_loaned_serializer_t* ser, int32_t val);
+
+/// Serializes an int64_t value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_int64(
+    ze_loaned_serializer_t* ser, int64_t val);
+
+/// Serializes a float value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_float(
+    ze_loaned_serializer_t* ser, float val);
+
+/// Serializes a double value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_double(
+    ze_loaned_serializer_t* ser, double val);
+
+/// Serializes a bool value.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_bool(
+    ze_loaned_serializer_t* ser, bool val);
+
+// ---------------------------------------------------------------------------
+// Serializer — compound type serialization
+// ---------------------------------------------------------------------------
+
+/// Serializes a null-terminated UTF-8 string.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_string(
+    ze_loaned_serializer_t* ser, const char* val);
+
+/// Serializes a byte buffer of the given length.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_buf(
+    ze_loaned_serializer_t* ser, const uint8_t* data, size_t len);
+
+/// Serializes a sequence length header for a subsequent sequence of elements.
+FFI_PLUGIN_EXPORT int8_t zd_serializer_serialize_sequence_length(
+    ze_loaned_serializer_t* ser, size_t len);
+
+// ---------------------------------------------------------------------------
+// Deserializer
+// ---------------------------------------------------------------------------
+
+/// Returns the size of ze_deserializer_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_deserializer_sizeof(void);
+
+/// Creates a deserializer from loaned bytes.
+///
+/// @param bytes  Loaned bytes to deserialize from.
+/// @param out    Pointer to an uninitialized ze_deserializer_t.
+FFI_PLUGIN_EXPORT void zd_deserializer_from_bytes(
+    const z_loaned_bytes_t* bytes, ze_deserializer_t* out);
+
+/// Checks if the deserializer has consumed all data.
+///
+/// @return true if no more data to parse, false otherwise.
+FFI_PLUGIN_EXPORT bool zd_deserializer_is_done(const ze_deserializer_t* deser);
+
+// ---------------------------------------------------------------------------
+// Deserializer — type deserialization
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_uint8(
+    ze_deserializer_t* deser, uint8_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_uint16(
+    ze_deserializer_t* deser, uint16_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_uint32(
+    ze_deserializer_t* deser, uint32_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_uint64(
+    ze_deserializer_t* deser, uint64_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_int8(
+    ze_deserializer_t* deser, int8_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_int16(
+    ze_deserializer_t* deser, int16_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_int32(
+    ze_deserializer_t* deser, int32_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_int64(
+    ze_deserializer_t* deser, int64_t* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_float(
+    ze_deserializer_t* deser, float* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_double(
+    ze_deserializer_t* deser, double* out);
+
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_bool(
+    ze_deserializer_t* deser, bool* out);
+
+/// Deserializes a string. Caller must drop the owned string.
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_string(
+    ze_deserializer_t* deser, z_owned_string_t* out);
+
+/// Deserializes a byte buffer (slice). Outputs owned bytes.
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_buf(
+    ze_deserializer_t* deser, z_owned_bytes_t* out);
+
+/// Deserializes a sequence length header.
+FFI_PLUGIN_EXPORT int8_t zd_deserializer_deserialize_sequence_length(
+    ze_deserializer_t* deser, size_t* out);
+
+// ---------------------------------------------------------------------------
+// Bytes Writer
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_owned_bytes_writer_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_bytes_writer_sizeof(void);
+
+/// Creates an empty bytes writer.
+FFI_PLUGIN_EXPORT int8_t zd_bytes_writer_empty(z_owned_bytes_writer_t* writer);
+
+/// Obtains a mutable loan of the writer.
+FFI_PLUGIN_EXPORT void zd_bytes_writer_loan_mut(
+    z_owned_bytes_writer_t* writer, z_loaned_bytes_writer_t** out);
+
+/// Writes all bytes from src into the writer.
+FFI_PLUGIN_EXPORT int8_t zd_bytes_writer_write_all(
+    z_loaned_bytes_writer_t* writer, const uint8_t* data, size_t len);
+
+/// Appends owned bytes into the writer. Consumes the bytes.
+FFI_PLUGIN_EXPORT int8_t zd_bytes_writer_append(
+    z_loaned_bytes_writer_t* writer, z_owned_bytes_t* bytes);
+
+/// Finishes the writer and produces owned bytes.
+FFI_PLUGIN_EXPORT void zd_bytes_writer_finish(
+    z_owned_bytes_writer_t* writer, z_owned_bytes_t* out);
+
+/// Drops the writer without finishing.
+FFI_PLUGIN_EXPORT void zd_bytes_writer_drop(z_owned_bytes_writer_t* writer);
+
+// ---------------------------------------------------------------------------
+// Bytes Slice Iterator
+// ---------------------------------------------------------------------------
+
+/// Returns the size of z_bytes_slice_iterator_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_bytes_slice_iterator_sizeof(void);
+
+/// Creates a slice iterator from loaned bytes and copies it to *iter.
+///
+/// @param bytes  Const pointer to loaned bytes.
+/// @param iter   Pointer to caller-allocated z_bytes_slice_iterator_t.
+FFI_PLUGIN_EXPORT void zd_bytes_get_slice_iterator(
+    const z_loaned_bytes_t* bytes, z_bytes_slice_iterator_t* iter);
+
+/// Advances the slice iterator.
+///
+/// @param iter  Pointer to a z_bytes_slice_iterator_t.
+/// @param out   Pointer to a z_view_slice_t to receive the next slice.
+/// @return true if a slice was written to out, false if iteration is done.
+FFI_PLUGIN_EXPORT bool zd_bytes_slice_iterator_next(
+    z_bytes_slice_iterator_t* iter, z_view_slice_t* out);
+
+/// Returns the size of z_view_slice_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_view_slice_sizeof(void);
+
+/// Returns a pointer to the slice data.
+///
+/// @param slice  Const pointer to a z_view_slice_t.
+/// @return Pointer to the data bytes.
+FFI_PLUGIN_EXPORT const uint8_t* zd_view_slice_data(
+    const z_view_slice_t* slice);
+
+/// Returns the length of the slice data.
+///
+/// @param slice  Const pointer to a z_view_slice_t.
+/// @return Number of bytes in the slice.
+FFI_PLUGIN_EXPORT size_t zd_view_slice_len(const z_view_slice_t* slice);
+
 #endif // ZENOH_DART_H
