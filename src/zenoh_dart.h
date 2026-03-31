@@ -1106,4 +1106,76 @@ FFI_PLUGIN_EXPORT const uint8_t* zd_view_slice_data(
 /// @return Number of bytes in the slice.
 FFI_PLUGIN_EXPORT size_t zd_view_slice_len(const z_view_slice_t* slice);
 
+// ---------------------------------------------------------------------------
+// Advanced Publisher
+// ---------------------------------------------------------------------------
+#if defined(Z_FEATURE_UNSTABLE_API)
+
+/// Returns the size of ze_owned_advanced_publisher_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_advanced_publisher_sizeof(void);
+
+/// Declares an advanced publisher on the given key expression.
+FFI_PLUGIN_EXPORT int zd_declare_advanced_publisher(
+    const z_loaned_session_t* session,
+    ze_owned_advanced_publisher_t* publisher,
+    const z_loaned_keyexpr_t* keyexpr,
+    bool enable_cache,
+    size_t cache_max_samples,
+    bool publisher_detection,
+    bool sample_miss_detection,
+    int heartbeat_mode,
+    uint64_t heartbeat_period_ms);
+
+/// Publishes data through the advanced publisher.
+FFI_PLUGIN_EXPORT int zd_advanced_publisher_put(
+    const ze_loaned_advanced_publisher_t* publisher,
+    z_owned_bytes_t* payload);
+
+/// Sends a DELETE through the advanced publisher.
+FFI_PLUGIN_EXPORT int zd_advanced_publisher_delete(
+    const ze_loaned_advanced_publisher_t* publisher);
+
+/// Obtains a const loaned reference to the advanced publisher.
+FFI_PLUGIN_EXPORT const ze_loaned_advanced_publisher_t* zd_advanced_publisher_loan(
+    const ze_owned_advanced_publisher_t* publisher);
+
+/// Drops (undeclares and frees) an advanced publisher.
+FFI_PLUGIN_EXPORT void zd_advanced_publisher_drop(
+    ze_owned_advanced_publisher_t* publisher);
+
+// ---------------------------------------------------------------------------
+// Advanced Subscriber
+// ---------------------------------------------------------------------------
+
+/// Returns the size of ze_owned_advanced_subscriber_t in bytes.
+FFI_PLUGIN_EXPORT size_t zd_advanced_subscriber_sizeof(void);
+
+/// Declares an advanced subscriber on the given key expression.
+FFI_PLUGIN_EXPORT int zd_declare_advanced_subscriber(
+    const z_loaned_session_t* session,
+    ze_owned_advanced_subscriber_t* subscriber,
+    const z_loaned_keyexpr_t* keyexpr,
+    int64_t dart_port,
+    bool history,
+    bool history_detect_late_publishers,
+    bool recovery,
+    bool recovery_last_sample_miss_detection,
+    uint64_t recovery_periodic_queries_period_ms,
+    bool subscriber_detection);
+
+/// Declares a background sample miss listener on the advanced subscriber.
+FFI_PLUGIN_EXPORT int zd_advanced_subscriber_declare_background_sample_miss_listener(
+    const ze_loaned_advanced_subscriber_t* subscriber,
+    int64_t dart_port);
+
+/// Obtains a const loaned reference to the advanced subscriber.
+FFI_PLUGIN_EXPORT const ze_loaned_advanced_subscriber_t* zd_advanced_subscriber_loan(
+    const ze_owned_advanced_subscriber_t* subscriber);
+
+/// Drops (undeclares and frees) an advanced subscriber.
+FFI_PLUGIN_EXPORT void zd_advanced_subscriber_drop(
+    ze_owned_advanced_subscriber_t* subscriber);
+
+#endif // Z_FEATURE_UNSTABLE_API
+
 #endif // ZENOH_DART_H

@@ -6,6 +6,8 @@ import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
 
+import 'advanced_publisher.dart';
+import 'advanced_subscriber.dart';
 import 'bytes.dart';
 import 'config.dart';
 import 'congestion_control.dart';
@@ -246,6 +248,71 @@ class Session {
         priority: priority,
         isExpress: isExpress,
         enableMatchingListener: enableMatchingListener,
+      );
+    } finally {
+      ke.dispose();
+    }
+  }
+
+  /// Declares an advanced publisher on the given [keyExpr].
+  ///
+  /// Returns an [AdvancedPublisher] with optional cache, publisher detection,
+  /// and sample miss detection capabilities. Call [AdvancedPublisher.close]
+  /// when done.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  AdvancedPublisher declareAdvancedPublisher(
+    String keyExpr, {
+    AdvancedPublisherOptions? options,
+  }) {
+    _ensureOpen();
+    final opts = options ?? const AdvancedPublisherOptions();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final loanedSession =
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+      final loanedKe =
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+      return AdvancedPublisher.declare(
+        loanedSession,
+        loanedKe,
+        keyExpr,
+        enableCache: opts.cacheMaxSamples != null,
+        cacheMaxSamples: opts.cacheMaxSamples ?? 0,
+        publisherDetection: opts.publisherDetection,
+        sampleMissDetection: opts.sampleMissDetection,
+        heartbeatMode: opts.heartbeatMode,
+        heartbeatPeriodMs: opts.heartbeatPeriodMs,
+      );
+    } finally {
+      ke.dispose();
+    }
+  }
+
+  /// Declares an advanced subscriber on the given [keyExpr].
+  ///
+  /// Returns an [AdvancedSubscriber] with optional history recovery,
+  /// late publisher detection, sample recovery, and miss detection
+  /// capabilities. Call [AdvancedSubscriber.close] when done.
+  ///
+  /// Throws [ZenohException] if the key expression is invalid.
+  /// Throws [StateError] if the session has been closed.
+  AdvancedSubscriber declareAdvancedSubscriber(
+    String keyExpr, {
+    AdvancedSubscriberOptions options = const AdvancedSubscriberOptions(),
+  }) {
+    _ensureOpen();
+    final ke = KeyExpr(keyExpr);
+    try {
+      final loanedSession =
+          bindings.zd_session_loan(_ptr.cast()) as Pointer<Void>;
+      final loanedKe =
+          bindings.zd_view_keyexpr_loan(ke.nativePtr.cast()) as Pointer<Void>;
+      return AdvancedSubscriber.declare(
+        loanedSession,
+        loanedKe,
+        options: options,
       );
     } finally {
       ke.dispose();

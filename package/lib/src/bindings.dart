@@ -3170,6 +3170,253 @@ class ZenohDartBindings {
       >('zd_view_slice_len');
   late final _zd_view_slice_len = _zd_view_slice_lenPtr
       .asFunction<int Function(ffi.Pointer<z_view_slice_t>)>();
+
+  /// Returns the size of ze_owned_advanced_publisher_t in bytes.
+  int zd_advanced_publisher_sizeof() {
+    return _zd_advanced_publisher_sizeof();
+  }
+
+  late final _zd_advanced_publisher_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>(
+        'zd_advanced_publisher_sizeof',
+      );
+  late final _zd_advanced_publisher_sizeof = _zd_advanced_publisher_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares an advanced publisher on the given key expression.
+  int zd_declare_advanced_publisher(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> publisher,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+    bool enable_cache,
+    int cache_max_samples,
+    bool publisher_detection,
+    bool sample_miss_detection,
+    int heartbeat_mode,
+    int heartbeat_period_ms,
+  ) {
+    return _zd_declare_advanced_publisher(
+      session,
+      publisher,
+      keyexpr,
+      enable_cache,
+      cache_max_samples,
+      publisher_detection,
+      sample_miss_detection,
+      heartbeat_mode,
+      heartbeat_period_ms,
+    );
+  }
+
+  late final _zd_declare_advanced_publisherPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Bool,
+            ffi.Size,
+            ffi.Bool,
+            ffi.Bool,
+            ffi.Int,
+            ffi.Uint64,
+          )
+        >
+      >('zd_declare_advanced_publisher');
+  late final _zd_declare_advanced_publisher = _zd_declare_advanced_publisherPtr
+      .asFunction<
+        int Function(
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          ffi.Pointer<ffi.Opaque>,
+          bool,
+          int,
+          bool,
+          bool,
+          int,
+          int,
+        )
+      >();
+
+  /// Publishes data through the advanced publisher.
+  int zd_advanced_publisher_put(
+    ffi.Pointer<ffi.Opaque> publisher,
+    ffi.Pointer<ffi.Opaque> payload,
+  ) {
+    return _zd_advanced_publisher_put(publisher, payload);
+  }
+
+  late final _zd_advanced_publisher_putPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_advanced_publisher_put');
+  late final _zd_advanced_publisher_put = _zd_advanced_publisher_putPtr
+      .asFunction<
+        int Function(ffi.Pointer<ffi.Opaque>, ffi.Pointer<ffi.Opaque>)
+      >();
+
+  /// Sends a DELETE through the advanced publisher.
+  int zd_advanced_publisher_delete(ffi.Pointer<ffi.Opaque> publisher) {
+    return _zd_advanced_publisher_delete(publisher);
+  }
+
+  late final _zd_advanced_publisher_deletePtr =
+      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_advanced_publisher_delete',
+      );
+  late final _zd_advanced_publisher_delete = _zd_advanced_publisher_deletePtr
+      .asFunction<int Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Obtains a const loaned reference to the advanced publisher.
+  ffi.Pointer<ffi.Opaque> zd_advanced_publisher_loan(
+    ffi.Pointer<ffi.Opaque> publisher,
+  ) {
+    return _zd_advanced_publisher_loan(publisher);
+  }
+
+  late final _zd_advanced_publisher_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_advanced_publisher_loan');
+  late final _zd_advanced_publisher_loan = _zd_advanced_publisher_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (undeclares and frees) an advanced publisher.
+  void zd_advanced_publisher_drop(ffi.Pointer<ffi.Opaque> publisher) {
+    return _zd_advanced_publisher_drop(publisher);
+  }
+
+  late final _zd_advanced_publisher_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_advanced_publisher_drop',
+      );
+  late final _zd_advanced_publisher_drop = _zd_advanced_publisher_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Returns the size of ze_owned_advanced_subscriber_t in bytes.
+  int zd_advanced_subscriber_sizeof() {
+    return _zd_advanced_subscriber_sizeof();
+  }
+
+  late final _zd_advanced_subscriber_sizeofPtr =
+      _lookup<ffi.NativeFunction<ffi.Size Function()>>(
+        'zd_advanced_subscriber_sizeof',
+      );
+  late final _zd_advanced_subscriber_sizeof = _zd_advanced_subscriber_sizeofPtr
+      .asFunction<int Function()>();
+
+  /// Declares an advanced subscriber on the given key expression.
+  int zd_declare_advanced_subscriber(
+    ffi.Pointer<ffi.Opaque> session,
+    ffi.Pointer<ffi.Opaque> subscriber,
+    ffi.Pointer<ffi.Opaque> keyexpr,
+    int dart_port,
+    bool history,
+    bool history_detect_late_publishers,
+    bool recovery,
+    bool recovery_last_sample_miss_detection,
+    int recovery_periodic_queries_period_ms,
+    bool subscriber_detection,
+  ) {
+    return _zd_declare_advanced_subscriber(
+      session,
+      subscriber,
+      keyexpr,
+      dart_port,
+      history,
+      history_detect_late_publishers,
+      recovery,
+      recovery_last_sample_miss_detection,
+      recovery_periodic_queries_period_ms,
+      subscriber_detection,
+    );
+  }
+
+  late final _zd_declare_advanced_subscriberPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Int Function(
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Pointer<ffi.Opaque>,
+            ffi.Int64,
+            ffi.Bool,
+            ffi.Bool,
+            ffi.Bool,
+            ffi.Bool,
+            ffi.Uint64,
+            ffi.Bool,
+          )
+        >
+      >('zd_declare_advanced_subscriber');
+  late final _zd_declare_advanced_subscriber =
+      _zd_declare_advanced_subscriberPtr
+          .asFunction<
+            int Function(
+              ffi.Pointer<ffi.Opaque>,
+              ffi.Pointer<ffi.Opaque>,
+              ffi.Pointer<ffi.Opaque>,
+              int,
+              bool,
+              bool,
+              bool,
+              bool,
+              int,
+              bool,
+            )
+          >();
+
+  /// Declares a background sample miss listener on the advanced subscriber.
+  int zd_advanced_subscriber_declare_background_sample_miss_listener(
+    ffi.Pointer<ffi.Opaque> subscriber,
+    int dart_port,
+  ) {
+    return _zd_advanced_subscriber_declare_background_sample_miss_listener(
+      subscriber,
+      dart_port,
+    );
+  }
+
+  late final _zd_advanced_subscriber_declare_background_sample_miss_listenerPtr =
+      _lookup<
+        ffi.NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Opaque>, ffi.Int64)>
+      >('zd_advanced_subscriber_declare_background_sample_miss_listener');
+  late final _zd_advanced_subscriber_declare_background_sample_miss_listener =
+      _zd_advanced_subscriber_declare_background_sample_miss_listenerPtr
+          .asFunction<int Function(ffi.Pointer<ffi.Opaque>, int)>();
+
+  /// Obtains a const loaned reference to the advanced subscriber.
+  ffi.Pointer<ffi.Opaque> zd_advanced_subscriber_loan(
+    ffi.Pointer<ffi.Opaque> subscriber,
+  ) {
+    return _zd_advanced_subscriber_loan(subscriber);
+  }
+
+  late final _zd_advanced_subscriber_loanPtr =
+      _lookup<
+        ffi.NativeFunction<
+          ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)
+        >
+      >('zd_advanced_subscriber_loan');
+  late final _zd_advanced_subscriber_loan = _zd_advanced_subscriber_loanPtr
+      .asFunction<ffi.Pointer<ffi.Opaque> Function(ffi.Pointer<ffi.Opaque>)>();
+
+  /// Drops (undeclares and frees) an advanced subscriber.
+  void zd_advanced_subscriber_drop(ffi.Pointer<ffi.Opaque> subscriber) {
+    return _zd_advanced_subscriber_drop(subscriber);
+  }
+
+  late final _zd_advanced_subscriber_dropPtr =
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Opaque>)>>(
+        'zd_advanced_subscriber_drop',
+      );
+  late final _zd_advanced_subscriber_drop = _zd_advanced_subscriber_dropPtr
+      .asFunction<void Function(ffi.Pointer<ffi.Opaque>)>();
 }
 
 final class UnnamedStruct extends ffi.Struct {

@@ -246,3 +246,19 @@ type-map:
       lib: ffi
       c-type: Opaque
       dart-type: Opaque
+    ze_owned_advanced_publisher_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    ze_loaned_advanced_publisher_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    ze_owned_advanced_subscriber_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque
+    ze_loaned_advanced_subscriber_t:
+      lib: ffi
+      c-type: Opaque
+      dart-type: Opaque

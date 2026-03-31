@@ -1904,3 +1904,194 @@ size_t zd_view_slice_len(const z_view_slice_t* slice) {
   const z_loaned_slice_t* loaned = z_view_slice_loan(slice);
   return z_slice_len(loaned);
 }
+
+// ---------------------------------------------------------------------------
+// Advanced Publisher
+// ---------------------------------------------------------------------------
+#if defined(Z_FEATURE_UNSTABLE_API)
+
+FFI_PLUGIN_EXPORT
+size_t zd_advanced_publisher_sizeof(void) {
+  return sizeof(ze_owned_advanced_publisher_t);
+}
+
+FFI_PLUGIN_EXPORT
+int zd_declare_advanced_publisher(
+    const z_loaned_session_t* session,
+    ze_owned_advanced_publisher_t* publisher,
+    const z_loaned_keyexpr_t* keyexpr,
+    bool enable_cache,
+    size_t cache_max_samples,
+    bool publisher_detection,
+    bool sample_miss_detection,
+    int heartbeat_mode,
+    uint64_t heartbeat_period_ms) {
+
+  ze_advanced_publisher_options_t opts;
+  ze_advanced_publisher_options_default(&opts);
+
+  if (enable_cache) {
+    ze_advanced_publisher_cache_options_default(&opts.cache);
+    if (cache_max_samples > 0) {
+      opts.cache.max_samples = cache_max_samples;
+    }
+  }
+
+  if (publisher_detection) {
+    opts.publisher_detection = true;
+  }
+
+  if (sample_miss_detection) {
+    ze_advanced_publisher_sample_miss_detection_options_default(
+        &opts.sample_miss_detection);
+    opts.sample_miss_detection.heartbeat_mode =
+        (ze_advanced_publisher_heartbeat_mode_t)heartbeat_mode;
+    if (heartbeat_period_ms > 0) {
+      opts.sample_miss_detection.heartbeat_period_ms = heartbeat_period_ms;
+    }
+  }
+
+  return ze_declare_advanced_publisher(session, publisher, keyexpr, &opts);
+}
+
+FFI_PLUGIN_EXPORT
+int zd_advanced_publisher_put(
+    const ze_loaned_advanced_publisher_t* publisher,
+    z_owned_bytes_t* payload) {
+  return ze_advanced_publisher_put(publisher, z_bytes_move(payload), NULL);
+}
+
+FFI_PLUGIN_EXPORT
+int zd_advanced_publisher_delete(
+    const ze_loaned_advanced_publisher_t* publisher) {
+  return ze_advanced_publisher_delete(publisher, NULL);
+}
+
+FFI_PLUGIN_EXPORT
+const ze_loaned_advanced_publisher_t* zd_advanced_publisher_loan(
+    const ze_owned_advanced_publisher_t* publisher) {
+  return ze_advanced_publisher_loan(publisher);
+}
+
+FFI_PLUGIN_EXPORT
+void zd_advanced_publisher_drop(ze_owned_advanced_publisher_t* publisher) {
+  ze_advanced_publisher_drop(ze_advanced_publisher_move(publisher));
+}
+
+// ---------------------------------------------------------------------------
+// Advanced Subscriber
+// ---------------------------------------------------------------------------
+
+FFI_PLUGIN_EXPORT
+size_t zd_advanced_subscriber_sizeof(void) {
+  return sizeof(ze_owned_advanced_subscriber_t);
+}
+
+FFI_PLUGIN_EXPORT
+int zd_declare_advanced_subscriber(
+    const z_loaned_session_t* session,
+    ze_owned_advanced_subscriber_t* subscriber,
+    const z_loaned_keyexpr_t* keyexpr,
+    int64_t dart_port,
+    bool history,
+    bool history_detect_late_publishers,
+    bool recovery,
+    bool recovery_last_sample_miss_detection,
+    uint64_t recovery_periodic_queries_period_ms,
+    bool subscriber_detection) {
+
+  // Create closure context with the Dart port
+  zd_subscriber_context_t* ctx =
+      (zd_subscriber_context_t*)malloc(sizeof(zd_subscriber_context_t));
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+
+  z_owned_closure_sample_t callback;
+  z_closure_sample(&callback, _zd_sample_callback, _zd_sample_drop, ctx);
+
+  ze_advanced_subscriber_options_t opts;
+  ze_advanced_subscriber_options_default(&opts);
+
+  if (history) {
+    ze_advanced_subscriber_history_options_default(&opts.history);
+    if (history_detect_late_publishers) {
+      opts.history.detect_late_publishers = true;
+    }
+  }
+
+  if (recovery) {
+    ze_advanced_subscriber_recovery_options_default(&opts.recovery);
+    if (recovery_last_sample_miss_detection) {
+      ze_advanced_subscriber_last_sample_miss_detection_options_default(
+          &opts.recovery.last_sample_miss_detection);
+      if (recovery_periodic_queries_period_ms > 0) {
+        opts.recovery.last_sample_miss_detection.periodic_queries_period_ms =
+            recovery_periodic_queries_period_ms;
+      }
+    }
+  }
+
+  if (subscriber_detection) {
+    opts.subscriber_detection = true;
+  }
+
+  return ze_declare_advanced_subscriber(
+      session, subscriber, keyexpr,
+      z_closure_sample_move(&callback), &opts);
+}
+
+/// Miss callback: posts miss info to Dart via native port.
+static void _zd_miss_callback(const ze_miss_t* miss, void* context) {
+  zd_subscriber_context_t* ctx = (zd_subscriber_context_t*)context;
+
+  // Extract ZID from the source entity global id
+  z_id_t zid = z_entity_global_id_zid(&miss->source);
+  uint32_t nb = miss->nb;
+
+  // Post [Uint8List(16 bytes of zid.id), Int64(nb)] to Dart
+  Dart_CObject c_zid;
+  c_zid.type = Dart_CObject_kTypedData;
+  c_zid.value.as_typed_data.type = Dart_TypedData_kUint8;
+  c_zid.value.as_typed_data.length = 16;
+  c_zid.value.as_typed_data.values = zid.id;
+
+  Dart_CObject c_nb;
+  c_nb.type = Dart_CObject_kInt64;
+  c_nb.value.as_int64 = (int64_t)nb;
+
+  Dart_CObject* elements[2] = {&c_zid, &c_nb};
+  Dart_CObject c_array;
+  c_array.type = Dart_CObject_kArray;
+  c_array.value.as_array.length = 2;
+  c_array.value.as_array.values = elements;
+
+  Dart_PostCObject_DL(ctx->dart_port, &c_array);
+}
+
+FFI_PLUGIN_EXPORT
+int zd_advanced_subscriber_declare_background_sample_miss_listener(
+    const ze_loaned_advanced_subscriber_t* subscriber,
+    int64_t dart_port) {
+
+  zd_subscriber_context_t* ctx =
+      (zd_subscriber_context_t*)malloc(sizeof(zd_subscriber_context_t));
+  ctx->dart_port = (Dart_Port_DL)dart_port;
+
+  ze_owned_closure_miss_t miss_callback;
+  ze_closure_miss(&miss_callback, _zd_miss_callback, _zd_sample_drop, ctx);
+
+  return ze_advanced_subscriber_declare_background_sample_miss_listener(
+      subscriber, ze_closure_miss_move(&miss_callback));
+}
+
+FFI_PLUGIN_EXPORT
+const ze_loaned_advanced_subscriber_t* zd_advanced_subscriber_loan(
+    const ze_owned_advanced_subscriber_t* subscriber) {
+  return ze_advanced_subscriber_loan(subscriber);
+}
+
+FFI_PLUGIN_EXPORT
+void zd_advanced_subscriber_drop(ze_owned_advanced_subscriber_t* subscriber) {
+  ze_advanced_subscriber_drop(ze_advanced_subscriber_move(subscriber));
+}
+
+#endif // Z_FEATURE_UNSTABLE_API
