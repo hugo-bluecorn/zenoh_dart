@@ -80,11 +80,11 @@ Which zenoh-c examples does this binding implement, and which are absent?
 | `z_bytes.c` | `z_bytes.dart` | Implemented |
 | `z_queryable_with_channels.c` | -- | Absent (Dart Streams) |
 | `z_non_blocking_get.c` | -- | Absent (Dart Streams) |
-| `z_advanced_pub.c` | -- | Future |
-| `z_advanced_sub.c` | -- | Future |
+| `z_advanced_pub.c` | `z_advanced_pub.dart` | Implemented |
+| `z_advanced_sub.c` | `z_advanced_sub.dart` | Implemented |
 | `z_storage.c` | `z_storage.dart` | Implemented |
 
-**Current:** 24 implemented, 3 permanently absent, 2 future.
+**Current:** 26 implemented, 3 permanently absent, 0 future.
 
 ---
 
@@ -119,13 +119,6 @@ already receive SHM-backed data transparently — `Sample.payloadBytes`
 returns the bytes regardless of backing. The `ZBytes.isShmBacked` property
 lets callers detect SHM when needed, but no separate subscriber example
 is required.
-
-### z_advanced_pub / z_advanced_sub — Advanced Publication (Future)
-
-These use zenoh-c's advanced publication API (`ze_declare_advanced_publisher`,
-`ze_declare_advanced_subscriber`) with sample miss detection, history, and
-recovery. Planned for a future phase when the advanced API surface is
-implemented.
 
 ### z_pong_shm — Pong Is SHM-Transparent
 
@@ -851,6 +844,47 @@ z_storage.dart -k 'demo/example/**'
 
 ---
 
+### z_advanced_pub / z_advanced_sub — Advanced Pub/Sub
+
+**Follows canon.**
+
+**The pattern it demonstrates**
+
+```
+z_advanced_pub: config(timestamping=true) → open → declareAdvancedPublisher(key, opts) → put loop
+z_advanced_sub: open → declareAdvancedSubscriber(key, opts) → stream<Sample> + missEvents<MissEvent>
+```
+
+Advanced publisher with cache (late-joining subscribers retrieve history),
+publisher detection (liveliness), and sample miss detection (sequence
+numbering with optional heartbeats). Advanced subscriber with history
+recovery, gap detection, and a miss event stream.
+
+The publisher session requires `config.insertJson5('timestamping/enabled', 'true')`.
+All 11 C shim functions are guarded by `#if defined(Z_FEATURE_UNSTABLE_API)` —
+unavailable on Android.
+
+```
+z_advanced_pub.dart -k demo/example/zenoh-dart-advanced-pub -i 10
+z_advanced_sub.dart -k 'demo/example/**'
+```
+
+| Flag (z_advanced_pub) | Default | Description |
+|------|---------|-------------|
+| `-k, --key` | `demo/example/zenoh-dart-advanced-pub` | Key expression |
+| `-p, --payload` | `Advanced Pub from Dart!` | Payload string |
+| `-i, --history` | `1` | Cache size (number of samples) |
+| `-e, --connect` | -- | Connect endpoint(s) |
+| `-l, --listen` | -- | Listen endpoint(s) |
+
+| Flag (z_advanced_sub) | Default | Description |
+|------|---------|-------------|
+| `-k, --key` | `demo/example/**` | Key expression |
+| `-e, --connect` | -- | Connect endpoint(s) |
+| `-l, --listen` | -- | Listen endpoint(s) |
+
+---
+
 ## Architectural Notes
 
 ### The NativePort Callback Bridge
@@ -896,12 +930,13 @@ Several callback implementations are shared:
 
 | Callback pair | Used by |
 |---------------|---------|
-| `_zd_sample_callback` / `_zd_sample_drop` | subscriber, liveliness subscriber, background subscriber |
+| `_zd_sample_callback` / `_zd_sample_drop` | subscriber, liveliness subscriber, background subscriber, advanced subscriber |
 | `_zd_reply_callback` / `_zd_get_drop` | `Session.get()`, `Querier.get()`, `Session.livelinessGet()` |
+| `_zd_miss_callback` / `_zd_miss_drop` | `AdvancedSubscriber` miss listener |
 
 This is a consequence of zenoh-c using the same data types (`z_loaned_sample_t`,
-`z_loaned_reply_t`) across different features. The C shim mirrors this —
-one extraction function per data type, not per feature.
+`z_loaned_reply_t`, `ze_miss_t`) across different features. The C shim mirrors
+this — one extraction function per data type, not per feature.
 
 ---
 

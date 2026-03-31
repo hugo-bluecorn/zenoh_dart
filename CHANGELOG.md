@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.18.0 — Phase 18: Advanced Pub/Sub
+
+- `AdvancedPublisher`: publisher with cache, publisher detection, and sample miss detection
+- `AdvancedPublisherOptions`: cache size, publisher detection, miss detection, heartbeat mode/period
+- `HeartbeatMode` enum: `none`, `periodic`, `sporadic`
+- `AdvancedSubscriber`: subscriber with history recovery, late publisher detection, miss events
+- `AdvancedSubscriberOptions`: history, late publisher detection, recovery, miss detection, subscriber detection, miss listener
+- `MissEvent`: missed sample notification with source `ZenohId` and count
+- `Session.declareAdvancedPublisher()`, `Session.declareAdvancedSubscriber()`
+- **CLI examples**: `z_advanced_pub.dart`, `z_advanced_sub.dart`
+- 11 new C shim functions (144 → 155 total), guarded by `Z_FEATURE_UNSTABLE_API`
+- ~38 new integration tests (473 → 512 total)
+
 ## 0.17.0 — Phase 17: In-Memory Storage
 
 - `KeyExpr.intersects(other)`: returns true if two key expressions share at least one key
