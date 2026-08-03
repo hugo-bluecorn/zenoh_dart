@@ -1,5 +1,18 @@
 # zenoh-dart Examples
 
+> # 🎯 THE GOAL — **v1.0.0: the Parity Release against Eclipse Zenoh 1.8.0**
+>
+> These examples exist to mirror `zenoh-c`'s `z_*.c` one for one. **In 0.20.0 several of them do
+> not yet succeed at that**, and the divergences are catalogued in
+> [Known issues in these examples](#known-issues-in-these-examples) below — including five that
+> change observable behaviour.
+>
+> **All of them are already fixed in the development tree.** This release is published
+> deliberately as the *baseline* against which v1.0.0 will be measured. See the package
+> [README](../README.md#road-to-v100) for the full roadmap.
+>
+> ⚠️ **Where this guide and an example's source disagree, the source is authoritative.**
+
 > These are the canonical CLI examples, mirroring `zenoh-c`'s `z_*.c`. For complete
 > applications, see [flutter_zenoh_gateway](https://github.com/bluecorn/flutter_zenoh_gateway)
 > and [flutter_zenoh_direct](https://github.com/bluecorn/flutter_zenoh_direct).
@@ -10,7 +23,7 @@
 >
 > **Convention:** Each example entry below mirrors a zenoh-c example
 > (`extern/zenoh-c/examples/z_*.c`). Entries are grouped by zenoh pattern.
-> Canon-following examples get brief entries; examples that deviate from
+> Entries state where the example diverges from canon; those that deviate from
 > zenoh-c/zenoh-cpp get expanded architectural rationale.
 
 ## How This Binding Maps to zenoh-c
@@ -33,22 +46,38 @@ the Dart FFI boundary:
 |---|---------|---------|
 | 1 | `static inline` move functions | `z_move(x)` has no exported symbol |
 | 2 | C11 `_Generic` polymorphic macros | `z_drop`, `z_loan`, `z_try_recv` |
-| 3 | Options struct initialization | `z_put_options_default()` is a macro |
+| 3 | Options struct initialization | `z_put_options_t` must be stack-allocated and field-set; Dart FFI cannot size it |
 | 4 | Opaque type sizes | Dart FFI has no `sizeof` for foreign types |
 | 5 | Closure callbacks across threads | NativePort bridge for Dart event loop |
 | 6 | Loaning and const/mut enforcement | `z_loan()` is macro/inline; Dart erases const |
 
-Every `zd_*` function wraps one or more of these barriers. There are no
-unnecessary proxies.
+Every `zd_*` function wraps one or more of these barriers. Seven exported `zd_` symbols are
+currently unreachable from the Dart API — see Known issues.
 
 **Dual-reference strategy:** We use zenoh-c as the contract boundary
 (correct FFI) and zenoh-cpp as the structural peer (API design). We do
 not reference the Rust source — it is one layer too deep.
 
-**Example-driven development:** Each CLI example mirrors its zenoh-c
-counterpart — same flags, same defaults, same output format. This ensures
-cross-language interop (a Dart `z_get` can query a C `z_queryable`) and
-zero cognitive overhead for zenoh users switching languages.
+**Example-driven development:** Each CLI example is *intended* to mirror its zenoh-c
+counterpart — same flags, same defaults, same output format — so that cross-language
+interop works (a Dart `z_get` can query a C `z_queryable`) and a zenoh user switching
+languages carries no cognitive overhead.
+
+**In 0.20.0 that intent is not yet met.** Three families of divergence remain, all
+catalogued in [Known issues in these examples](#known-issues-in-these-examples):
+
+1. **Five examples behave differently from their C counterparts** — a crash on
+   `?params` selectors, silent binary corruption, overlapping queries, a whole-ring
+   drain, and an inflated benchmark.
+2. **The common flag block is absent.** Canon gives every example `-c/--config`,
+   `-m/--mode`, `--cfg`, `--no-multicast-scouting` and `-h/--help` via
+   `parse_args.h`. No example here implements them.
+3. **Several defaults and output strings differ** from their C counterparts, so a
+   side-by-side output diff between a C run and a Dart run will not match — and in
+   the cases where the differing string is the published payload, the **wire bytes**
+   differ too.
+
+All three are closed in the development tree and land in v1.0.0.
 
 ---
 
@@ -80,7 +109,7 @@ Which zenoh-c examples does this binding implement, and which are absent?
 | `z_pub_thr.c` | `z_pub_thr.dart` | Implemented |
 | `z_sub_thr.c` | `z_sub_thr.dart` | Implemented |
 | `z_pub_shm_thr.c` | `z_pub_shm_thr.dart` | Implemented |
-| `z_sub_shm.c` | -- | Absent (subscriber is SHM-transparent) |
+| `z_sub_shm.c` | -- | Absent (delivery is SHM-transparent; **SHM *detection* on receive is an API gap** — see below) |
 | `z_bytes.c` | `z_bytes.dart` | Implemented |
 | `z_queryable_with_channels.c` | -- | Absent (Dart Streams) |
 | `z_non_blocking_get.c` | -- | Absent (Dart Streams) |
@@ -89,6 +118,72 @@ Which zenoh-c examples does this binding implement, and which are absent?
 | `z_storage.c` | `z_storage.dart` | Implemented |
 
 **Current:** 26 implemented, 3 permanently absent, 0 future.
+
+*Implemented* means the example exists and runs. It does not mean it matches canon — see below.
+
+---
+
+## Known issues in these examples
+
+This release publishes the examples **with their defects intact and catalogued**, as the
+baseline against which [v1.0.0](../README.md#road-to-v100) will be measured. **Every item
+below is already fixed in the development tree** (that repository is private —
+please contact the maintainer for access).
+
+Each was verified against the example's own source and its zenoh-c counterpart; several were
+reproduced by running them.
+
+### Five that change observable behaviour
+
+| Example | What happens | Canon does |
+|---|---|---|
+| **`z_get`, `z_get_shm`** | Pass the whole selector as a key expression, so **any selector containing `?params` throws** and exits 255. `-s 'demo/**?_time=[now(-1h)..]'` — the canonical storage query — crashes. | splits the selector at `?` and passes the two halves separately |
+| **`z_storage`** | Replies with the **lenient UTF-8 display string**, re-encoding every invalid byte as U+FFFD. Reproduced: a 3-byte payload `[8, 150, 1]` comes back as 5 bytes `[8, 239, 191, 189, 1]` — **content and length both change, silently**. Binary payloads are corrupted. | replies with the stored **bytes** |
+| **`z_querier`** | Issues queries on an unawaited timer, so drains overlap — roughly **ten queries in flight** at the default timeout, printing repeating indices. | strictly serial: sleep → get → drain to completion → next index |
+| **`z_pull`** | Drains the **entire ring** per keypress; default `-s` is 256 against canon's 3; no `-i/--interval`. | exactly one `try_recv` per input character |
+| **`z_ping`** | Builds its payload **inside the timed window**, inflating every measurement — about **+0.3 µs at 64 B rising to +44 µs at 64 KiB**, so it distorts the shape of the latency-versus-size curve, not just its offset. Cross-binding comparison against `z_ping.c` is invalid. | builds the payload, *then* starts the clock |
+
+`z_ping_shm` is **correct** — canon keeps the clone inside the window there,
+because the clone is the operation under test, and this binding matches that.
+
+### The CLI surface
+
+- **No example implements canon's common flags** — `-c/--config`, `-m/--mode`, `--cfg`,
+  `--no-multicast-scouting`, `-h/--help`. **`-h` produces a Dart stack trace instead of help.**
+  An unknown option raises an unhandled `FormatException` where canon prints a message and
+  exits with a defined status.
+- **`z_delete` accepts only `-k`** and opens its session with no config, so it cannot be
+  pointed at a router on a network without multicast scouting.
+- **`z_pub_shm` publishes on `z_pub`'s key expression**, so running both feeds one subscriber
+  from two sources. Canon distinguishes them.
+- **`z_bytes` exits 0 even when every section prints FAIL** — it has no `exit` and no `throw`,
+  so a CI job checking the exit status cannot see a serialization regression.
+- **Defaults and output strings differ** from canon in several places: `z_sub_thr`'s message
+  count is 10× below canon's, `z_ping` prints `us` where canon prints `µs`, and the index
+  padding in published payloads differs — which changes the **bytes on the wire**, not just
+  the console.
+- **`z_info` prints roughly a third of what canon prints** — it stops after the ZIDs, omitting
+  canon's transport and link detail and its live connectivity-event loop.
+- **`z_pub_shm` warns and keeps publishing forever** when SHM allocation fails; canon breaks the
+  publish loop. A run that never touched shared memory looks healthy.
+- **`z_pub` never sets an encoding**; canon attaches `text/plain` to every put, so a C subscriber
+  sees different wire metadata from the Dart publisher.
+- **Neither queryable prints the received query payload**, and both omit canon's `Responding`
+  line — so the request half of the exchange is invisible in the output.
+- **`z_scout` labels the identifier `zid`** where canon prints `pid`, renders the entity kind in
+  lower case, and never emits canon's `Dropping scout` line.
+- **`z_pub_thr` does not validate `-p`** — an out-of-range priority throws an unhandled
+  `RangeError` where canon prints `Unsupported priority value` and exits.
+- **Ten examples set the log level to `info`** where every canon example uses `error`. Their
+  output is interleaved with zenoh's own tracing, and for `z_ping`/`z_pong` that tracing lands on
+  the measured path of a latency benchmark.
+
+### This guide
+
+Entries below were written against earlier revisions of the code and some had drifted. The
+known-false claims have been corrected in this revision and are marked ⚠️ where the
+underlying defect still exists in 0.20.0. **Where this guide and an example's source still
+disagree, the source is authoritative.**
 
 ---
 
@@ -120,9 +215,14 @@ exist.
 zenoh-c's `z_sub_shm.c` demonstrates a subscriber that detects and
 handles SHM-backed payloads explicitly. In zenoh-dart, all subscribers
 already receive SHM-backed data transparently — `Sample.payloadBytes`
-returns the bytes regardless of backing. The `ZBytes.isShmBacked` property
-lets callers detect SHM when needed, but no separate subscriber example
-is required.
+returns the bytes regardless of backing, so no separate subscriber example
+is required for *delivery*.
+
+⚠️ **The detection half is an API gap, not a design choice.** Canon's `z_sub_shm.c` also
+classifies a received payload as SHM or raw. zenoh-dart cannot: no receive surface hands
+back a `ZBytes` — `Sample`, `Reply`, `ReplyError` and `Query` all expose `Uint8List` — so
+`ZBytes.isShmBacked` is unreachable on the receive path. It applies only to a `ZBytes` the
+caller constructs. Tracked for v1.0.0.
 
 ### z_pong_shm — Pong Is SHM-Transparent
 
@@ -136,7 +236,7 @@ unchanged with both `z_ping.dart` and `z_ping_shm.dart`.
 
 ### z_put / z_delete — One-Shot Publish and Delete
 
-**Follows canon.**
+**Deviates from canon** — `z_delete` declares no endpoint options at all, so it cannot be pointed at a router (see [Known issues](#known-issues-in-these-examples)).
 
 These are the simplest zenoh operations. `z_put` publishes a single
 key-value pair; `z_delete` removes a resource.
@@ -166,14 +266,19 @@ z_delete.dart -k demo/example/zenoh-dart-put
 |------|---------|-------------|
 | `-k, --key` | `demo/example/zenoh-dart-put` | Key expression |
 | `-p, --payload` | `Put from Dart!` | Value to publish (z_put only) |
-| `-e, --connect` | -- | Connect endpoint(s) |
-| `-l, --listen` | -- | Listen endpoint(s) |
+| `-e, --connect` | -- | Connect endpoint(s) — **z_put only** |
+| `-l, --listen` | -- | Listen endpoint(s) — **z_put only** |
+
+⚠️ **`z_delete` accepts only `-k`.** It declares no endpoint options and opens its session
+with no config, so it cannot be pointed at a router on a network without multicast
+scouting — and passing `-e` or `-l` **fails with a `FormatException`**. Canon's
+`z_delete.c` wires the full common block. Fixed in the development tree.
 
 ---
 
 ### z_sub — Callback Subscriber
 
-**Follows canon** with Dart-specific async adaptation.
+**Deviates from canon** — never prints the sample attachment, which canon appends (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -199,7 +304,7 @@ the synchronous callback — by the time `NativeCallable.listener`
 delivers the pointer to Dart asynchronously, the memory is invalid.
 The C shim must extract fields synchronously regardless of which Dart
 callback API is used. The current approach is battle-tested across all
-phases and 370+ tests. Monitor `NativeCallable.isolateGroupBound`
+phases and 571 tests. Monitor `NativeCallable.isolateGroupBound`
 (experimental) for a future alternative that could read loaned pointers
 synchronously on the zenoh thread.
 
@@ -217,7 +322,7 @@ z_sub.dart -k 'demo/example/**'
 
 ### z_pub — Declared Publisher
 
-**Follows canon.**
+**Deviates from canon** — does not set canon's `text/plain` encoding, and omits canon's index padding (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -252,7 +357,7 @@ z_pub.dart -k demo/example/zenoh-dart-pub -p 'Pub from Dart!' --add-matching-lis
 
 ### z_pub_shm — SHM Publisher
 
-**Follows canon.**
+**Deviates from canon** — publishes on `z_pub`'s key, and warns-and-continues where canon stops on allocation failure (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -270,9 +375,13 @@ pattern — correct but not optimal for latency-sensitive paths (see
 **Dart-specific note**
 
 Direct pointer manipulation via `ShmMutBuffer.data` — the Dart equivalent
-of writing through a `uint8_t*` in C. `ShmProvider.alloc()` returns
-`ShmMutBuffer?` (null on failure) rather than throwing, following the
-approved nullable-return design.
+of writing through a `uint8_t*` in C. The allocators return `ShmMutBuffer?`
+(null on failure) rather than throwing.
+
+Note that every SHM example calls `allocGcDefragBlocking()`, not `alloc()` — the plain
+`alloc()` appears in no example. The null return also **collapses canon's two distinct
+failure statuses** (allocation error and layout error) into a single `null`, which v1.0.0
+replaces with a sealed three-way result.
 
 SHM features are compile-time guarded (`Z_FEATURE_SHARED_MEMORY`,
 `Z_FEATURE_UNSTABLE_API`) and excluded on Android where POSIX `shm_open`
@@ -294,7 +403,7 @@ z_pub_shm.dart -k demo/example/zenoh-dart-pub -p 'Hello from SHM!'
 
 ### z_get / z_queryable — Query/Reply
 
-**Follows canon.**
+**Deviates from canon** — any selector containing `?params` throws, and neither queryable prints the received payload or canon's Responding line (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -351,7 +460,7 @@ z_queryable.dart -k demo/example/zenoh-dart-queryable -p 'Queryable from Dart!' 
 
 ### z_get_shm / z_queryable_shm — SHM Query/Reply
 
-**Follows canon.**
+**Deviates from canon** — `z_get_shm` has no allocation fallback and sends an empty query; both differ from canon's default payloads (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -368,9 +477,14 @@ path needed.
 
 **Dart-specific note**
 
-`ZBytes.isShmBacked` detects SHM backing. On Android, this always returns
-false (SHM excluded at compile time). Both examples fall back to regular
-payloads if SHM allocation fails.
+`ZBytes.isShmBacked` detects SHM backing on a `ZBytes` you construct. On Android it
+**throws** rather than returning false — the symbol is compiled out.
+
+⚠️ **The two examples behave differently on allocation failure, and neither matches canon.**
+`z_queryable_shm` warns and replies over the heap. **`z_get_shm` has no fallback at all** —
+it sends a query with **no payload** and keeps running, so the only visible signal is the
+`[SHM]` prefix quietly disappearing from its output. Canon's `z_get_shm.c` prints an error
+and returns −1. Fixed in the development tree.
 
 ```
 z_get_shm.dart       -s 'demo/example/**' -p 'Query from SHM!'
@@ -393,9 +507,17 @@ z_pull: open → declarePullSubscriber(key, capacity) → [user presses Enter �
                                                        synchronous poll, no stream (pull, not push)
 ```
 
-On-demand polling of buffered samples. The user presses Enter to pull;
-`tryRecv()` returns the most recent sample or null. The ring buffer is
-lossy — when full, it drops the oldest entry.
+On-demand polling of buffered samples. The user presses Enter to pull.
+
+⚠️ **`tryRecv()` returns the OLDEST retained sample, not the most recent.** The ring is
+FIFO with drop-oldest overflow: when it is full the oldest entry is discarded, but reads
+still come out in arrival order. At this example's default capacity of 256, the sample you
+receive may be up to 255 behind the newest. **Do not use this as a latest-value cache.**
+
+⚠️ **This example also drains the entire ring per keypress**, where canon's `z_pull.c`
+performs exactly one `z_try_recv` per input character — so one ENTER emits a burst rather
+than a single sample. Its `-s` default is 256 against canon's **3**, and it does not
+implement canon's `-i/--interval`. All three are fixed in the development tree.
 
 **Key architectural decision**
 
@@ -425,10 +547,15 @@ and drop internally. One FFI round-trip per poll. Dart never holds a
 sample handle. This mirrors the NativePort push pattern (extract
 everything in C) but inverts control — Dart pulls instead of C pushing.
 
-**Return code note:** `z_try_recv()` returns positive codes (0 = OK,
-1 = no data, 2 = disconnected) unlike the usual zenoh-c convention of
-negative errors. The Dart side uses explicit value checks, not the `!= 0`
-pattern used elsewhere.
+**Return code note:** `z_try_recv()` returns positive codes rather than the usual zenoh-c
+convention of negative errors: **0 = OK, 1 = disconnected, 2 = no data**
+(`Z_CHANNEL_DISCONNECTED` and `Z_CHANNEL_NODATA` in `zenoh_concrete.h`). The shim preserves
+both values distinctly.
+
+⚠️ **The Dart side does not currently discriminate them.** `PullSubscriber.tryRecv` collapses
+every non-zero code to `null` with a plain `if (rc != 0)`, so a caller cannot tell an empty
+buffer from a closed channel. v1.0.0 replaces this with a sealed result type that keeps the
+two apart.
 
 ```
 z_pull.dart -k 'demo/example/**' -s 256
@@ -445,7 +572,7 @@ z_pull.dart -k 'demo/example/**' -s 256
 
 ### z_info / z_scout — Session Info and Discovery
 
-**Follow canon.**
+**Deviates from canon** — `z_info` prints roughly a third of canon's output; `z_scout` labels the field `zid` where canon prints `pid` (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -488,7 +615,7 @@ z_scout.dart
 
 ### z_querier — Declared Querier
 
-**Follows canon.**
+**Deviates from canon** — queries are issued on an unawaited timer, so drains overlap (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -524,7 +651,7 @@ z_querier.dart -s 'demo/example/**' -t BEST_MATCHING --add-matching-listener
 
 ### z_liveliness / z_sub_liveliness / z_get_liveliness — Liveliness
 
-**Follow canon.**
+**Deviates from canon** — the declaration message is printed after declaring rather than before, and no undeclare line is emitted (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -577,7 +704,7 @@ z_get_liveliness.dart -k 'group1/**' -o 10000
 
 ### z_ping / z_pong — Latency Benchmark
 
-**Follow canon.**
+**Deviates from canon** — `z_ping` builds its payload inside the timed window and prints `us` where canon prints `µs` (see [Known issues](#known-issues-in-these-examples)).
 
 **The pattern it demonstrates**
 
@@ -634,8 +761,7 @@ z_ping.dart 64 -n 100 -w 1000
 ### z_ping_shm — SHM Latency Benchmark
 
 **Composition example.** Zero new C shim functions, zero new Dart API.
-Composes from `z_pub_shm`, `z_ping/z_pong`, `ZBytes.clone()`, and
-`ZBytes.isShmBacked`.
+Composes from `z_pub_shm`, `z_ping/z_pong`, and `ZBytes.clone()`.
 
 **What's new**
 
@@ -667,8 +793,8 @@ latency-sensitive paths.
 **Test gap it fills**
 
 No prior test covers `ZBytes.clone()` on SHM-backed bytes, or verifies
-`isShmBacked` on `ShmMutBuffer.toBytes()` output. This example's test
-suite closes that gap.
+`isShmBacked` on `ShmMutBuffer.toBytes()` output. Those assertions live in
+`shm_provider_test.dart`, not in this example's own CLI tests.
 
 ```
 z_ping_shm.dart 64 -n 100 -w 1000
@@ -756,11 +882,27 @@ z_pub_shm_thr.dart 8192 -s 32
 | `-e, --connect` | -- | Connect endpoint(s) |
 | `-l, --listen` | -- | Listen endpoint(s) |
 
+⚠️ **`z_pub_shm_thr` needs a raised locked-memory limit.** The `-s` default of **32 MB**
+mirrors canon's `z_pub_shm_thr.c` — it is parity, not a tuning choice. Most Linux
+distributions cap locked memory (`ulimit -l`) at 8 MB, and the provider then fails at
+startup with:
+
+    Unable to create POSIX shm segment: OS error 12
+
+Pass a smaller pool (`-s 1`), or raise the limit — note the *hard* limit is usually 8 MB
+too, so raising it needs root via `/etc/security/limits.conf` or a systemd `LimitMEMLOCK=`
+override, not just `ulimit -l` in your shell.
+
+The example keeps canon's default deliberately: **an example is a parity artifact**, so it
+mirrors what zenoh-c does rather than what a particular host permits. **A test is a
+reproducibility artifact** and must run anywhere — which is why the tests pin a small pool
+instead.
+
 ---
 
 ### z_bytes — Serialization Round-Trip Demo
 
-**Follows canon.**
+**Deviates from canon** — exits 0 even when sections fail, and omits canon's reader and custom-struct sections (see [Known issues](#known-issues-in-these-examples)).
 
 **What's new**
 
@@ -802,7 +944,7 @@ No flags — runs all sections and prints PASS/FAIL for each.
 
 ### z_storage — In-Memory Storage
 
-**Follows canon.**
+**Deviates from canon** — replies with the lenient UTF-8 display string, corrupting binary payloads (see [Known issues](#known-issues-in-these-examples)).
 
 **What's new**
 
@@ -850,7 +992,13 @@ z_storage.dart -k 'demo/example/**'
 
 ### z_advanced_pub / z_advanced_sub — Advanced Pub/Sub
 
-**Follows canon.**
+**Deviates from canon** — three divergences: `periodicQueriesPeriodMs` that canon leaves commented out, and different default key and payload (see [Known issues](#known-issues-in-these-examples)).
+
+⚠️ `z_advanced_sub` sets `periodicQueriesPeriodMs: 1000`, which canon's `z_advanced_sub.c`
+leaves **commented out** in favour of publisher heartbeats — so this pair demonstrates a
+different recovery regime from the C original, and puts continuous 1 Hz query traffic on the
+wire that canon does not. `z_advanced_pub`'s default key and payload also differ from canon's.
+Both are corrected in the development tree.
 
 **The pattern it demonstrates**
 
@@ -934,9 +1082,10 @@ Several callback implementations are shared:
 
 | Callback pair | Used by |
 |---------------|---------|
-| `_zd_sample_callback` / `_zd_sample_drop` | subscriber, liveliness subscriber, background subscriber, advanced subscriber |
+| `_zd_sample_callback` / `_zd_sample_drop` | subscriber, liveliness subscriber, advanced subscriber |
+| `_zd_sample_callback` / `_zd_sample_drop_with_sentinel` | background subscriber — the sentinel variant is what terminates the Dart stream |
 | `_zd_reply_callback` / `_zd_get_drop` | `Session.get()`, `Querier.get()`, `Session.livelinessGet()` |
-| `_zd_miss_callback` / `_zd_miss_drop` | `AdvancedSubscriber` miss listener |
+| `_zd_miss_callback` / `_zd_sample_drop` | `AdvancedSubscriber` miss listener |
 
 This is a consequence of zenoh-c using the same data types (`z_loaned_sample_t`,
 `z_loaned_reply_t`, `ze_miss_t`) across different features. The C shim mirrors
