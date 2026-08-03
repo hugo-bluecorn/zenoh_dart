@@ -1,10 +1,22 @@
 name: zenoh_dart
 description: "Dart bindings for the Zenoh pub/sub/query protocol via FFI."
-version: 0.19.0
+version: 0.20.0
 repository: https://github.com/bluecorn/zenoh_dart
+issue_tracker: https://github.com/bluecorn/zenoh_dart/issues
+
+topics:
+  - zenoh
+  - ffi
+  - pubsub
+  - networking
+  - iot
+
+platforms:
+  android:
+  linux:
 
 environment:
-  sdk: ^3.11.0
+  sdk: ^3.12.2
 
 dependencies:
   args: ^2.6.0
