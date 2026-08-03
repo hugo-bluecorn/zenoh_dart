@@ -15,6 +15,11 @@ All notable changes to this project will be documented in this file.
   registered code asset, which reintroduces a tokio-waker crash in multi-process
   scenarios. 3.12.2 is the lowest measured-good floor.
 - Documented the supported-target matrix and the Android feature reduction.
+- **Added the `armeabi-v7a` Android prebuilt.** `flutter build apk` targets `android-arm` by
+  default, so a stock APK build previously failed in the build hook. All three of Flutter's default
+  Android ABIs now ship.
+- Documented how the native libraries are built, what the package does and does not contain, and how
+  to verify the shipped binaries.
 
 ## 0.19.0 — Binary I/O Pairs: Payload + Attachment Fidelity
 
