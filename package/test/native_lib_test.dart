@@ -1,7 +1,7 @@
 import 'package:ffi/ffi.dart';
 import 'package:test/test.dart';
-import 'package:zenoh/src/native_lib.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/src/native_lib.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   group('ensureInitialized with DynamicLibrary.open', () {

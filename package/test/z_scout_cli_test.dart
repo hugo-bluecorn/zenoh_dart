@@ -45,7 +45,7 @@ void main() {
       // multicast scouting on the default interface may not work on all
       // machines (especially when loopback doesn't have the MULTICAST flag).
       final helperScript = '''
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 Future<void> main() async {
   Zenoh.initLog('error');

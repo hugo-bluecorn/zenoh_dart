@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   group('ZBytes round-trip', () {
@@ -454,7 +454,7 @@ void main() {
 
   group('Barrel export', () {
     test('provides all public types', () {
-      // Given: the zenoh package is imported via package:zenoh/zenoh.dart
+      // Given: the zenoh package is imported via package:zenoh_dart/zenoh.dart
       // When: the types Config, Session, KeyExpr, ZBytes, ZenohException
       //       are referenced
       // Then: all types are accessible (test compiles and runs)

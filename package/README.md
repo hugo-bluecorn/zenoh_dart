@@ -25,7 +25,7 @@ Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol
 ## Getting Started
 
 ```dart
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() async {
   final session = Session.open();

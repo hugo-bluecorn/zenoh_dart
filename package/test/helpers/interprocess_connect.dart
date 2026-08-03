@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 /// Helper script for inter-process connection tests.
 ///

@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart'; // z_pong CLI tests
+import 'package:zenoh_dart/zenoh.dart'; // z_pong CLI tests
 
 /// The FVM-resolved Dart executable path.
 final _dartExe = Platform.resolvedExecutable;

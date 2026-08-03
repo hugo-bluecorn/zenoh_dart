@@ -33,7 +33,7 @@ String? _resolveLibraryPath(String libraryName) {
   // but throws UnsupportedError in Flutter test runner).
   try {
     final packageUri = Isolate.resolvePackageUriSync(
-      Uri.parse('package:zenoh/src/native_lib.dart'),
+      Uri.parse('package:zenoh_dart/src/native_lib.dart'),
     );
     if (packageUri != null) {
       final packageRoot = packageUri.resolve('../../');

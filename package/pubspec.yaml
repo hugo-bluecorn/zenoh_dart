@@ -1,4 +1,4 @@
-name: zenoh
+name: zenoh_dart
 description: "Dart bindings for the Zenoh pub/sub/query protocol via FFI."
 version: 0.19.0
 repository: https://github.com/bluecorn/zenoh_dart

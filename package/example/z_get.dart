@@ -1,5 +1,5 @@
 import 'package:args/args.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 const defaultSelector = 'demo/example/**';
 const defaultTimeoutMs = 10000;

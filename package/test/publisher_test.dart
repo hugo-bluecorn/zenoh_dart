@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   group('Publisher lifecycle', () {

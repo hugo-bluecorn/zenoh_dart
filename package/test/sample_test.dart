@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/src/sample.dart';
+import 'package:zenoh_dart/src/sample.dart';
 
 void main() {
   group('Sample.attachmentBytes', () {

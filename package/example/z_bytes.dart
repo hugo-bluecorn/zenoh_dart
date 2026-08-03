@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   // Section 1: Raw bytes and string round-trips

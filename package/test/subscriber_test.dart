@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/src/bytes.dart';
-import 'package:zenoh/src/bytes_writer.dart';
-import 'package:zenoh/src/config.dart';
-import 'package:zenoh/src/exceptions.dart';
-import 'package:zenoh/src/sample.dart';
-import 'package:zenoh/src/session.dart';
-import 'package:zenoh/src/subscriber.dart';
+import 'package:zenoh_dart/src/bytes.dart';
+import 'package:zenoh_dart/src/bytes_writer.dart';
+import 'package:zenoh_dart/src/config.dart';
+import 'package:zenoh_dart/src/exceptions.dart';
+import 'package:zenoh_dart/src/sample.dart';
+import 'package:zenoh_dart/src/session.dart';
+import 'package:zenoh_dart/src/subscriber.dart';
 
 void main() {
   group('SampleKind', () {

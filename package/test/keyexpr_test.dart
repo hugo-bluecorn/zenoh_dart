@@ -1,6 +1,6 @@
 import 'package:test/test.dart';
-import 'package:zenoh/src/exceptions.dart';
-import 'package:zenoh/src/keyexpr.dart';
+import 'package:zenoh_dart/src/exceptions.dart';
+import 'package:zenoh_dart/src/keyexpr.dart';
 
 void main() {
   group('KeyExpr round-trip', () {
