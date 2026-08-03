@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   group('ZBytes round-trip', () {
@@ -206,7 +206,10 @@ void main() {
 
       // Then: result == exactly the stored bytes (rc-checked reader; no
       // trailing uninitialized bytes from a short read).
-      expect(result, equals(Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41])));
+      expect(
+        result,
+        equals(Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41])),
+      );
       expect(result.length, equals(5));
       zbytes.dispose();
     });
@@ -454,7 +457,7 @@ void main() {
 
   group('Barrel export', () {
     test('provides all public types', () {
-      // Given: the zenoh package is imported via package:zenoh/zenoh.dart
+      // Given: the zenoh package is imported via package:zenoh_dart/zenoh.dart
       // When: the types Config, Session, KeyExpr, ZBytes, ZenohException
       //       are referenced
       // Then: all types are accessible (test compiles and runs)

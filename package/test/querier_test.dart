@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   group('Querier lifecycle', () {
@@ -700,15 +700,13 @@ void main() {
           )
           .toList();
       await querier
-          .get(
-            parameters: 'empty',
-            payload: ZBytes.fromUint8List(Uint8List(0)),
-          )
+          .get(parameters: 'empty', payload: ZBytes.fromUint8List(Uint8List(0)))
           .toList();
       await querier.get(parameters: 'absent').toList();
 
-      await Future.wait(completers.values.map((c) => c.future))
-          .timeout(Duration(seconds: 10));
+      await Future.wait(
+        completers.values.map((c) => c.future),
+      ).timeout(Duration(seconds: 10));
 
       expect(results['valid'], equals(validBytes));
       expect(results['invalid'], equals(invalidBytes));
@@ -732,55 +730,57 @@ void main() {
     // fails for a junk MIME in zenoh-c 1.7.2), and a valid querier + reachable
     // queryable makes z_querier_get succeed. So the post-move consumption
     // assertion is exercised on the success path.
-    test('querier get marks payload + attachment consumed unconditionally',
-        () async {
-      final queryable = sessionA.declareQueryable(
-        'zenoh/dart/test/qr7/consume',
-      );
-      addTearDown(queryable.close);
-      queryable.stream.listen((q) {
-        q.reply('zenoh/dart/test/qr7/consume', 'ack');
-        q.dispose();
-      });
-      await Future.delayed(Duration(milliseconds: 200));
+    test(
+      'querier get marks payload + attachment consumed unconditionally',
+      () async {
+        final queryable = sessionA.declareQueryable(
+          'zenoh/dart/test/qr7/consume',
+        );
+        addTearDown(queryable.close);
+        queryable.stream.listen((q) {
+          q.reply('zenoh/dart/test/qr7/consume', 'ack');
+          q.dispose();
+        });
+        await Future.delayed(Duration(milliseconds: 200));
 
-      final querier = sessionB.declareQuerier(
-        'zenoh/dart/test/qr7/consume',
-        timeout: Duration(seconds: 5),
-      );
-      addTearDown(querier.close);
+        final querier = sessionB.declareQuerier(
+          'zenoh/dart/test/qr7/consume',
+          timeout: Duration(seconds: 5),
+        );
+        addTearDown(querier.close);
 
-      final payload = ZBytes.fromUint8List(
-        Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41]),
-      );
-      final attachment = ZBytes.fromUint8List(
-        Uint8List.fromList([0xFF, 0xFE, 0x80]),
-      );
+        final payload = ZBytes.fromUint8List(
+          Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41]),
+        );
+        final attachment = ZBytes.fromUint8List(
+          Uint8List.fromList([0xFF, 0xFE, 0x80]),
+        );
 
-      await querier.get(payload: payload, attachment: attachment).toList();
+        await querier.get(payload: payload, attachment: attachment).toList();
 
-      // Both moved into zenoh-c (gravestoned) -- use-after-move must throw.
-      expect(
-        () => payload.toBytes(),
-        throwsA(
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            contains('consumed'),
+        // Both moved into zenoh-c (gravestoned) -- use-after-move must throw.
+        expect(
+          () => payload.toBytes(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('consumed'),
+            ),
           ),
-        ),
-      );
-      expect(
-        () => attachment.toBytes(),
-        throwsA(
-          isA<StateError>().having(
-            (e) => e.message,
-            'message',
-            contains('consumed'),
+        );
+        expect(
+          () => attachment.toBytes(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('consumed'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     // Test 4 (Edge): empty vs absent attachment via the querier.
     test('querier empty vs absent attachment', () async {
@@ -818,8 +818,9 @@ void main() {
           .toList();
       await querier.get(parameters: 'none').toList();
 
-      await Future.wait(completers.values.map((c) => c.future))
-          .timeout(Duration(seconds: 10));
+      await Future.wait(
+        completers.values.map((c) => c.future),
+      ).timeout(Duration(seconds: 10));
 
       // empty attachment -> non-null empty bytes.
       expect(results['empty'], isNotNull);
@@ -876,10 +877,9 @@ void main() {
       );
       addTearDown(querier.close);
 
-      final replies = await querier
-          .get()
-          .toList()
-          .timeout(Duration(seconds: 5));
+      final replies = await querier.get().toList().timeout(
+        Duration(seconds: 5),
+      );
 
       expect(replies, isNotEmpty);
       expect(replies.first.isOk, isTrue);

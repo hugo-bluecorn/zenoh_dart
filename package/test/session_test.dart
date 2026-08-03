@@ -2,12 +2,12 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/src/bytes.dart';
-import 'package:zenoh/src/config.dart';
-import 'package:zenoh/src/encoding.dart';
-import 'package:zenoh/src/exceptions.dart';
-import 'package:zenoh/src/id.dart';
-import 'package:zenoh/src/session.dart';
+import 'package:zenoh_dart/src/bytes.dart';
+import 'package:zenoh_dart/src/config.dart';
+import 'package:zenoh_dart/src/encoding.dart';
+import 'package:zenoh_dart/src/exceptions.dart';
+import 'package:zenoh_dart/src/id.dart';
+import 'package:zenoh_dart/src/session.dart';
 
 void main() {
   group('Session lifecycle', () {
@@ -421,7 +421,9 @@ void main() {
     });
 
     test('valid custom encoding round-trips faithfully', () async {
-      final subscriber = session2.declareSubscriber('zenoh/dart/put/enc-custom');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/put/enc-custom',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));

@@ -5,7 +5,7 @@ import 'dart:ffi';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 /// Helper to allocate an SHM buffer, write a string into it, and convert
 /// to ZBytes.  Allocates exactly [message.length] bytes for zero-copy

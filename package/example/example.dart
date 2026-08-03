@@ -1,4 +1,4 @@
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 void main() {
   Zenoh.initLog('error');

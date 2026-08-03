@@ -1,7 +1,7 @@
 import 'package:test/test.dart';
-import 'package:zenoh/src/config.dart';
-import 'package:zenoh/src/exceptions.dart';
-import 'package:zenoh/src/session.dart';
+import 'package:zenoh_dart/src/config.dart';
+import 'package:zenoh_dart/src/exceptions.dart';
+import 'package:zenoh_dart/src/session.dart';
 
 void main() {
   group('Config lifecycle', () {

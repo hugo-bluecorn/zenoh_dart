@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:test/test.dart';
-import 'package:zenoh/src/bytes.dart';
-import 'package:zenoh/src/bytes_writer.dart';
-import 'package:zenoh/src/config.dart';
-import 'package:zenoh/src/exceptions.dart';
-import 'package:zenoh/src/sample.dart';
-import 'package:zenoh/src/session.dart';
-import 'package:zenoh/src/subscriber.dart';
+import 'package:zenoh_dart/src/bytes.dart';
+import 'package:zenoh_dart/src/bytes_writer.dart';
+import 'package:zenoh_dart/src/config.dart';
+import 'package:zenoh_dart/src/exceptions.dart';
+import 'package:zenoh_dart/src/sample.dart';
+import 'package:zenoh_dart/src/session.dart';
+import 'package:zenoh_dart/src/subscriber.dart';
 
 void main() {
   group('SampleKind', () {
@@ -590,9 +590,7 @@ void main() {
     });
 
     test('receives valid-UTF-8 attachment byte-exact and as string', () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/utf8-att',
-      );
+      final subscriber = session2.declareSubscriber('zenoh/dart/test/utf8-att');
       addTearDown(subscriber.close);
 
       final publisher = session1.declarePublisher('zenoh/dart/test/utf8-att');
@@ -642,9 +640,7 @@ void main() {
     });
 
     test('absent attachment is null', () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/no-att',
-      );
+      final subscriber = session2.declareSubscriber('zenoh/dart/test/no-att');
       addTearDown(subscriber.close);
 
       final publisher = session1.declarePublisher('zenoh/dart/test/no-att');

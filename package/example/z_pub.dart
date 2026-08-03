@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:zenoh/zenoh.dart';
+import 'package:zenoh_dart/zenoh.dart';
 
 const defaultKeyExpr = 'demo/example/zenoh-dart-pub';
 const defaultValue = 'Pub from Dart!';
