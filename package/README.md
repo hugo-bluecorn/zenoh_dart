@@ -175,6 +175,12 @@ dart run example/z_pub_shm_thr.dart 8192
 dart run example/z_bytes.dart
 ```
 
+> **`z_pub_shm_thr.dart` needs a raised locked-memory limit.** It defaults to a **32 MB**
+> shared-memory pool, matching zenoh-c's example. Most Linux hosts cap locked memory at 8 MB,
+> and the provider then fails with `Unable to create POSIX shm segment: OS error 12`. Either
+> raise the limit (`ulimit -l 65536`) or pass a smaller pool with `-s 1`. The other SHM
+> examples use small pools and are unaffected.
+
 ## Real-world examples
 
 Two open-source Flutter applications drive a PincherX-100 robot arm over Zenoh
