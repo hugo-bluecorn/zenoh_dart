@@ -259,51 +259,55 @@ void main() {
     // MIME in zenoh-c 1.7.2, so we cannot force a throw. Instead we assert a
     // valid custom encoding survives the rc-checked path (no silent default
     // substitution) -- the rc IS now checked.
-    test('Publisher.put custom encoding round-trips (rc-checked path)',
-        () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/pub-enc-put-custom',
-      );
-      addTearDown(subscriber.close);
-      final publisher = session1.declarePublisher(
-        'zenoh/dart/test/pub-enc-put-custom',
-      );
-      addTearDown(publisher.close);
+    test(
+      'Publisher.put custom encoding round-trips (rc-checked path)',
+      () async {
+        final subscriber = session2.declareSubscriber(
+          'zenoh/dart/test/pub-enc-put-custom',
+        );
+        addTearDown(subscriber.close);
+        final publisher = session1.declarePublisher(
+          'zenoh/dart/test/pub-enc-put-custom',
+        );
+        addTearDown(publisher.close);
 
-      await Future<void>.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
 
-      publisher.put(
-        'data',
-        encoding: const Encoding('application/vnd.dart.pub-put'),
-      );
+        publisher.put(
+          'data',
+          encoding: const Encoding('application/vnd.dart.pub-put'),
+        );
 
-      final sample = await subscriber.stream.first.timeout(
-        const Duration(seconds: 5),
-      );
-      expect(sample.encoding, contains('application/vnd.dart.pub-put'));
-    });
+        final sample = await subscriber.stream.first.timeout(
+          const Duration(seconds: 5),
+        );
+        expect(sample.encoding, contains('application/vnd.dart.pub-put'));
+      },
+    );
 
-    test('declarePublisher custom encoding round-trips (rc-checked path)',
-        () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/pub-enc-decl-custom',
-      );
-      addTearDown(subscriber.close);
-      final publisher = session1.declarePublisher(
-        'zenoh/dart/test/pub-enc-decl-custom',
-        encoding: const Encoding('application/vnd.dart.pub-decl'),
-      );
-      addTearDown(publisher.close);
+    test(
+      'declarePublisher custom encoding round-trips (rc-checked path)',
+      () async {
+        final subscriber = session2.declareSubscriber(
+          'zenoh/dart/test/pub-enc-decl-custom',
+        );
+        addTearDown(subscriber.close);
+        final publisher = session1.declarePublisher(
+          'zenoh/dart/test/pub-enc-decl-custom',
+          encoding: const Encoding('application/vnd.dart.pub-decl'),
+        );
+        addTearDown(publisher.close);
 
-      await Future<void>.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
 
-      publisher.put('data');
+        publisher.put('data');
 
-      final sample = await subscriber.stream.first.timeout(
-        const Duration(seconds: 5),
-      );
-      expect(sample.encoding, contains('application/vnd.dart.pub-decl'));
-    });
+        final sample = await subscriber.stream.first.timeout(
+          const Duration(seconds: 5),
+        );
+        expect(sample.encoding, contains('application/vnd.dart.pub-decl'));
+      },
+    );
   });
 
   group('Multiple publishers integration', () {

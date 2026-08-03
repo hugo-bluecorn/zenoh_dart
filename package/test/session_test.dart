@@ -421,7 +421,9 @@ void main() {
     });
 
     test('valid custom encoding round-trips faithfully', () async {
-      final subscriber = session2.declareSubscriber('zenoh/dart/put/enc-custom');
+      final subscriber = session2.declareSubscriber(
+        'zenoh/dart/put/enc-custom',
+      );
       addTearDown(subscriber.close);
 
       await Future<void>.delayed(const Duration(seconds: 1));

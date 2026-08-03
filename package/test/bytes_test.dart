@@ -206,7 +206,10 @@ void main() {
 
       // Then: result == exactly the stored bytes (rc-checked reader; no
       // trailing uninitialized bytes from a short read).
-      expect(result, equals(Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41])));
+      expect(
+        result,
+        equals(Uint8List.fromList([0x00, 0xFF, 0xFE, 0x80, 0x41])),
+      );
       expect(result.length, equals(5));
       zbytes.dispose();
     });

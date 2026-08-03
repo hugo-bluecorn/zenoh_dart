@@ -590,9 +590,7 @@ void main() {
     });
 
     test('receives valid-UTF-8 attachment byte-exact and as string', () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/utf8-att',
-      );
+      final subscriber = session2.declareSubscriber('zenoh/dart/test/utf8-att');
       addTearDown(subscriber.close);
 
       final publisher = session1.declarePublisher('zenoh/dart/test/utf8-att');
@@ -642,9 +640,7 @@ void main() {
     });
 
     test('absent attachment is null', () async {
-      final subscriber = session2.declareSubscriber(
-        'zenoh/dart/test/no-att',
-      );
+      final subscriber = session2.declareSubscriber('zenoh/dart/test/no-att');
       addTearDown(subscriber.close);
 
       final publisher = session1.declarePublisher('zenoh/dart/test/no-att');

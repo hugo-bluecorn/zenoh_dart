@@ -402,55 +402,57 @@ void main() {
     });
     // --- Slice 4: attachment + encoding (send) ---
     // Test 1: binary attachment byte-exact (port 17526)
-    test('AdvancedPublisher putBytes delivers binary attachment byte-exact',
-        () async {
-      final config1 = Config();
-      config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17526"]');
-      config1.insertJson5('timestamping/enabled', 'true');
-      final session1 = Session.open(config: config1);
+    test(
+      'AdvancedPublisher putBytes delivers binary attachment byte-exact',
+      () async {
+        final config1 = Config();
+        config1.insertJson5('listen/endpoints', '["tcp/127.0.0.1:17526"]');
+        config1.insertJson5('timestamping/enabled', 'true');
+        final session1 = Session.open(config: config1);
 
-      await Future<void>.delayed(const Duration(milliseconds: 500));
+        await Future<void>.delayed(const Duration(milliseconds: 500));
 
-      final config2 = Config();
-      config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17526"]');
-      final session2 = Session.open(config: config2);
-
-      await Future<void>.delayed(const Duration(seconds: 1));
-
-      try {
-        final publisher = session1.declareAdvancedPublisher(
-          'zenoh/dart/test/adv-int/att-bin',
-          options: AdvancedPublisherOptions(
-            cacheMaxSamples: 5,
-            publisherDetection: true,
-          ),
-        );
-
-        final subscriber = session2.declareAdvancedSubscriber(
-          'zenoh/dart/test/adv-int/att-bin',
-        );
+        final config2 = Config();
+        config2.insertJson5('connect/endpoints', '["tcp/127.0.0.1:17526"]');
+        final session2 = Session.open(config: config2);
 
         await Future<void>.delayed(const Duration(seconds: 1));
 
-        publisher.putBytes(
-          ZBytes.fromString('payload'),
-          attachment: ZBytes.fromUint8List(
-            Uint8List.fromList([0xFF, 0xFE, 0x80]),
-          ),
-        );
+        try {
+          final publisher = session1.declareAdvancedPublisher(
+            'zenoh/dart/test/adv-int/att-bin',
+            options: AdvancedPublisherOptions(
+              cacheMaxSamples: 5,
+              publisherDetection: true,
+            ),
+          );
 
-        final sample = await subscriber.stream.first.timeout(
-          const Duration(seconds: 5),
-        );
-        expect(sample.attachmentBytes, equals([0xFF, 0xFE, 0x80]));
+          final subscriber = session2.declareAdvancedSubscriber(
+            'zenoh/dart/test/adv-int/att-bin',
+          );
 
-        subscriber.close();
-        publisher.close();
-      } finally {
-        session1.close();
-        session2.close();
-      }
-    });
+          await Future<void>.delayed(const Duration(seconds: 1));
+
+          publisher.putBytes(
+            ZBytes.fromString('payload'),
+            attachment: ZBytes.fromUint8List(
+              Uint8List.fromList([0xFF, 0xFE, 0x80]),
+            ),
+          );
+
+          final sample = await subscriber.stream.first.timeout(
+            const Duration(seconds: 5),
+          );
+          expect(sample.attachmentBytes, equals([0xFF, 0xFE, 0x80]));
+
+          subscriber.close();
+          publisher.close();
+        } finally {
+          session1.close();
+          session2.close();
+        }
+      },
+    );
 
     // Test 2: encoding received faithfully (port 17527)
     test('AdvancedPublisher put encoding received faithfully', () async {
@@ -547,12 +549,8 @@ void main() {
         await Future<void>.delayed(const Duration(seconds: 1));
         await sub.cancel();
 
-        final empty = samples.firstWhere(
-          (s) => s.payload == 'with-empty',
-        );
-        final absent = samples.firstWhere(
-          (s) => s.payload == 'no-attachment',
-        );
+        final empty = samples.firstWhere((s) => s.payload == 'with-empty');
+        final absent = samples.firstWhere((s) => s.payload == 'no-attachment');
 
         // Empty -> non-null empty; absent -> null.
         expect(empty.attachmentBytes, isNotNull);

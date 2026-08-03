@@ -189,34 +189,36 @@ void main() {
       expect(sample.attachmentBytes, equals([0xFF, 0xFE, 0x80]));
     });
 
-    test('tryRecv reports present-but-empty attachment as non-null empty',
-        () async {
-      final pullSub = session2.declarePullSubscriber(
-        'zenoh/dart/test/pull/empty-att',
-      );
-      addTearDown(pullSub.close);
+    test(
+      'tryRecv reports present-but-empty attachment as non-null empty',
+      () async {
+        final pullSub = session2.declarePullSubscriber(
+          'zenoh/dart/test/pull/empty-att',
+        );
+        addTearDown(pullSub.close);
 
-      final publisher = session1.declarePublisher(
-        'zenoh/dart/test/pull/empty-att',
-      );
-      addTearDown(publisher.close);
+        final publisher = session1.declarePublisher(
+          'zenoh/dart/test/pull/empty-att',
+        );
+        addTearDown(publisher.close);
 
-      await Future<void>.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
 
-      // Present but zero-length attachment.
-      publisher.putBytes(
-        ZBytes.fromString('payload'),
-        attachment: ZBytes.fromUint8List(Uint8List(0)),
-      );
+        // Present but zero-length attachment.
+        publisher.putBytes(
+          ZBytes.fromString('payload'),
+          attachment: ZBytes.fromUint8List(Uint8List(0)),
+        );
 
-      await Future<void>.delayed(const Duration(seconds: 1));
+        await Future<void>.delayed(const Duration(seconds: 1));
 
-      final sample = pullSub.tryRecv();
-      expect(sample, isNotNull);
-      // Empty (non-null) is distinct from absent (null) -- conflation fixed.
-      expect(sample!.attachmentBytes, isNotNull);
-      expect(sample.attachmentBytes, hasLength(0));
-    });
+        final sample = pullSub.tryRecv();
+        expect(sample, isNotNull);
+        // Empty (non-null) is distinct from absent (null) -- conflation fixed.
+        expect(sample!.attachmentBytes, isNotNull);
+        expect(sample.attachmentBytes, hasLength(0));
+      },
+    );
 
     test('tryRecv reports absent attachment as null', () async {
       final pullSub = session2.declarePullSubscriber(
