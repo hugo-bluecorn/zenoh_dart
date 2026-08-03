@@ -15,8 +15,8 @@
 > **Pre-1.0 and under active development. Good enough to experiment with — not good enough to
 > build a product on.** Expect breaking changes without deprecation cycles.
 >
-> **Targets are narrow.** Linux `x86_64` and Android `arm64-v8a` / `x86_64` only. macOS, Windows,
-> iOS and web are unsupported — the build hook fails on those targets.
+> **Targets are narrow.** Linux `x86_64` and Android `armeabi-v7a` / `arm64-v8a` / `x86_64` only.
+> macOS, Windows, iOS and web are unsupported — the build hook fails on those targets.
 >
 > **Android is feature-reduced, not merely a different platform.** Shared memory (`ShmProvider`,
 > `ShmMutBuffer`, `ZBytes.isShmBacked`) and advanced pub/sub (`AdvancedPublisher`,
@@ -221,10 +221,69 @@ distributions are untested; the shipped prebuilt requires glibc ≥ 2.34.
 | Platform | Architecture | Status | Notes |
 |----------|--------------|--------|-------|
 | Linux | x86_64 | Supported | Ubuntu LTS 24.04 / 26.04 |
-| Android | arm64-v8a, x86_64 | Supported | **`minSdkVersion` 24**; no SHM, no advanced pub/sub |
-| Android | armeabi-v7a, x86 | **Not shipped** | ⚠️ `flutter build apk` targets **android-arm by default** — the build hook throws a raw `PathNotFoundException`. Restrict your ABI filters. |
-| Linux | arm64 and others | **Not shipped** | Same failure mode (Raspberry Pi, Jetson, ARM cloud) |
+| Android | armeabi-v7a, arm64-v8a, x86_64 | Supported | **`minSdkVersion` 24**; no SHM, no advanced pub/sub. These are Flutter's three default APK targets. |
+| Android | x86 | Not shipped | Emulator-only ABI, and not a Flutter default target |
+| Linux | arm64 and others | Not shipped | The build hook throws `PathNotFoundException` (Raspberry Pi, Jetson, ARM cloud) |
 | macOS, Windows, iOS, web | — | Not supported | The build hook fails cleanly with `UnsupportedError` |
+
+## How the native libraries are built
+
+This package ships **prebuilt** native libraries — you do not need Rust, cargo, CMake or the Android
+NDK to depend on it. Eight `.so` files, about 48 MB unpacked:
+
+| Target | Files |
+|---|---|
+| `native/linux/x86_64/` | `libzenoh_dart.so`, `libzenohc.so` |
+| `native/android/armeabi-v7a/` | `libzenoh_dart.so`, `libzenohc.so` |
+| `native/android/arm64-v8a/` | `libzenoh_dart.so`, `libzenohc.so` |
+| `native/android/x86_64/` | `libzenoh_dart.so`, `libzenohc.so` |
+
+`libzenohc.so` is [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) itself, built from tag
+**1.7.2**. `libzenoh_dart.so` is this project's C shim, which flattens the macros, generic selections
+and opaque types that cannot cross the Dart FFI boundary. The shim links the runtime via `DT_NEEDED`.
+On Linux it also carries `RUNPATH=$ORIGIN`, so the two resolve from the same directory with no
+`LD_LIBRARY_PATH`; on Android the APK's linker resolves them from `lib/<abi>/`.
+
+**The sources are not in this package.** The publish boundary is `package/`, and every build input
+lives above it in the repository:
+[`src/`](https://github.com/bluecorn/zenoh_dart/tree/main/src) (the C shim),
+[`CMakeLists.txt`](https://github.com/bluecorn/zenoh_dart/blob/main/CMakeLists.txt) and
+`CMakePresets.json`, [`scripts/`](https://github.com/bluecorn/zenoh_dart/tree/main/scripts), and the
+`extern/zenoh-c` submodule. Clone the repository to build them yourself:
+
+```bash
+git clone --recurse-submodules https://github.com/bluecorn/zenoh_dart
+cd zenoh_dart
+
+# Linux x86_64 — zenoh-c from source, then the shim, installed into package/native/
+cmake --preset linux-x64
+cmake --build --preset linux-x64 --target install
+
+# Android — all three shipped ABIs (needs the NDK and cargo-ndk)
+./scripts/build_zenoh_android.sh --abi armeabi-v7a
+./scripts/build_zenoh_android.sh
+```
+
+The Linux build uses the Rust toolchain that zenoh-c's `rust-toolchain.toml` pins — **1.85.0** —
+which cargo selects on its own. The Android script builds through `cargo-ndk` with the `stable`
+toolchain instead, so the three Android runtimes are compiled by whatever `stable` resolved to at
+build time rather than by 1.85.0. Android builds target **API 24** and are 16 KB page-size aligned.
+
+**Verifying what you got.** The shipped binaries are checkable without building anything:
+
+```bash
+# zenoh-c version baked into the runtime
+strings libzenohc.so | grep -oE 'v1\.[0-9]+\.[0-9]+' | sort -u
+
+# the rustc that compiled it
+strings libzenohc.so | grep -oE 'rustc/[0-9a-f]+' | sort -u
+
+# exported shim surface — 156 on Linux, 131 on Android
+nm -D --defined-only libzenoh_dart.so | grep -c ' T zd_'
+```
+
+The Android builds export fewer symbols because shared memory and advanced pub/sub are compiled out
+there — see [Platform Support](#platform-support).
 
 ## Known issues in 0.20.0
 

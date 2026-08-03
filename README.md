@@ -4,8 +4,8 @@
 >
 > **Pre-1.0 and under active development — good enough to experiment with, not to
 > build a product on.** Published to make the work visible, not because it is ready.
-> Linux `x86_64` and Android `arm64-v8a`/`x86_64` only; Android has no SHM and no
-> advanced pub/sub.
+> Linux `x86_64` and Android `armeabi-v7a`/`arm64-v8a`/`x86_64` only; Android has no
+> SHM and no advanced pub/sub.
 
 Pure Dart FFI bindings for [Eclipse Zenoh](https://github.com/eclipse-zenoh) — the pub/sub, query and storage protocol — wrapping [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) v1.7.2 via a thin C shim layer.
 
@@ -64,14 +64,17 @@ Both end up in `package/native/android/<abi>/`. The Flutter build hook bundles t
 
 **Supported ABIs:**
 
-| ABI | Architecture | Use case |
-|-----|-------------|----------|
-| `arm64-v8a` | 64-bit ARM | Real phones (99% of devices) |
-| `x86_64` | 64-bit Intel | Android emulator on x86 host |
-| `armeabi-v7a` | 32-bit ARM | Legacy phones (pre-2015) |
-| `x86` | 32-bit Intel | Old emulators |
+| ABI | Architecture | Use case | Shipped |
+|-----|-------------|----------|---------|
+| `arm64-v8a` | 64-bit ARM | Real phones (99% of devices) | yes |
+| `x86_64` | 64-bit Intel | Android emulator on x86 host | yes |
+| `armeabi-v7a` | 32-bit ARM | Legacy phones (pre-2015) | yes |
+| `x86` | 32-bit Intel | Old emulators | no |
 
-Default (no flag) builds the two useful ones: `arm64-v8a` + `x86_64`. `--all` adds the 32-bit ABIs.
+The published package ships the three ABIs `flutter build apk` targets by default —
+`armeabi-v7a`, `arm64-v8a` and `x86_64`. The script's own default (no flag) builds only
+`arm64-v8a` + `x86_64`, so `armeabi-v7a` needs its own `--abi armeabi-v7a` run; `--all` adds
+`x86` as well, which is not shipped.
 
 **Note:** The `Cannot set "ZENOHC_LIB_DIR": current scope has no parent` warning during the Android C shim build is cosmetic — `set(... PARENT_SCOPE)` in `src/CMakeLists.txt` has no parent when built standalone. It does not affect the output.
 
