@@ -15,7 +15,7 @@ zenoh_dart/
     hook/                       #   Dart build hooks (CodeAsset registration)
     native/                     #   Prebuilt shared libraries (linux/x86_64/, android/<abi>/)
     example/                    #   CLI examples (26: z_put, z_sub, z_pub, z_get, z_queryable, z_ping, z_storage, z_advanced_pub, etc.)
-    test/                       #   Integration tests (571 tests)
+    test/                       #   Integration tests (571; 569 pass, 2 fail on low ulimit -l)
     pubspec.yaml
   src/                          # C shim source (outside publish boundary)
     zenoh_dart.{h,c}            #   156 C shim functions
@@ -42,7 +42,7 @@ cmake --build --preset linux-x64 --target install
 
 First build takes ~3 minutes (cargo). Subsequent builds are incremental (~2s for C shim changes).
 
-**Rust version constraint:** zenoh-c 1.7.2 requires Rust 1.85.0 — Rust >= 1.86 breaks `static_init`. The preset pins `+1.85.0` via `ZENOHC_CARGO_CHANNEL`. Install with `rustup toolchain install 1.85.0`.
+**Rust version constraint:** zenoh-c 1.7.2 requires Rust 1.85.0 — Rust >= 1.86 breaks `static_init`. The root `CMakeLists.txt` pins `+1.85.0` via `ZENOHC_CARGO_CHANNEL` (`CMakeLists.txt:34`); `CMakePresets.json` contains no such variable. Install with `rustup toolchain install 1.85.0`.
 
 **C shim only** (when zenoh-c is already built):
 ```bash
@@ -57,25 +57,34 @@ cmake --build --preset linux-x64-shim-only --target install
 ./scripts/build_zenoh_android.sh --abi arm64-v8a  # single ABI
 ```
 
-SHM features are excluded on Android.
+SHM **and advanced pub/sub** are excluded on Android — `src/CMakeLists.txt:17-22` withholds both `Z_FEATURE_SHARED_MEMORY` and `Z_FEATURE_UNSTABLE_API` under `if(NOT ANDROID)`, so **25 of 156** `zd_` symbols are absent (156 on Linux → 131 on Android).
 
 ### Dart package commands
 
 ```bash
 # Regenerate FFI bindings after modifying src/zenoh_dart.h
+#
+# PREREQUISITE: run a full `cmake --build --preset linux-x64` first. zenoh-c's
+# zenoh_configure.h and zenoh_opaque.h are gitignored upstream and are emitted into the
+# BUILD tree, not into the submodule's include/ — so a fresh checkout has neither, and
+# ffigen's parse fails. ffigen.yaml's compiler-opts must therefore also carry
+# -I../build/linux-x64/extern/zenoh-c/release/include alongside
+# -I../extern/zenoh-c/include; those generated headers are what supply the correct
+# opaque-type bodies and feature flags for the pinned version.
 cd package && dart run ffigen --config ffigen.yaml
 
 # Analyze Dart code
 cd package && dart analyze
 
-# Run all tests
-cd package && dart test
+# Run all tests (--concurrency=1 is required: the tests open real zenoh sessions
+# that contend for the network and for peer discovery)
+cd package && fvm dart test --concurrency=1
 
 # Run a single test file
-cd package && dart test test/session_test.dart
+cd package && fvm dart test --concurrency=1 test/session_test.dart
 
 # Run a single test by name
-cd package && dart test --name "opens session"
+cd package && fvm dart test --concurrency=1 --name "open session with default config"
 ```
 
 ### CLI examples
@@ -225,4 +234,4 @@ Uses `lints` package (configured in `package/analysis_options.yaml`).
 4. Regenerate bindings: `cd package && dart run ffigen --config ffigen.yaml`
 5. Add Dart API wrapper in `package/lib/src/`
 6. Add tests in `package/test/`
-7. Run: `cd package && dart test`
+7. Run: `cd package && fvm dart test --concurrency=1`

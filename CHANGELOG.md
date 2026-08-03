@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## 0.20.0 — First release under this name
+
+- **Renamed the package from `zenoh` to `zenoh_dart`.** All imports move from
+  `package:zenoh/...` to `package:zenoh_dart/...`. This is a breaking change.
+- **Fixed: the build hook no longer registers assets inside the package root.** It now
+  stages each prebuilt into the hook's output directory and registers the copy. The
+  previous behaviour pointed the build system at files in the pub cache, which it could
+  then delete as stale outputs — corrupting the cached package for every project on the
+  machine. See flutter/flutter#186305 for the contract.
+- **Raised the Dart SDK floor to `^3.12.2`.** On 3.11.x the VM eagerly `dlopen`s the
+  registered code asset, which reintroduces a tokio-waker crash in multi-process
+  scenarios. 3.12.2 is the lowest measured-good floor.
+- Documented the supported-target matrix and the Android feature reduction.
+
 ## 0.19.0 — Binary I/O Pairs: Payload + Attachment Fidelity
 
 Byte-faithful payload **and** attachment across every send/receive transport pair, proven end-to-end. First application of the data-fidelity parity check ("correct in ⟹ correct out").

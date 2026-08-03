@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## 0.20.0 — Published to pub.dev
+## 0.20.0 — First release under this name
 
 - **Renamed the package from `zenoh` to `zenoh_dart`.** All imports move from
   `package:zenoh/...` to `package:zenoh_dart/...`. This is a breaking change.
