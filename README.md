@@ -25,8 +25,8 @@ The Dart package lives in `package/`. All `dart` commands run from there. Build 
 
 ## Prerequisites
 
-- Dart SDK ^3.11.0
-- CMake 3.16+, Ninja, Clang/Clang++
+- Dart SDK ^3.12.2
+- CMake 3.21+, Ninja, Clang/Clang++
 - Rust 1.85.0 (`rustup toolchain install 1.85.0`)
 - For Android: Android NDK, [cargo-ndk](https://github.com/bbqsrc/cargo-ndk) (`cargo install cargo-ndk`)
 
@@ -45,7 +45,7 @@ The superbuild does two things:
 1. **cargo** builds `libzenohc.so` from Rust source (~3 min first time, incremental thereafter)
 2. **CMake/Clang** builds `libzenoh_dart.so` (the C shim, ~2s)
 
-Both are installed to `package/native/linux/x86_64/` with `RPATH=$ORIGIN` so the OS linker resolves them without `LD_LIBRARY_PATH`.
+Both are installed to `package/native/linux/x86_64/`. `libzenoh_dart.so` carries `RUNPATH=$ORIGIN`, which is what lets the OS linker resolve `libzenohc.so` from the same directory without `LD_LIBRARY_PATH`. `libzenohc.so` itself carries no run-time search path.
 
 ### Android
 
@@ -82,12 +82,14 @@ See [`package/README.md`](package/README.md) for the Dart API documentation, exa
 ## Running Tests
 
 ```bash
-cd package && dart test
+cd package && fvm dart test --concurrency=1
 ```
 
-The 571 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions (including intersects/includes/equals matching), put/delete, publisher lifecycle (including express mode), SHM alloc/write/publish, scout/info, get/queryable query/reply, SHM get/reply, pull subscriber ring buffer, declared querier with matching status, liveliness token/subscriber/get, background subscriber, ZBytes clone/toBytes, ping/pong latency benchmarks, SHM ping zero-copy benchmarks, throughput benchmarks (heap and SHM), bytes serialization/deserialization (ZSerializer, ZDeserializer, ZBytesWriter, slice iterator, convenience methods), in-memory storage (subscriber + queryable + key expression intersection), advanced pub/sub (cache, history recovery, miss detection, heartbeats), byte-exact binary payloads and attachments (with attachment + encoding send options and error replies), and inter-process scenarios.
+`--concurrency=1` is required, not a preference — these tests open real zenoh sessions that contend for the network and for peer discovery.
 
-Tests run against the Linux native libraries on the host machine. Android `.so` files cannot be tested on a Linux host (different architecture/linker) — they are validated by deploying a Flutter app to a real device or emulator. SHM features are excluded on Android.
+The 571 integration tests call through the real `libzenoh_dart.so` -> `libzenohc.so` via FFI — no mocks. They open zenoh sessions in peer mode, do pub/sub over TCP with two sessions in the same process, test key expressions (including intersects/includes/equals matching), put/delete, publisher lifecycle (including express mode), SHM alloc/write/publish, scout/info, get/queryable query/reply, SHM get/reply, pull subscriber ring buffer, declared querier with matching status, liveliness token/subscriber/get, background subscriber, ZBytes clone/toBytes, ping/pong latency benchmarks, SHM ping zero-copy benchmarks, throughput benchmarks (heap and SHM), bytes serialization/deserialization (ZSerializer, ZDeserializer, ZBytesWriter, slice iterator, convenience methods), in-memory storage (subscriber + queryable + key expression intersection), advanced pub/sub (cache, history recovery, miss detection, heartbeats), byte-exact binary payloads and attachments (with attachment + encoding send options and error replies), and inter-process scenarios. Two currently fail on hosts whose locked-memory limit is below 32 MB — see Known issues in [`package/README.md`](package/README.md).
+
+Tests run against the Linux native libraries on the host machine. Android `.so` files cannot be tested on a Linux host — the `arm64-v8a` build targets a different architecture, and even the `x86_64` build, which is the *same* architecture as the host, is linked against bionic libc and the Android dynamic linker. They are validated by deploying a Flutter app to a real device or emulator. SHM features are excluded on Android.
 
 ## License
 
