@@ -38,12 +38,12 @@ class Query {
   ///
   /// This is called internally by [Queryable] stream handler.
   Query({
-    required int handle,
+    required this._handle,
     required this.keyExpr,
     required this.parameters,
     this.payloadBytes,
     this.attachmentBytes,
-  }) : _handle = handle;
+  });
 
   /// The native pointer handle for this query (used by reply methods).
   int get handle {
