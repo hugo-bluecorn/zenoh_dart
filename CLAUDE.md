@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Pure Dart FFI package providing bindings for [Zenoh](https://zenoh.io/) (a pub/sub/query protocol) via a C shim layer wrapping zenoh-c v1.7.2. This is the product repo — clean, publishable code. Development happens in the companion `zenoh_dart_dev` repo.
+Pure Dart FFI package providing bindings for [Eclipse Zenoh](https://github.com/eclipse-zenoh) (a pub/sub, query and storage protocol) via a C shim layer wrapping [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) v1.7.2. This is the product repo — clean, publishable code. Development happens in the companion `zenoh_dart_dev` repo.
 
 ## Repository Structure
 

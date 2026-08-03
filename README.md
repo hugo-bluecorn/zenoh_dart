@@ -1,6 +1,13 @@
 # zenoh_dart
 
-Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol, wrapping [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) v1.7.2 via a thin C shim layer.
+> ## ⚠️ NOT FOR PRODUCTION
+>
+> **Pre-1.0 and under active development — good enough to experiment with, not to
+> build a product on.** Published to make the work visible, not because it is ready.
+> Linux `x86_64` and Android `arm64-v8a`/`x86_64` only; Android has no SHM and no
+> advanced pub/sub.
+
+Pure Dart FFI bindings for [Eclipse Zenoh](https://github.com/eclipse-zenoh) — the pub/sub, query and storage protocol — wrapping [zenoh-c](https://github.com/eclipse-zenoh/zenoh-c) v1.7.2 via a thin C shim layer.
 
 ## Repository Layout
 

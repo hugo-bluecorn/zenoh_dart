@@ -1,6 +1,30 @@
-# zenoh
+# zenoh_dart
 
-Pure Dart FFI bindings for the [Zenoh](https://zenoh.io/) pub/sub/query protocol.
+> ## ⚠️ NOT FOR PRODUCTION
+>
+> **This package is pre-1.0 and under active development. It is good enough to
+> experiment with — it is not good enough to build a product on.**
+>
+> It is published to make the work visible and to let people try it, not because it
+> is ready. Expect breaking changes without deprecation cycles.
+>
+> **Targets are narrow.** Linux `x86_64` and Android `arm64-v8a` / `x86_64` only.
+> There is no macOS, Windows, iOS or web support — the build hook fails outright on
+> those targets.
+>
+> **Android is feature-reduced, not merely a different platform.** Shared memory
+> (`ShmProvider`, `ShmMutBuffer`) and advanced pub/sub (`AdvancedPublisher`,
+> `AdvancedSubscriber`) are compiled out; calling them on Android fails at symbol
+> lookup.
+>
+> **Versions `0.2.0` and earlier under this name are an unrelated project** that no
+> longer has any connection to this package. They share no code, no API and no
+> maintainer, and nothing they document applies here.
+
+Pure Dart FFI bindings for [Eclipse Zenoh](https://github.com/eclipse-zenoh) — the
+pub/sub, query and storage protocol — wrapping
+[`zenoh-c`](https://github.com/eclipse-zenoh/zenoh-c) **v1.7.2** through a thin C shim
+layer.
 
 ## Features
 
@@ -151,12 +175,30 @@ dart run example/z_pub_shm_thr.dart 8192
 dart run example/z_bytes.dart
 ```
 
+## Real-world examples
+
+Two open-source Flutter applications drive a PincherX-100 robot arm over Zenoh
+using this package. Both run against a simulator in Docker with rviz — no
+hardware required.
+
+| App | What it demonstrates |
+|-----|----------------------|
+| [flutter_zenoh_gateway](https://github.com/bluecorn/flutter_zenoh_gateway) | App → Zenoh → a thin C++ Zenoh↔ROS gateway node → arm. JSON commands in, `interbotix_xs_msgs` out. |
+| [flutter_zenoh_direct](https://github.com/bluecorn/flutter_zenoh_direct) | No gateway node — the app *is* the ROS-over-Zenoh participant. Reads `joint_states`, computes FK, writes `JointGroupCommand` as CDR. |
+
+Each repository's README states the `zenoh_dart` version it targets and how to
+bring up the simulator.
+
+Background: [Building a UI for Robotics Using Flutter and
+Zenoh](https://github.com/bluecorn/flutter-zenoh-robotics-ui-webinar) (slides).
+
 ## Platform Support
 
-| Platform | Architecture | Status |
-|----------|-------------|--------|
-| Linux | x86_64 | Supported |
-| Android | arm64-v8a, x86_64 | Supported |
+| Platform | Architecture | Status | Notes |
+|----------|--------------|--------|-------|
+| Linux | x86_64 | Supported | Full API |
+| Android | arm64-v8a, x86_64 | Supported | **No SHM, no Advanced Pub/Sub** — compiled out |
+| macOS, Windows, iOS, web | — | Not supported | The build hook fails on these targets |
 
 ## License
 

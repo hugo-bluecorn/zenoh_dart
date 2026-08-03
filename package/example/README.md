@@ -1,5 +1,9 @@
 # zenoh-dart Examples
 
+> These are the canonical CLI examples, mirroring `zenoh-c`'s `z_*.c`. For complete
+> applications, see [flutter_zenoh_gateway](https://github.com/bluecorn/flutter_zenoh_gateway)
+> and [flutter_zenoh_direct](https://github.com/bluecorn/flutter_zenoh_direct).
+
 > **Audience:** Auditors, new developers, and zenoh users familiar with the
 > C or C++ bindings who want to understand what zenoh-dart implements, what
 > it skips, and why.
